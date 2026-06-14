@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { palette } from '../lib/tokens'
 import type { NavKey } from '../lib/calendar'
 import NavIcon from './NavIcon'
+import ProfileSwitcher from './ProfileSwitcher'
 
 const NAV: { key: NavKey; icon: LucideIcon; label: string }[] = [
   { key: 'home', icon: Home, label: 'Home' },
@@ -33,6 +34,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
       <div className="flex">
         <nav className="hidden lg:flex flex-col items-center gap-1 py-4 px-2" style={{ borderRight: `1px solid ${palette.line}`, backgroundColor: palette.surface }}>
           {NAV.map((n) => <NavIcon key={n.key} icon={n.icon} label={n.label} active={active === n.key} onClick={() => onNavigate(n.key)} />)}
+          <div className="mt-auto pt-2"><ProfileSwitcher /></div>
         </nav>
 
         <main className="flex-1 p-3 pb-24 lg:p-6 lg:pb-6">
@@ -49,6 +51,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around py-2" style={{ borderTop: `1px solid ${palette.line}`, backgroundColor: palette.surface }}>
         {NAV.map((n) => <NavIcon key={n.key} icon={n.icon} label={n.label} active={active === n.key} mobile onClick={() => onNavigate(n.key)} />)}
+        <ProfileSwitcher mobile />
       </nav>
 
       {showFab && (

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"tribo/internal/api"
+	"tribo/internal/auth"
 	"tribo/internal/chores"
 	"tribo/internal/store"
 	"tribo/web"
@@ -27,7 +28,8 @@ func main() {
 
 	startChoreScheduler(db)
 
-	handler := api.NewHandler(db, web.FS())
+	authSvc := auth.New(db)
+	handler := api.NewHandler(db, web.FS(), authSvc)
 
 	log.Printf("tribo listening on %s (db: %s)", addr, dbPath)
 	if err := http.ListenAndServe(addr, handler); err != nil {

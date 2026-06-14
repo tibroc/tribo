@@ -237,6 +237,49 @@ export function getReview(period: 'week' | 'month' | 'year'): Promise<Review> {
   return fetch(`/api/review?period=${period}`).then((r) => json<Review>(r))
 }
 
+// ===== Session / auth =====
+export interface SessionMember {
+  id: string
+  name: string
+  color: string
+  role: 'guardian' | 'child'
+  hasPin: boolean
+  mapped: boolean
+}
+
+export interface SessionInfo {
+  authEnabled: boolean
+  authenticated: boolean
+  needsMapping: boolean
+  subject?: string
+  activeMemberId?: string
+  members: SessionMember[]
+}
+
+export function getSession(): Promise<SessionInfo> {
+  return fetch('/api/session').then((r) => json<SessionInfo>(r))
+}
+
+export function switchProfile(memberId: string, pin?: string): Promise<{ activeMemberId: string }> {
+  return fetch('/api/session/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memberId, pin: pin ?? '' }),
+  }).then((r) => json<{ activeMemberId: string }>(r))
+}
+
+export function mapProfile(memberId: string): Promise<{ activeMemberId: string }> {
+  return fetch('/api/session/map', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memberId }),
+  }).then((r) => json<{ activeMemberId: string }>(r))
+}
+
+export function logout(): Promise<void> {
+  return fetch('/auth/logout', { method: 'POST' }).then((r) => json<void>(r))
+}
+
 // Local date as YYYY-MM-DD (chore-instance endpoint accepts date-only).
 function isoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

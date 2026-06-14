@@ -72,6 +72,10 @@ func seed(db *sql.DB) error {
 			return err
 		}
 	}
+	// Demo the optional profile-switch PIN (data model: "optional PIN for kids").
+	if _, err := tx.Exec(`UPDATE family_member SET pin = '1234' WHERE id = ?`, memberMarie); err != nil {
+		return err
+	}
 
 	if _, err := tx.Exec(
 		`INSERT INTO calendar_source (id, type, display_name, is_shared) VALUES

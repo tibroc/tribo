@@ -18,6 +18,13 @@ services:
     environment:
       - DATABASE_PATH=/data/tribo.db
       - LISTEN_ADDR=:8080
+      # Auth (OIDC against Authentik). Leave OIDC_ISSUER_URL unset to run with
+      # auth disabled (dev mode). When set, also provide a stable SESSION_SECRET.
+      # - OIDC_ISSUER_URL=https://authentik.example.com/application/o/tribo/
+      # - OIDC_CLIENT_ID=...
+      # - OIDC_CLIENT_SECRET=...
+      # - OIDC_REDIRECT_URL=https://tribo.example.com/auth/callback
+      # - SESSION_SECRET=change-me-to-a-long-random-string
     volumes:
       - tribo_data:/data
 

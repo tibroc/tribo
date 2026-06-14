@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"net/http"
 
+	"tribo/internal/auth"
 	"tribo/internal/calendar"
 	"tribo/internal/chores"
 	"tribo/internal/family"
@@ -21,10 +22,10 @@ type Server struct {
 	family *family.Service
 }
 
-// NewHandler builds the full HTTP handler: /api/* routes plus the embedded SPA
-// served (with index.html fallback) for everything else. Pass a nil/empty
-// webFS to serve the API only (e.g. `go run` during frontend dev).
-func NewHandler(db *sql.DB, webFS fs.FS) http.Handler {
+// NewHandler builds the full HTTP handler: open auth/session routes, the
+// auth-protected /api/* surface, and the embedded SPA (index.html fallback) for
+// everything else. Pass a nil/empty webFS to serve the API only.
+func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service) http.Handler {
 	s := &Server{
 		events: calendar.NewService(db),
 		chores: chores.NewService(db),
@@ -32,6 +33,7 @@ func NewHandler(db *sql.DB, webFS fs.FS) http.Handler {
 		family: family.NewService(db),
 	}
 
+	// Protected API surface.
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/events", s.listEvents)
 	mux.HandleFunc("POST /api/events", s.createEvent)
@@ -57,14 +59,19 @@ func NewHandler(db *sql.DB, webFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)
 
-	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, _ *http.Request) {
+	// Root mux: open routes first (more specific patterns win), then the
+	// protected /api/ subtree, then the SPA.
+	root := http.NewServeMux()
+	authSvc.RegisterRoutes(root) // /auth/*, /api/session*
+	root.HandleFunc("GET /api/health", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+	root.Handle("/api/", authSvc.Protect(mux))
 
 	if webFS != nil {
-		mux.Handle("/", spaHandler(webFS))
+		root.Handle("/", spaHandler(webFS))
 	}
-	return mux
+	return root
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

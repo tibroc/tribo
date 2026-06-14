@@ -70,6 +70,19 @@ Milestone: **2 complete.**
   the calendar FAB and by tapping an event; conflict events show a warning badge
   on their chip. Seed flags Soccer (→assigned) and Piano (→conflict) to demo.
 
-Next: **Milestone 5** (OIDC auth via Authentik + profile switcher). The
-Family/Settings edit interactions, the unclaimed-event "claim" action, and the
-Calendars section remain for later milestones.
+- **M5** — `internal/auth`: OIDC relying-party (coreos/go-oidc + oauth2,
+  authorization-code flow) with an HMAC-signed session cookie. First login maps
+  the Authentik `sub` to a `FamilyMember.oidc_subject`; an in-app profile
+  switcher (PIN-gated via `FamilyMember.pin`) changes the active profile without
+  re-auth. `Protect` middleware guards `/api/*`; `/auth/*` + `/api/session*` stay
+  open. Config via `OIDC_ISSUER_URL`/`OIDC_CLIENT_ID`/`OIDC_CLIENT_SECRET`/
+  `OIDC_REDIRECT_URL`/`SESSION_SECRET`. **When `OIDC_ISSUER_URL` is unset (or
+  discovery fails) auth runs in dev/disabled mode** — no login, session tracks
+  only the active profile. Frontend: `SessionProvider` + gate (login →
+  first-login mapping → app), `ProfileSwitcher` in the rail/bottom bar. Seed sets
+  Marie's PIN to `1234` to demo the gate.
+
+Next: **Milestone 6** (calendar sync + MCP server). Family/Settings edit
+interactions, the unclaimed-event "claim" action, and the Calendars connect flow
+remain for later milestones. OIDC login itself couldn't be exercised in-repo (no
+Authentik instance); dev mode + the session/PIN/Protect paths are tested.
