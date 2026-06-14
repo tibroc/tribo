@@ -1,0 +1,31 @@
+flowchart LR
+  subgraph clients["Clients"]
+    phone["Phone / Tablet (browser)"]
+    assistant["AI Assistant (MCP client)"]
+    calapp["Native Calendar App"]
+  end
+
+  subgraph host["Roost host — docker compose"]
+    caddy["Caddy<br/>reverse proxy + TLS"]
+    roost["Roost (Go)<br/>API + MCP + embedded frontend"]
+    db[("SQLite")]
+    radicale["Radicale<br/>(optional, bundled CalDAV)"]
+  end
+
+  subgraph external["External services"]
+    authentik["Authentik (OIDC)"]
+    google["Google Calendar"]
+    caldav["Other CalDAV server"]
+  end
+
+  phone --> caddy
+  assistant -->|"MCP over HTTP"| caddy
+  calapp -->|"CalDAV"| caddy
+  caddy --> roost
+  caddy --> radicale
+  roost --> db
+  roost <-->|"sync"| radicale
+  roost <-->|"sync"| google
+  roost <-->|"sync"| caldav
+  roost -->|"OIDC login"| authentik
+  calapp -.->|"optional: subscribe directly"| radicale
