@@ -7,6 +7,7 @@ import {
 } from '../lib/calendar'
 import type { FamilyMember, TriboEvent } from '../lib/api'
 import AppShell from '../components/AppShell'
+import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
 import EventChip from '../components/EventChip'
 
@@ -15,7 +16,7 @@ function ordered(events: TriboEvent[]): TriboEvent[] {
   return [...events.filter((e) => e.isShared || e.attendeeIds.length === 0), ...events.filter((e) => !(e.isShared || e.attendeeIds.length === 0))]
 }
 
-export default function MonthView({ members, events, cursor, today, header }: ViewProps) {
+export default function MonthView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
   const year = cursor.getFullYear()
   const month = cursor.getMonth()
   const byId = useMemo(() => membersById(members), [members])
@@ -36,7 +37,9 @@ export default function MonthView({ members, events, cursor, today, header }: Vi
 
   return (
     <AppShell
-      header={header}
+      active="calendar"
+      onNavigate={onNavigate}
+      header={<CalendarHeader controls={header} />}
       aside={
         <div className="space-y-5">
           <SelectedDayPanel date={selected} byDay={byDay} byId={byId} today={today} />

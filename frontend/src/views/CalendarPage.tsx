@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   addDays, addMonths, mondayOf, startOfDay, startOfMonth, weekRangeLabel,
-  FULL_WEEKDAY, MONTHS_FULL, MONTHS_SHORT, type ViewName, type HeaderControls, type ViewProps,
+  FULL_WEEKDAY, MONTHS_FULL, MONTHS_SHORT, type ViewName, type HeaderControls, type ViewProps, type NavKey,
 } from '../lib/calendar'
 import { getEvents, getFamilyMembers, type FamilyMember, type TriboEvent } from '../lib/api'
 import DayView from './DayView'
@@ -52,7 +52,7 @@ function periodFor(view: ViewName, cursor: Date): { start: Date; end: Date; labe
   }
 }
 
-export default function CalendarPage() {
+export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) => void }) {
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState<ViewName>('Week')
   const [cursor, setCursor] = useState<Date>(() => new Date())
@@ -89,7 +89,7 @@ export default function CalendarPage() {
       {error && (
         <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 rounded-xl px-3 py-2 text-sm shadow" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>
       )}
-      <ActiveView members={members} events={events} cursor={cursor} today={today} header={header} />
+      <ActiveView members={members} events={events} cursor={cursor} today={today} header={header} onNavigate={onNavigate} />
     </>
   )
 }

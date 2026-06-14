@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
-import { CheckSquare, ListTodo, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { palette, SHARED_COLOR, chipStyle } from '../lib/tokens'
 import { fmtTime, sameDay, startOfDay, type ViewProps } from '../lib/calendar'
 import type { FamilyMember, TriboEvent } from '../lib/api'
+import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
+import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
+import { ChoresPanel, TodosPanel } from '../components/panels'
 
 const HOUR_START = 6
 const HOUR_END = 21 // 6 AM – 9 PM
@@ -20,7 +23,7 @@ const formatHour = (h: number) => `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`
 
 interface Block { ev: TriboEvent; start: number; end: number; color: string; who?: string }
 
-export default function DayView({ members, events, cursor, today, header }: ViewProps) {
+export default function DayView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
   const day = useMemo(() => startOfDay(cursor), [cursor])
   const isToday = sameDay(day, today)
   const nowFrac = fracHour(today)
@@ -55,7 +58,7 @@ export default function DayView({ members, events, cursor, today, header }: View
   ]
 
   return (
-    <AppShell header={header}>
+    <AppShell active="calendar" onNavigate={onNavigate} header={<CalendarHeader controls={header} />}>
       <Card className="overflow-hidden">
         {/* Tablet: per-person columns */}
         <div className="hidden lg:grid" style={{ gridTemplateColumns: `56px repeat(${columns.length}, 1fr)` }}>
@@ -135,42 +138,13 @@ function TimelineColumn({ blocks, isLast, showNow, nowFrac, withWho }: {
   )
 }
 
-// Static placeholder — chores/todos are wired to the API in Milestone 3.
+// Live chores + to-dos for the family this week.
 function TodayPanel({ members }: { members: FamilyMember[] }) {
-  const chores = [
-    { title: 'Water the plants', who: 'Marie', color: members.find((m) => m.name === 'Marie')?.color ?? '#5C9460', done: false },
-    { title: 'Tidy the living room', who: 'Guilherme', color: members.find((m) => m.name === 'Guilherme')?.color ?? '#8A6BB8', done: true },
-  ]
-  const todos = [
-    { title: 'Pack swim bag for tomorrow', done: false },
-    { title: 'Reply to school email', done: false },
-  ]
+  const { instances, todos, toggleChore, toggleTodo, addTodo } = useChoresTodos()
   return (
     <Card className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div>
-        <div className="font-display text-base font-bold mb-2 flex items-center gap-2"><CheckSquare size={16} /> Today's chores</div>
-        <div className="space-y-2">
-          {chores.map((c, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" defaultChecked={c.done} className="w-4 h-4 rounded" readOnly />
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
-              <span className={c.done ? 'line-through' : ''} style={{ color: c.done ? palette.inkSoft : palette.ink }}>{c.title}</span>
-              <span className="text-xs ml-auto flex-shrink-0" style={{ color: palette.inkSoft }}>{c.who}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-      <div>
-        <div className="font-display text-base font-bold mb-2 flex items-center gap-2"><ListTodo size={16} /> To-dos</div>
-        <div className="space-y-2">
-          {todos.map((t, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" defaultChecked={t.done} className="w-4 h-4 rounded" readOnly />
-              <span className={t.done ? 'line-through' : ''} style={{ color: t.done ? palette.inkSoft : palette.ink }}>{t.title}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      <ChoresPanel instances={instances} members={members} onToggle={toggleChore} title="This week's chores" />
+      <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
     </Card>
   )
 }

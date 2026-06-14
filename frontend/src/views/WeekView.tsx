@@ -1,14 +1,17 @@
 import { useMemo } from 'react'
-import { CheckSquare, ListTodo, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { palette, SHARED_COLOR } from '../lib/tokens'
 import {
   addDays, mondayOf, sameDay, fmtTime, groupByDay, WEEKDAY_LABELS, type ViewProps,
 } from '../lib/calendar'
 import type { FamilyMember, TriboEvent } from '../lib/api'
+import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
+import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
 import EventChip from '../components/EventChip'
 import PersonAvatar from '../components/PersonAvatar'
+import { ChoresPanel, TodosPanel } from '../components/panels'
 
 interface Placed { ev: TriboEvent; time?: string }
 
@@ -32,13 +35,13 @@ function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date
   }, [events, members, monday])
 }
 
-export default function WeekView({ members, events, cursor, today, header }: ViewProps) {
+export default function WeekView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
   const monday = useMemo(() => mondayOf(cursor), [cursor])
   const { perMember, shared } = useWeekData(events, members, monday)
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
 
   return (
-    <AppShell header={header} aside={<ThisWeekPanel />}>
+    <AppShell active="calendar" onNavigate={onNavigate} header={<CalendarHeader controls={header} />} aside={<ThisWeekPanel members={members} />}>
       {/* Tablet/desktop grid */}
       <Card className="hidden lg:block overflow-hidden">
         <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} />
@@ -149,52 +152,22 @@ function AgendaDay({ day, di, members, perMember, shared, today }: {
   )
 }
 
-// Static placeholder — chores/todos are wired to the API in Milestone 3.
-const sampleChores = [
-  { title: 'Mow the lawn', color: '#4C7EA8', done: false },
-  { title: 'Clean the bathroom', color: '#D1577A', done: true },
-  { title: 'Take out recycling', color: '#8A6BB8', done: false },
-  { title: 'Water the plants', color: '#5C9460', done: true },
-]
-const sampleTodos = [
-  { title: 'Book dentist for Marie', done: false },
-  { title: 'Renew car registration', done: false },
-  { title: 'Order birthday gift', done: true },
-]
-
-function ThisWeekPanel() {
+// This-week panel: live chores + to-dos with a completion progress bar.
+function ThisWeekPanel({ members }: { members: FamilyMember[] }) {
+  const { instances, todos, toggleChore, toggleTodo, addTodo } = useChoresTodos()
+  const done = instances.filter((i) => i.status === 'done').length
+  const pct = instances.length ? Math.round((done / instances.length) * 100) : 0
   return (
     <div className="space-y-5">
       <div>
         <div className="font-display text-lg font-bold mb-1">This week</div>
-        <div className="text-sm" style={{ color: palette.inkSoft }}>Last week: 11/14 chores · 3 to-dos done</div>
+        <div className="text-sm" style={{ color: palette.inkSoft }}>{done}/{instances.length} chores done</div>
         <div className="h-1.5 rounded-full mt-2" style={{ backgroundColor: palette.line }}>
-          <div className="h-1.5 rounded-full" style={{ width: '78%', backgroundColor: palette.brand }} />
+          <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: palette.brand }} />
         </div>
       </div>
-      <PlaceholderList icon={<CheckSquare size={16} />} title="Chores" items={sampleChores} />
-      <PlaceholderList icon={<ListTodo size={16} />} title="To-dos" items={sampleTodos} />
-    </div>
-  )
-}
-
-function PlaceholderList({ icon, title, items }: {
-  icon: React.ReactNode
-  title: string
-  items: { title: string; color?: string; done: boolean }[]
-}) {
-  return (
-    <div>
-      <div className="font-display text-base font-bold mb-2 flex items-center gap-2">{icon} {title}</div>
-      <div className="space-y-2">
-        {items.map((it, i) => (
-          <label key={i} className="flex items-center gap-2 text-sm">
-            <input type="checkbox" defaultChecked={it.done} className="w-4 h-4 rounded" readOnly />
-            {it.color && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: it.color }} />}
-            <span className={it.done ? 'line-through' : ''} style={{ color: it.done ? palette.inkSoft : palette.ink }}>{it.title}</span>
-          </label>
-        ))}
-      </div>
+      <ChoresPanel instances={instances} members={members} onToggle={toggleChore} />
+      <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
     </div>
   )
 }

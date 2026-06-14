@@ -6,6 +6,11 @@ import type { FamilyMember, TriboEvent } from './api'
 export type ViewName = 'Day' | 'Week' | 'Month' | 'Quarter' | 'Year'
 export const VIEWS: ViewName[] = ['Day', 'Week', 'Month', 'Quarter', 'Year']
 
+// Top-level navigation destinations. 'review' is reached from Home (not the rail);
+// it highlights the Home nav item, matching the prototype.
+export type Section = 'home' | 'calendar' | 'chores' | 'todos' | 'family' | 'review'
+export type NavKey = 'home' | 'calendar' | 'chores' | 'todos' | 'family'
+
 export const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 export const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -29,6 +34,7 @@ export interface ViewProps {
   cursor: Date // anchor date for the focused period
   today: Date
   header: HeaderControls
+  onNavigate: (k: NavKey) => void
 }
 
 // ===== Date helpers =====

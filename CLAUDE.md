@@ -46,6 +46,19 @@ Milestone: **2 complete.**
   navigates between them and the header's prev/next/Today step by the active
   period. No palette/Card/shell duplication across views.
 
-Next: **Milestone 3** (Chores, To-dos, Family/Settings, Review + nightly chore
-instance generation). The chores/todos panels in Day/Week are still static
-placeholders until then.
+- **M3** — `Chore`, `ChoreInstance`, `Todo`, `WorkSchedule` tables (migration
+  `0002`) + services. APIs: `GET/POST /api/chores`, `GET /api/chore-instances`,
+  `POST /api/chores/{id}/complete|skip`, `PATCH /api/chore-instances/{id}`,
+  `GET/POST /api/todos` + `PATCH /api/todos/{id}`, `GET /api/work-schedules`,
+  and the aggregation endpoints `GET /api/briefing` (Home) + `GET /api/review`
+  (hero stats, per-person streaks, 8-week consistency heatmap, YTD). In-process
+  nightly scheduler generates the upcoming period's chore instances; seed
+  includes 8 weeks of history. Frontend: top-level section routing
+  (Home/Calendar/Chores/To-dos/Family/Review) via a refactored `AppShell` +
+  `chrome.tsx` headers; Home, Family/Settings, Review screens; Day/Week panels
+  and dedicated Chores/To-dos screens wired to real data — checking off a chore
+  or to-do persists and shows in Review's heatmap and Home's recap.
+
+Next: **Milestone 4** (event form + guardian assignment/conflict logic). The
+Family/Settings rows and the FAB are still display-only; the Calendars section
+and Authentik account row are placeholders until Milestones 6/5.

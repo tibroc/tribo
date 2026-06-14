@@ -3,6 +3,8 @@ package store
 import (
 	"database/sql"
 	"time"
+
+	"tribo/internal/chores"
 )
 
 // Stable IDs so seeding is idempotent and member ordering stays fixed.
@@ -195,7 +197,119 @@ func seed(db *sql.DB) error {
 		}
 	}
 
-	return tx.Commit()
+	// Chores.
+	type choreSeed struct {
+		id, title, rule, mode, color string
+		assigned                     string
+		rotation                     any
+	}
+	choreSeeds := []choreSeed{
+		{"chore-mow", "Mow the lawn", "weekly", "fixed", "#4C7EA8", memberAlberto, nil},
+		{"chore-bath", "Clean the bathroom", "weekly", "fixed", "#D1577A", memberHilda, nil},
+		{"chore-recycle", "Take out recycling", "weekly", "fixed", "#8A6BB8", memberGuilherme, nil},
+		{"chore-plants", "Water the plants", "weekly", "fixed", "#5C9460", memberMarie, nil},
+		{"chore-table", "Set the table", "daily", "rotation", "#5C9460", "", memberMarie + "," + memberGuilherme},
+		{"chore-fridge", "Defrost the fridge", "monthly", "fixed", "#D1577A", memberHilda, nil},
+	}
+	for i, c := range choreSeeds {
+		var assigned any
+		if c.assigned != "" {
+			assigned = c.assigned
+		}
+		if _, err := tx.Exec(
+			`INSERT INTO chore (id, title, recurrence_rule, assignment_mode, assigned_member_id, rotation_member_ids, color, sort_order)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			c.id, c.title, c.rule, c.mode, assigned, c.rotation, c.color, i); err != nil {
+			return err
+		}
+	}
+
+	// Work schedules (guardians, Mon–Fri).
+	if _, err := tx.Exec(
+		`INSERT INTO work_schedule (id, member_id, days_of_week, start_time, end_time, label, show_on_calendar) VALUES
+		 (?, ?, '1111100', '09:00', '17:00', 'Work', 0),
+		 (?, ?, '1111100', '08:00', '16:00', 'Work', 0)`,
+		"ws-alberto", memberAlberto, "ws-hilda", memberHilda); err != nil {
+		return err
+	}
+
+	// Todos. "Order birthday gift" was completed last week so Home/Review recaps show it.
+	lastWeekDone := monday.AddDate(0, 0, -2).Format(time.RFC3339)
+	todoSeeds := []struct {
+		id, title string
+		member    any
+		status    string
+		completed any
+		order     int
+	}{
+		{"todo-dentist", "Book dentist for Marie", memberMarie, "open", nil, 0},
+		{"todo-car", "Renew car registration", nil, "open", nil, 1},
+		{"todo-gift", "Order birthday gift", nil, "done", lastWeekDone, 2},
+		{"todo-swim", "Pack swim bag for tomorrow", nil, "open", nil, 3},
+		{"todo-email", "Reply to school email", nil, "open", nil, 4},
+	}
+	for _, t := range todoSeeds {
+		if _, err := tx.Exec(
+			`INSERT INTO todo (id, title, assigned_member_id, status, completed_at, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
+			t.id, t.title, t.member, t.status, t.completed, t.order); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	// Generate chore instances and a realistic completion history (post-commit,
+	// so the chores exist for the generator to read).
+	return seedChoreHistory(db, monday)
+}
+
+// seedChoreHistory generates instances for the past 8 weeks (+ current/next) and
+// marks a believable subset done, so the Review heatmap and streaks have data.
+// The current week stays pending so the user can check chores off live.
+func seedChoreHistory(db *sql.DB, currentMonday time.Time) error {
+	svc := chores.NewService(db)
+	if _, err := svc.Generate(currentMonday.AddDate(0, 0, -7*9), currentMonday.AddDate(0, 0, 7)); err != nil {
+		return err
+	}
+
+	today := time.Now()
+	todayStr := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location()).Format("2006-01-02")
+
+	// Weekly chores: explicit 7-week histories (oldest → most recent prior week).
+	weekly := map[string][]bool{
+		"chore-mow":     {true, true, false, true, true, true, true},
+		"chore-bath":    {true, true, true, true, true, true, true},
+		"chore-recycle": {true, false, true, true, false, true, false},
+		"chore-plants":  {true, true, false, true, true, true, false},
+	}
+	markDone := func(choreID, periodStart string) error {
+		_, err := db.Exec(
+			`UPDATE chore_instance SET status='done', completed_by=assigned_member_id, completed_at=?
+			 WHERE chore_id=? AND period_start=?`,
+			periodStart+"T12:00:00Z", choreID, periodStart)
+		return err
+	}
+	for choreID, hist := range weekly {
+		for w, done := range hist {
+			if !done {
+				continue
+			}
+			weekStart := currentMonday.AddDate(0, 0, -7*(7-w)).Format("2006-01-02")
+			if err := markDone(choreID, weekStart); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Daily + monthly: mark every fully-elapsed period done (period_end <= today).
+	if _, err := db.Exec(
+		`UPDATE chore_instance SET status='done', completed_by=assigned_member_id, completed_at=period_start||'T12:00:00Z'
+		 WHERE chore_id IN ('chore-table','chore-fridge') AND period_end <= ?`, todayStr); err != nil {
+		return err
+	}
+	return nil
 }
 
 // mondayOf returns midnight on the Monday of t's week, in t's location.
