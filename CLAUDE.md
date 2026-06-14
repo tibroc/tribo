@@ -32,7 +32,7 @@ Self-hosted, family-centered organizer. Go backend + SQLite, React frontend, Cad
 
 ## Current status
 
-Milestone: **2 complete.**
+**All 7 roadmap milestones complete.**
 
 - **M1** — Go backend (layout per `docs/roost-architecture.md`), SQLite schema +
   migration + seed (Silva family, a week of events, plus year-spanning milestone
@@ -95,7 +95,16 @@ Milestone: **2 complete.**
   pull (external event appears in Tribo) and push (Tribo event appears in
   Radicale); MCP tools tested via an in-process client.
 
-Next: **Milestone 7** (onboarding wizard). Family/Settings edit interactions,
-the unclaimed-event "claim" action, and Google sync remain. OIDC login itself
-isn't exercised in-repo (no Authentik); `/mcp` is unauthenticated in dev — gate
-it behind a token/proxy in production.
+- **M7** — Onboarding wizard (`OnboardingWizard.tsx`): 7 steps (welcome →
+  family basics → members → calendar → starter chores → typical week → done),
+  one-shot `POST /api/onboarding` creating family, members (+ default guardians),
+  internal calendar sources, starter chores (+ instances), and a typical week of
+  recurring events. Shown automatically when no members exist (gated in `App`);
+  re-runnable from Family → Settings. `TRIBO_SEED=false` leaves a fresh instance
+  empty so the wizard runs.
+
+**Known gaps / deferred** (not in the 7 milestones): Family/Settings per-row
+edit interactions, the unclaimed-event "claim" action, Google calendar sync
+(scaffolded only), and the work-schedule "busy stripe" rendering. Caveats: OIDC
+login round-trip isn't exercised in-repo (no Authentik); `/mcp` is
+unauthenticated in dev — gate it behind a token/proxy in production.

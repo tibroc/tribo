@@ -14,6 +14,8 @@ import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
+import OnboardingWizard from './OnboardingWizard'
+import { useSession } from '../lib/session'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
@@ -31,7 +33,19 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   }, [])
 
   const [showConnect, setShowConnect] = useState(false)
+  const [showWizard, setShowWizard] = useState(false)
+  const { refresh: refreshSession } = useSession()
   const nameOf = (id?: string) => members.find((m) => m.id === id)?.name ?? ''
+
+  if (showWizard) {
+    const reloadAll = () => {
+      getFamilyMembers().then(setMembers).catch(() => {})
+      getChores().then(setChores).catch(() => {})
+      reloadSources()
+      refreshSession()
+    }
+    return <OnboardingWizard onDone={() => { setShowWizard(false); reloadAll() }} onCancel={() => setShowWizard(false)} />
+  }
   const choreWho = (c: Chore) =>
     c.assignmentMode === 'rotation'
       ? (c.rotationMemberIds ?? []).map(nameOf).filter(Boolean).join(', ')
@@ -157,6 +171,14 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             <SettingRow icon={MapPin} title="Location" sub="Lisbon, Portugal — used for weather" />
             <SettingRow icon={Palette} title="Appearance" sub="Default color theme" />
             <SettingRow icon={LogIn} title="Account" sub="Sign-in via Authentik arrives in a later update" />
+            <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
+              <Plus size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">Run setup wizard</div>
+                <div className="text-xs" style={{ color: palette.inkSoft }}>Add members, chores, or a typical week</div>
+              </div>
+              <ChevronRight size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+            </button>
           </div>
         </Section>
       </div>

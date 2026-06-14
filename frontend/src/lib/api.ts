@@ -305,6 +305,44 @@ export function logout(): Promise<void> {
   return fetch('/auth/logout', { method: 'POST' }).then((r) => json<void>(r))
 }
 
+// ===== Onboarding =====
+export interface OnboardMember {
+  name: string
+  color: string
+  role: 'guardian' | 'child'
+  defaultGuardianIndex?: number | null
+}
+export interface OnboardChore {
+  title: string
+  recurrence: 'daily' | 'weekly' | 'monthly'
+  mode: 'fixed' | 'rotation'
+  color: string
+  assignedMemberIndex?: number | null
+  rotationMemberIndices?: number[]
+}
+export interface OnboardPattern {
+  memberIndex: number
+  title: string
+  startTime: string
+  durationMin: number
+  weekdays: number[]
+}
+export interface OnboardRequest {
+  familyName: string
+  timezone: string
+  members: OnboardMember[]
+  chores: OnboardChore[]
+  typicalWeek: OnboardPattern[]
+}
+
+export function onboard(req: OnboardRequest): Promise<{ status: string }> {
+  return fetch('/api/onboarding', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  }).then((r) => json<{ status: string }>(r))
+}
+
 // Local date as YYYY-MM-DD (chore-instance endpoint accepts date-only).
 function isoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

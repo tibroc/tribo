@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"os"
 	"time"
 
 	"tribo/internal/calendar"
@@ -28,6 +29,10 @@ const (
 // default (current) week always shows data with correct "today" highlighting.
 // Recurring-event generation arrives in a later milestone.
 func seed(db *sql.DB) error {
+	// TRIBO_SEED=false leaves a fresh instance empty so the onboarding wizard runs.
+	if os.Getenv("TRIBO_SEED") == "false" {
+		return nil
+	}
 	var count int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM family`).Scan(&count); err != nil {
 		return err

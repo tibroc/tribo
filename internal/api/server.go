@@ -18,6 +18,7 @@ import (
 )
 
 type Server struct {
+	db     *sql.DB
 	events *calendar.Service
 	chores *chores.Service
 	todos  *todos.Service
@@ -30,6 +31,7 @@ type Server struct {
 // everything else. Pass a nil/empty webFS to serve the API only.
 func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *calsync.Engine) http.Handler {
 	s := &Server{
+		db:     db,
 		events: calendar.NewService(db),
 		chores: chores.NewService(db),
 		todos:  todos.NewService(db),
@@ -65,6 +67,8 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)
+
+	mux.HandleFunc("POST /api/onboarding", s.handleOnboarding)
 
 	// Root mux: open routes first (more specific patterns win), then the
 	// protected /api/ subtree, then the SPA.
