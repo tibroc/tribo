@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.font-display {
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+.font-body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}

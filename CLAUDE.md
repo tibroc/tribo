@@ -20,13 +20,32 @@ Self-hosted, family-centered organizer. Go backend + SQLite, React frontend, Cad
 
 ## Commands
 
-_(fill in as the project is scaffolded)_
-
-- Backend: `go run ./cmd/roost`
-- Frontend dev server: `cd frontend && npm run dev`
-- Full stack: `docker-compose up`
+- Backend (API + embedded SPA): `go run ./cmd/tribo` (serves on `:8080`, SQLite at `./tribo.db`)
+- Frontend dev server: `cd frontend && npm run dev` (proxies `/api` → `:8080`)
+- Frontend build (emits to `web/dist` for `go:embed`): `cd frontend && npm run build`
+- Full stack: `docker-compose up` → http://localhost:8080
 - Tests: `go test ./...`
+
+> Note: the app was renamed **roost → tribo**. Go module is `tribo`, binary is
+> `cmd/tribo`, DB defaults to `tribo.db`. The `docs/roost-*.md` design files keep
+> their original filenames.
 
 ## Current status
 
-Milestone: **not started — begin with Milestone 1 in `docs/roadmap.md`**
+Milestone: **2 complete.**
+
+- **M1** — Go backend (layout per `docs/roost-architecture.md`), SQLite schema +
+  migration + seed (Silva family, a week of events, plus year-spanning milestone
+  birthdays/holidays), REST `GET/POST /api/events` + `GET /api/family-members`,
+  embedded SPA.
+- **M2** — Shared components in `frontend/src/components/` (`AppShell`, `Card`,
+  `NavIcon`, `EventChip`, `ViewSwitcher`, `PersonAvatar`) and shared
+  `lib/calendar.ts` (date math, grouping, `colorForEvent`). All five views
+  (`Day`, `Week`, `Month`, `Quarter`, `Year`) render real API data through one
+  `CalendarPage` orchestrator that owns view + cursor state; the `ViewSwitcher`
+  navigates between them and the header's prev/next/Today step by the active
+  period. No palette/Card/shell duplication across views.
+
+Next: **Milestone 3** (Chores, To-dos, Family/Settings, Review + nightly chore
+instance generation). The chores/todos panels in Day/Week are still static
+placeholders until then.

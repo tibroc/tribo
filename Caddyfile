@@ -1,0 +1,15 @@
+# Local-dev Caddyfile: plain HTTP, no automatic TLS. Reach the app at
+# http://localhost:8080 (host port mapped to Caddy's :80 in docker-compose).
+#
+# For production, replace ":80" with your domain (e.g. tribo.example.com) and
+# Caddy will provision HTTPS automatically.
+
+:80 {
+	reverse_proxy tribo:8080
+
+	# A second route to Radicale is added here once the with-radicale profile
+	# is enabled (Milestone 6), e.g.:
+	# handle_path /radicale/* {
+	#     reverse_proxy radicale:5232
+	# }
+}

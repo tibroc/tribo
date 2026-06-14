@@ -1,0 +1,7 @@
+.git
+*.db
+*.db-shm
+*.db-wal
+/tribo
+frontend/node_modules
+web/dist
