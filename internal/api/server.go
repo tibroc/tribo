@@ -35,8 +35,11 @@ func NewHandler(db *sql.DB, webFS fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/events", s.listEvents)
 	mux.HandleFunc("POST /api/events", s.createEvent)
+	mux.HandleFunc("PATCH /api/events/{id}", s.updateEvent)
+	mux.HandleFunc("DELETE /api/events/{id}", s.deleteEvent)
 	mux.HandleFunc("GET /api/family-members", s.listFamilyMembers)
 	mux.HandleFunc("GET /api/work-schedules", s.listWorkSchedules)
+	mux.HandleFunc("GET /api/calendar-sources", s.listCalendarSources)
 
 	mux.HandleFunc("GET /api/chores", s.listChores)
 	mux.HandleFunc("POST /api/chores", s.createChore)

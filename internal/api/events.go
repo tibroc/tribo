@@ -51,3 +51,36 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusCreated, ev)
 }
+
+func (s *Server) listCalendarSources(w http.ResponseWriter, _ *http.Request) {
+	srcs, err := s.events.ListSources()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, srcs)
+}
+
+// PATCH /api/events/{id} — full replace of the event's editable fields.
+func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
+	var in calendar.NewEvent
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	ev, err := s.events.UpdateEvent(r.PathValue("id"), in)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, ev)
+}
+
+// DELETE /api/events/{id}
+func (s *Server) deleteEvent(w http.ResponseWriter, r *http.Request) {
+	if err := s.events.DeleteEvent(r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}

@@ -20,7 +20,7 @@ function uniqueColors(events: TriboEvent[], byId: Map<string, FamilyMember>, cap
   return out
 }
 
-export default function QuarterView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
+export default function QuarterView({ members, events, cursor, today, header, onNavigate, onAddEvent }: ViewProps) {
   const year = cursor.getFullYear()
   const qStart = Math.floor(cursor.getMonth() / 3) * 3
   const months = [qStart, qStart + 1, qStart + 2]
@@ -28,7 +28,7 @@ export default function QuarterView({ members, events, cursor, today, header, on
   const byDay = useMemo(() => groupByDay(events), [events])
 
   return (
-    <AppShell active="calendar" onNavigate={onNavigate} header={<CalendarHeader controls={header} />}>
+    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
         {months.map((m) => <MiniMonth key={m} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
       </div>

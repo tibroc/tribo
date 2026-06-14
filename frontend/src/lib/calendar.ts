@@ -35,6 +35,8 @@ export interface ViewProps {
   today: Date
   header: HeaderControls
   onNavigate: (k: NavKey) => void
+  onAddEvent: () => void
+  onEditEvent: (e: TriboEvent) => void
 }
 
 // ===== Date helpers =====

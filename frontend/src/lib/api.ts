@@ -22,6 +22,7 @@ export interface TriboEvent {
   colorOverride?: string
   visibilityTag: 'routine' | 'standard' | 'milestone'
   requiresGuardian: boolean
+  assignedGuardianId?: string
   conflictStatus: 'none' | 'needs_guardian'
   externalAttendees?: string
   isShared: boolean
@@ -31,13 +32,28 @@ export interface TriboEvent {
 export interface NewEvent {
   calendarSourceId: string
   title: string
+  description?: string | null
+  location?: string | null
   startAt: string
   endAt: string
   allDay?: boolean
   visibilityTag?: TriboEvent['visibilityTag']
+  requiresGuardian?: boolean
   attendeeIds?: string[]
-  icon?: string
-  externalAttendees?: string
+  icon?: string | null
+  externalAttendees?: string | null
+}
+
+export interface CalendarSource {
+  id: string
+  type: 'internal' | 'caldav' | 'google'
+  displayName: string
+  isShared: boolean
+  readOnly: boolean
+}
+
+export function getCalendarSources(): Promise<CalendarSource[]> {
+  return fetch('/api/calendar-sources').then((r) => json<CalendarSource[]>(r))
 }
 
 async function json<T>(res: Response): Promise<T> {
@@ -63,6 +79,18 @@ export function createEvent(ev: NewEvent): Promise<TriboEvent> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(ev),
   }).then((r) => json<TriboEvent>(r))
+}
+
+export function updateEvent(id: string, ev: NewEvent): Promise<TriboEvent> {
+  return fetch(`/api/events/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(ev),
+  }).then((r) => json<TriboEvent>(r))
+}
+
+export function deleteEvent(id: string): Promise<void> {
+  return fetch(`/api/events/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
 }
 
 // ===== Chores =====

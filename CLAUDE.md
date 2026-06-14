@@ -59,6 +59,17 @@ Milestone: **2 complete.**
   and dedicated Chores/To-dos screens wired to real data — checking off a chore
   or to-do persists and shows in Review's heatmap and Home's recap.
 
-Next: **Milestone 4** (event form + guardian assignment/conflict logic). The
-Family/Settings rows and the FAB are still display-only; the Calendars section
-and Authentik account row are placeholders until Milestones 6/5.
+- **M4** — Guardian assignment/conflict logic in `internal/calendar/guardian.go`
+  (free = no overlapping event-as-attendee and no overlapping work-schedule;
+  one free → assign; many free → child's default guardian if free else
+  first-claim; zero free → `needs_guardian`). Cached `assigned_guardian_id`/
+  `conflict_status` recompute over the affected window on every event
+  create/edit/delete. New endpoints: `PATCH/DELETE /api/events/{id}`,
+  `GET /api/calendar-sources`. Frontend: `EventForm` modal (create/edit/delete,
+  attendee toggles, all-day, Important→milestone, live guardian card) opened by
+  the calendar FAB and by tapping an event; conflict events show a warning badge
+  on their chip. Seed flags Soccer (→assigned) and Piano (→conflict) to demo.
+
+Next: **Milestone 5** (OIDC auth via Authentik + profile switcher). The
+Family/Settings edit interactions, the unclaimed-event "claim" action, and the
+Calendars section remain for later milestones.

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"tribo/internal/calendar"
 	"tribo/internal/chores"
 )
 
@@ -262,7 +263,19 @@ func seed(db *sql.DB) error {
 
 	// Generate chore instances and a realistic completion history (post-commit,
 	// so the chores exist for the generator to read).
-	return seedChoreHistory(db, monday)
+	if err := seedChoreHistory(db, monday); err != nil {
+		return err
+	}
+
+	// Flag a couple of child activities as guardian-needed and compute their
+	// guardian state, so the calendar demonstrates the feature on first load.
+	// Given the seeded work schedules (Alberto 09–17, Hilda 08–16):
+	//   • Soccer 16:00–17:30 → only Hilda is free → assigned to Hilda.
+	//   • Piano  15:00–16:00 → neither is free   → conflict (needs_guardian).
+	if _, err := db.Exec(`UPDATE event SET requires_guardian = 1 WHERE title IN ('Soccer', 'Piano')`); err != nil {
+		return err
+	}
+	return calendar.NewService(db).RecomputeWindow(monday, monday.AddDate(0, 0, 7))
 }
 
 // seedChoreHistory generates instances for the past 8 weeks (+ current/next) and

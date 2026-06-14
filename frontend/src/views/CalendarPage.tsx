@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   addDays, addMonths, mondayOf, startOfDay, startOfMonth, weekRangeLabel,
   FULL_WEEKDAY, MONTHS_FULL, MONTHS_SHORT, type ViewName, type HeaderControls, type ViewProps, type NavKey,
 } from '../lib/calendar'
-import { getEvents, getFamilyMembers, type FamilyMember, type TriboEvent } from '../lib/api'
+import { getCalendarSources, getEvents, getFamilyMembers, type CalendarSource, type FamilyMember, type TriboEvent } from '../lib/api'
 import DayView from './DayView'
 import WeekView from './WeekView'
 import MonthView from './MonthView'
 import QuarterView from './QuarterView'
 import YearView from './YearView'
+import EventForm from '../components/EventForm'
 
 const VIEW_COMPONENTS: Record<ViewName, (p: ViewProps) => JSX.Element> = {
   Day: DayView,
@@ -60,18 +61,22 @@ export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) =
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [events, setEvents] = useState<TriboEvent[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [sources, setSources] = useState<CalendarSource[]>([])
+  // Event form modal: undefined = closed; null = new event; event = edit.
+  const [formEvent, setFormEvent] = useState<TriboEvent | null | undefined>(undefined)
 
   const period = useMemo(() => periodFor(view, cursor), [view, cursor])
 
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch((e) => setError(String(e)))
+    getCalendarSources().then(setSources).catch((e) => setError(String(e)))
   }, [])
 
-  useEffect(() => {
-    getEvents(period.start, period.end)
-      .then(setEvents)
-      .catch((e) => setError(String(e)))
+  const reloadEvents = useCallback(() => {
+    getEvents(period.start, period.end).then(setEvents).catch((e) => setError(String(e)))
   }, [period.start, period.end])
+
+  useEffect(reloadEvents, [reloadEvents])
 
   const header: HeaderControls = {
     view,
@@ -84,12 +89,35 @@ export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) =
 
   const ActiveView = VIEW_COMPONENTS[view]
 
+  // New events default to noon on the focused day (or today for zoomed-out views).
+  const defaultDate = useMemo(() => {
+    const base = view === 'Day' ? cursor : today
+    const d = new Date(base)
+    d.setHours(12, 0, 0, 0)
+    return d
+  }, [view, cursor, today])
+
   return (
     <>
       {error && (
         <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 rounded-xl px-3 py-2 text-sm shadow" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>
       )}
-      <ActiveView members={members} events={events} cursor={cursor} today={today} header={header} onNavigate={onNavigate} />
+      <ActiveView
+        members={members} events={events} cursor={cursor} today={today} header={header}
+        onNavigate={onNavigate}
+        onAddEvent={() => setFormEvent(null)}
+        onEditEvent={(e) => setFormEvent(e)}
+      />
+      {formEvent !== undefined && (
+        <EventForm
+          event={formEvent}
+          members={members}
+          sources={sources}
+          defaultDate={defaultDate}
+          onClose={() => setFormEvent(undefined)}
+          onSaved={() => { setFormEvent(undefined); reloadEvents() }}
+        />
+      )}
     </>
   )
 }

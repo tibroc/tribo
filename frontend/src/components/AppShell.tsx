@@ -17,12 +17,13 @@ const NAV: { key: NavKey; icon: LucideIcon; label: string }[] = [
 // (<lg), and the FAB. `header` is page-specific content rendered inside the
 // <header> bar. `aside` renders in the right column on ≥lg and stacks beneath
 // main on phone. `active` highlights a nav destination; `onNavigate` switches.
-export default function AppShell({ active, onNavigate, header, aside, showFab = true, children }: {
+export default function AppShell({ active, onNavigate, header, aside, showFab = true, onFabClick, children }: {
   active: NavKey
   onNavigate: (k: NavKey) => void
   header: ReactNode
   aside?: ReactNode
   showFab?: boolean
+  onFabClick?: () => void
   children: ReactNode
 }) {
   return (
@@ -52,6 +53,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
 
       {showFab && (
         <button
+          onClick={onFabClick}
           className="fixed right-4 bottom-20 w-14 h-14 rounded-full flex items-center justify-center shadow-lg lg:right-6 lg:bottom-6"
           style={{ backgroundColor: palette.amber, color: palette.ink }}
           aria-label="Add"

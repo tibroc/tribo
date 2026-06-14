@@ -35,34 +35,35 @@ function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date
   }, [events, members, monday])
 }
 
-export default function WeekView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
+export default function WeekView({ members, events, cursor, today, header, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
   const monday = useMemo(() => mondayOf(cursor), [cursor])
   const { perMember, shared } = useWeekData(events, members, monday)
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
 
   return (
-    <AppShell active="calendar" onNavigate={onNavigate} header={<CalendarHeader controls={header} />} aside={<ThisWeekPanel members={members} />}>
+    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={<ThisWeekPanel members={members} />}>
       {/* Tablet/desktop grid */}
       <Card className="hidden lg:block overflow-hidden">
-        <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} />
+        <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} onEditEvent={onEditEvent} />
       </Card>
 
       {/* Phone agenda */}
       <div className="lg:hidden space-y-2">
         {days.map((d, di) => (
-          <AgendaDay key={di} day={d} di={di} members={members} perMember={perMember} shared={shared} today={today} />
+          <AgendaDay key={di} day={d} di={di} members={members} perMember={perMember} shared={shared} today={today} onEditEvent={onEditEvent} />
         ))}
       </div>
     </AppShell>
   )
 }
 
-function WeekGrid({ days, members, perMember, shared, today }: {
+function WeekGrid({ days, members, perMember, shared, today, onEditEvent }: {
   days: Date[]
   members: FamilyMember[]
   perMember: Map<string, Placed[][]>
   shared: Placed[][]
   today: Date
+  onEditEvent: (e: TriboEvent) => void
 }) {
   const cellBase = { padding: '8px' }
   const line = `1px solid ${palette.line}`
@@ -93,7 +94,7 @@ function WeekGrid({ days, members, perMember, shared, today }: {
             </div>
             {days.map((d, di) => (
               <div key={di} style={{ ...cellBase, borderBottom: line, borderRight: di < 6 ? line : 'none', backgroundColor: sameDay(d, today) ? palette.brandSoft : 'transparent', minHeight: 64 }}>
-                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} />)}
+                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
               </div>
             ))}
           </div>
@@ -107,20 +108,21 @@ function WeekGrid({ days, members, perMember, shared, today }: {
       </div>
       {days.map((d, di) => (
         <div key={di} style={{ ...cellBase, borderTop: line, borderRight: di < 6 ? line : 'none', backgroundColor: sameDay(d, today) ? palette.brandSoft : 'transparent', minHeight: 56 }}>
-          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={SHARED_COLOR} time={p.time} icon={p.ev.icon} />)}
+          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={SHARED_COLOR} time={p.time} icon={p.ev.icon} onClick={() => onEditEvent(p.ev)} />)}
         </div>
       ))}
     </div>
   )
 }
 
-function AgendaDay({ day, di, members, perMember, shared, today }: {
+function AgendaDay({ day, di, members, perMember, shared, today, onEditEvent }: {
   day: Date
   di: number
   members: FamilyMember[]
   perMember: Map<string, Placed[][]>
   shared: Placed[][]
   today: Date
+  onEditEvent: (e: TriboEvent) => void
 }) {
   const isToday = sameDay(day, today)
   const items: { ev: TriboEvent; time?: string; color: string; who: string }[] = []
@@ -139,7 +141,7 @@ function AgendaDay({ day, di, members, perMember, shared, today }: {
       ) : (
         <div className="space-y-1.5">
           {items.map(({ ev, time, color, who }) => (
-            <div key={ev.id} className="flex items-center gap-2">
+            <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
               {time && <span className="text-xs w-16 flex-shrink-0" style={{ color: palette.inkSoft }}>{time}</span>}
               <span className="text-sm truncate flex-1">{ev.title}</span>

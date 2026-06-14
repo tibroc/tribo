@@ -16,7 +16,7 @@ function ordered(events: TriboEvent[]): TriboEvent[] {
   return [...events.filter((e) => e.isShared || e.attendeeIds.length === 0), ...events.filter((e) => !(e.isShared || e.attendeeIds.length === 0))]
 }
 
-export default function MonthView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
+export default function MonthView({ members, events, cursor, today, header, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
   const year = cursor.getFullYear()
   const month = cursor.getMonth()
   const byId = useMemo(() => membersById(members), [members])
@@ -39,10 +39,11 @@ export default function MonthView({ members, events, cursor, today, header, onNa
     <AppShell
       active="calendar"
       onNavigate={onNavigate}
+      onFabClick={onAddEvent}
       header={<CalendarHeader controls={header} />}
       aside={
         <div className="space-y-5">
-          <SelectedDayPanel date={selected} byDay={byDay} byId={byId} today={today} />
+          <SelectedDayPanel date={selected} byDay={byDay} byId={byId} today={today} onEditEvent={onEditEvent} />
           <MonthHighlights events={events} byId={byId} />
         </div>
       }
@@ -118,11 +119,12 @@ function DayCell({ cell, events, isToday, isSelected, byId, onClick }: {
   )
 }
 
-function SelectedDayPanel({ date, byDay, byId, today }: {
+function SelectedDayPanel({ date, byDay, byId, today, onEditEvent }: {
   date: Date
   byDay: Map<string, TriboEvent[]>
   byId: Map<string, FamilyMember>
   today: Date
+  onEditEvent: (e: TriboEvent) => void
 }) {
   const events = ordered(byDay.get(dayKey(date)) ?? [])
   const isToday = sameDay(date, today)
@@ -142,7 +144,7 @@ function SelectedDayPanel({ date, byDay, byId, today }: {
             const color = colorForEvent(ev, byId)
             const who = ev.isShared || ev.attendeeIds.length === 0 ? 'Family' : (byId.get(ev.attendeeIds[0])?.name ?? '')
             return (
-              <div key={ev.id} className="flex items-center gap-2">
+              <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                 {!ev.allDay && <span className="text-xs w-20 flex-shrink-0" style={{ color: palette.inkSoft }}>{fmtTime(new Date(ev.startAt))}</span>}
                 <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.icon === 'cake' && <Cake size={12} />}{ev.title}</span>

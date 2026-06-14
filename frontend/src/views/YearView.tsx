@@ -10,7 +10,7 @@ import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
 
-export default function YearView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
+export default function YearView({ members, events, cursor, today, header, onNavigate, onAddEvent }: ViewProps) {
   const year = cursor.getFullYear()
   const byId = useMemo(() => membersById(members), [members])
   const byDay = useMemo(() => groupByDay(events), [events])
@@ -27,7 +27,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
     .sort((a, b) => +a.d - +b.d), [events, year])
 
   return (
-    <AppShell active="calendar" onNavigate={onNavigate} header={<CalendarHeader controls={header} />}>
+    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
       {/* Year progress */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">

@@ -23,7 +23,7 @@ const formatHour = (h: number) => `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`
 
 interface Block { ev: TriboEvent; start: number; end: number; color: string; who?: string }
 
-export default function DayView({ members, events, cursor, today, header, onNavigate }: ViewProps) {
+export default function DayView({ members, events, cursor, today, header, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
   const day = useMemo(() => startOfDay(cursor), [cursor])
   const isToday = sameDay(day, today)
   const nowFrac = fracHour(today)
@@ -58,7 +58,7 @@ export default function DayView({ members, events, cursor, today, header, onNavi
   ]
 
   return (
-    <AppShell active="calendar" onNavigate={onNavigate} header={<CalendarHeader controls={header} />}>
+    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
       <Card className="overflow-hidden">
         {/* Tablet: per-person columns */}
         <div className="hidden lg:grid" style={{ gridTemplateColumns: `56px repeat(${columns.length}, 1fr)` }}>
@@ -67,14 +67,14 @@ export default function DayView({ members, events, cursor, today, header, onNavi
 
           <TimeAxis showNow={showNow} nowFrac={nowFrac} />
           {columns.map((c, i) => (
-            <TimelineColumn key={c.key} blocks={c.blocks} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} />
+            <TimelineColumn key={c.key} blocks={c.blocks} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} />
           ))}
         </div>
 
         {/* Phone: single combined column */}
         <div className="lg:hidden grid" style={{ gridTemplateColumns: '48px 1fr' }}>
           <TimeAxis showNow={showNow} nowFrac={nowFrac} />
-          <TimelineColumn blocks={combined} isLast showNow={showNow} nowFrac={nowFrac} withWho />
+          <TimelineColumn blocks={combined} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} />
         </div>
       </Card>
 
@@ -105,12 +105,13 @@ function TimeAxis({ showNow, nowFrac }: { showNow: boolean; nowFrac: number }) {
   )
 }
 
-function TimelineColumn({ blocks, isLast, showNow, nowFrac, withWho }: {
+function TimelineColumn({ blocks, isLast, showNow, nowFrac, withWho, onEditEvent }: {
   blocks: Block[]
   isLast: boolean
   showNow: boolean
   nowFrac: number
   withWho: boolean
+  onEditEvent: (e: TriboEvent) => void
 }) {
   return (
     <div
@@ -124,7 +125,8 @@ function TimelineColumn({ blocks, isLast, showNow, nowFrac, withWho }: {
       {blocks.map((b) => (
         <div
           key={b.ev.id}
-          className="absolute left-1 right-1 rounded-md px-2 py-1 overflow-hidden"
+          onClick={() => onEditEvent(b.ev)}
+          className="absolute left-1 right-1 rounded-md px-2 py-1 overflow-hidden cursor-pointer"
           style={{ top: timeToY(b.start) + 2, height: Math.max(18, (clamp(b.end) - clamp(b.start)) * HOUR_HEIGHT - 4), ...chipStyle(b.color) }}
         >
           <div className="text-xs font-semibold truncate" style={{ color: palette.ink }}>{b.ev.title}</div>
