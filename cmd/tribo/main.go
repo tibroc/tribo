@@ -1,8 +1,9 @@
-// Command tribo is the single binary: REST API + embedded React frontend.
-// (MCP server, sync engine, and scheduler arrive in later milestones.)
+// Command tribo is the single binary: REST API + MCP server + sync engine +
+// embedded React frontend.
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"tribo/internal/api"
 	"tribo/internal/auth"
+	"tribo/internal/calsync"
 	"tribo/internal/chores"
 	"tribo/internal/store"
 	"tribo/web"
@@ -29,7 +31,10 @@ func main() {
 	startChoreScheduler(db)
 
 	authSvc := auth.New(db)
-	handler := api.NewHandler(db, web.FS(), authSvc)
+	syncEngine := calsync.NewEngine(db)
+	syncEngine.Start(context.Background())
+
+	handler := api.NewHandler(db, web.FS(), authSvc, syncEngine)
 
 	log.Printf("tribo listening on %s (db: %s)", addr, dbPath)
 	if err := http.ListenAndServe(addr, handler); err != nil {

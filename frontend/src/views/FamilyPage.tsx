@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, Repeat, Shuffle, ChevronRight, MapPin, Palette, LogIn,
+  RefreshCw, Trash2, Plus,
 } from 'lucide-react'
 import { palette } from '../lib/tokens'
 import type { Section } from '../lib/calendar'
 import {
-  getFamilyMembers, getWorkSchedules, getChores,
-  type FamilyMember, type WorkSchedule, type Chore,
+  getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
+  addCalendarSource, syncCalendarSource, deleteCalendarSource,
+  type FamilyMember, type WorkSchedule, type Chore, type CalendarSource,
 } from '../lib/api'
 import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
@@ -19,12 +21,16 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [schedules, setSchedules] = useState<WorkSchedule[]>([])
   const [chores, setChores] = useState<Chore[]>([])
+  const [sources, setSources] = useState<CalendarSource[]>([])
+  const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch(() => {})
     getWorkSchedules().then(setSchedules).catch(() => {})
     getChores().then(setChores).catch(() => {})
+    reloadSources()
   }, [])
 
+  const [showConnect, setShowConnect] = useState(false)
   const nameOf = (id?: string) => members.find((m) => m.id === id)?.name ?? ''
   const choreWho = (c: Chore) =>
     c.assignmentMode === 'rotation'
@@ -103,18 +109,47 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             </div>
           </Section>
 
-          {/* Calendars — full source management arrives in Milestone 6. */}
+          {/* Calendars — internal + connected external (CalDAV) sources. */}
           <Section title="Calendars" icon={Globe}>
-            <div className="flex items-center gap-2 py-1">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: palette.brand }} />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">Family Calendar</div>
-                <div className="text-xs truncate" style={{ color: palette.inkSoft }}>Built-in · Synced</div>
-              </div>
+            <div className="space-y-2">
+              {sources.map((c) => (
+                <div key={c.id} className="flex items-center gap-2 py-1">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.isShared ? '#D99A2B' : palette.brand }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{c.displayName}</div>
+                    <div className="text-xs truncate capitalize" style={{ color: palette.inkSoft }}>
+                      {c.type === 'internal' ? 'Built-in' : `${c.type}${c.readOnly ? ' · read-only' : ''}`}
+                    </div>
+                  </div>
+                  {c.type !== 'internal' && (
+                    <>
+                      <button aria-label="Sync now" onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
+                        <RefreshCw size={14} style={{ color: palette.inkSoft }} />
+                      </button>
+                      <button aria-label="Remove" onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
+                        <Trash2 size={14} style={{ color: palette.inkSoft }} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="text-xs mt-2" style={{ color: palette.inkSoft }}>External calendar sync arrives in a later update.</div>
+            <button
+              onClick={() => setShowConnect(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 mt-2 text-sm font-semibold"
+              style={{ border: `1px dashed ${palette.line}`, color: palette.inkSoft }}
+            >
+              <Plus size={16} /> Add calendar
+            </button>
           </Section>
         </div>
+
+        {showConnect && (
+          <ConnectCalendarModal
+            onClose={() => setShowConnect(false)}
+            onConnected={() => { setShowConnect(false); reloadSources() }}
+          />
+        )}
 
         {/* App settings (static) */}
         <Section title="App settings">
@@ -152,3 +187,47 @@ function SettingRow({ icon: Icon, title, sub }: { icon: typeof MapPin; title: st
 }
 
 function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
+
+// CalDAV connect flow (designed just-in-time per the build brief).
+function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {
+  const [displayName, setDisplayName] = useState('')
+  const [url, setUrl] = useState('')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [readOnly, setReadOnly] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const connect = async () => {
+    if (!url.trim()) { setError('CalDAV URL is required'); return }
+    setBusy(true); setError(null)
+    try {
+      await addCalendarSource({ type: 'caldav', displayName: displayName || 'Calendar', url: url.trim(), username, password, readOnly })
+      onConnected()
+    } catch (e) { setError(String(e)); setBusy(false) }
+  }
+
+  const field = { border: `1px solid ${palette.line}` }
+  return (
+    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: palette.ink + '66' }}>
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:rounded-2xl lg:shadow-xl overflow-hidden" style={{ backgroundColor: palette.surface }}>
+        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${palette.line}` }}>
+          <button onClick={onClose} className="text-sm" style={{ color: palette.inkSoft }}>Cancel</button>
+          <div className="font-display text-lg font-bold">Add CalDAV calendar</div>
+          <button onClick={connect} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: palette.brand }}>Connect</button>
+        </div>
+        <div className="p-5 space-y-3">
+          {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          <input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="CalDAV URL (e.g. https://host/dav/user/calendar/)" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="Username (optional)" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="Password (optional)" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="flex items-center gap-2 text-sm" style={{ color: palette.inkSoft }}>
+            <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded" />
+            Read-only (don't push Tribo events to this calendar)
+          </label>
+        </div>
+      </div>
+    </div>
+  )
+}

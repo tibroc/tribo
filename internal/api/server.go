@@ -10,8 +10,10 @@ import (
 
 	"tribo/internal/auth"
 	"tribo/internal/calendar"
+	"tribo/internal/calsync"
 	"tribo/internal/chores"
 	"tribo/internal/family"
+	"tribo/internal/mcp"
 	"tribo/internal/todos"
 )
 
@@ -20,17 +22,19 @@ type Server struct {
 	chores *chores.Service
 	todos  *todos.Service
 	family *family.Service
+	sync   *calsync.Engine
 }
 
 // NewHandler builds the full HTTP handler: open auth/session routes, the
 // auth-protected /api/* surface, and the embedded SPA (index.html fallback) for
 // everything else. Pass a nil/empty webFS to serve the API only.
-func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service) http.Handler {
+func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *calsync.Engine) http.Handler {
 	s := &Server{
 		events: calendar.NewService(db),
 		chores: chores.NewService(db),
 		todos:  todos.NewService(db),
 		family: family.NewService(db),
+		sync:   syncEngine,
 	}
 
 	// Protected API surface.
@@ -42,6 +46,9 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service) http.Handler {
 	mux.HandleFunc("GET /api/family-members", s.listFamilyMembers)
 	mux.HandleFunc("GET /api/work-schedules", s.listWorkSchedules)
 	mux.HandleFunc("GET /api/calendar-sources", s.listCalendarSources)
+	mux.HandleFunc("POST /api/calendar-sources", s.createCalendarSource)
+	mux.HandleFunc("DELETE /api/calendar-sources/{id}", s.deleteCalendarSource)
+	mux.HandleFunc("POST /api/calendar-sources/{id}/sync", s.syncCalendarSource)
 
 	mux.HandleFunc("GET /api/chores", s.listChores)
 	mux.HandleFunc("POST /api/chores", s.createChore)
@@ -67,6 +74,11 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service) http.Handler {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 	root.Handle("/api/", authSvc.Protect(mux))
+
+	// MCP server (open in dev; protect behind a token/proxy in production).
+	mcpHandler := mcp.NewHandler(db)
+	root.Handle("/mcp", mcpHandler)
+	root.Handle("/mcp/", mcpHandler)
 
 	if webFS != nil {
 		root.Handle("/", spaHandler(webFS))

@@ -17,3 +17,6 @@ frontend/tsconfig.tsbuildinfo
 # Editor / OS
 .DS_Store
 *.local
+
+# Local secrets (OIDC, etc.) — never commit
+.env

@@ -82,7 +82,20 @@ Milestone: **2 complete.**
   first-login mapping → app), `ProfileSwitcher` in the rail/bottom bar. Seed sets
   Marie's PIN to `1234` to demo the gate.
 
-Next: **Milestone 6** (calendar sync + MCP server). Family/Settings edit
-interactions, the unclaimed-event "claim" action, and the Calendars connect flow
-remain for later milestones. OIDC login itself couldn't be exercised in-repo (no
-Authentik instance); dev mode + the session/PIN/Protect paths are tested.
+- **M6** — `internal/calsync`: CalDAV sync (pull via REPORT + push via PUT,
+  emersion/go-webdav + go-ical), credentials AES-GCM-encrypted at rest
+  (`CREDENTIALS_KEY`/`SESSION_SECRET`). Per-source goroutine on a 10-min ticker;
+  source CRUD `POST/DELETE /api/calendar-sources` + `/{id}/sync`; push triggered
+  on event create/edit for writable sources. Google sync is scaffolded (returns
+  "not implemented"). `internal/mcp`: MCP server (modelcontextprotocol/go-sdk) at
+  `/mcp` exposing `get_today`, `get_briefing`, `add_event`, `add_todo`,
+  `complete_todo`, `complete_chore`, `check_availability`. Frontend: Family/
+  Settings Calendars section lists real sources with add (CalDAV connect modal),
+  sync-now, and remove. **Verified end-to-end against a real Radicale (podman):**
+  pull (external event appears in Tribo) and push (Tribo event appears in
+  Radicale); MCP tools tested via an in-process client.
+
+Next: **Milestone 7** (onboarding wizard). Family/Settings edit interactions,
+the unclaimed-event "claim" action, and Google sync remain. OIDC login itself
+isn't exercised in-repo (no Authentik); `/mcp` is unauthenticated in dev — gate
+it behind a token/proxy in production.

@@ -56,6 +56,31 @@ export function getCalendarSources(): Promise<CalendarSource[]> {
   return fetch('/api/calendar-sources').then((r) => json<CalendarSource[]>(r))
 }
 
+export interface NewCalendarSource {
+  type: 'caldav' | 'google'
+  displayName: string
+  url: string
+  username?: string
+  password?: string
+  readOnly?: boolean
+}
+
+export function addCalendarSource(src: NewCalendarSource): Promise<{ id: string }> {
+  return fetch('/api/calendar-sources', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(src),
+  }).then((r) => json<{ id: string }>(r))
+}
+
+export function syncCalendarSource(id: string): Promise<void> {
+  return fetch(`/api/calendar-sources/${id}/sync`, { method: 'POST' }).then((r) => json<void>(r))
+}
+
+export function deleteCalendarSource(id: string): Promise<void> {
+  return fetch(`/api/calendar-sources/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))

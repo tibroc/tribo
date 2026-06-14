@@ -25,6 +25,9 @@ services:
       # - OIDC_CLIENT_SECRET=...
       # - OIDC_REDIRECT_URL=https://tribo.example.com/auth/callback
       # - SESSION_SECRET=change-me-to-a-long-random-string
+      # CalDAV/Google credentials are encrypted at rest with this key
+      # (falls back to SESSION_SECRET if unset):
+      # - CREDENTIALS_KEY=change-me-to-a-long-random-string
     volumes:
       - tribo_data:/data
 
