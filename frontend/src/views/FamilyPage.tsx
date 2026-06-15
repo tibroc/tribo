@@ -7,7 +7,7 @@ import { palette } from '../lib/tokens'
 import type { Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
-  addCalendarSource, syncCalendarSource, deleteCalendarSource,
+  addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility,
   type FamilyMember, type WorkSchedule, type Chore, type CalendarSource,
 } from '../lib/api'
 import AppShell from '../components/AppShell'
@@ -25,6 +25,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [chores, setChores] = useState<Chore[]>([])
   const [sources, setSources] = useState<CalendarSource[]>([])
   const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
+  const reloadSchedules = () => getWorkSchedules().then(setSchedules).catch(() => {})
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch(() => {})
     getWorkSchedules().then(setSchedules).catch(() => {})
@@ -97,7 +98,10 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                     })}
                   </div>
                   <label className="flex items-center gap-2 text-xs" style={{ color: palette.inkSoft }}>
-                    <input type="checkbox" checked={s.showOnCalendar} readOnly className="w-3.5 h-3.5 rounded" />
+                    <input
+                      type="checkbox" checked={s.showOnCalendar} className="w-3.5 h-3.5 rounded"
+                      onChange={(e) => setWorkScheduleVisibility(s.id, e.target.checked).then(reloadSchedules)}
+                    />
                     Show as "busy" on calendar
                   </label>
                 </div>

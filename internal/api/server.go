@@ -49,6 +49,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	mux.HandleFunc("POST /api/events/{id}/claim", s.claimEvent)
 	mux.HandleFunc("GET /api/family-members", s.listFamilyMembers)
 	mux.HandleFunc("GET /api/work-schedules", s.listWorkSchedules)
+	mux.HandleFunc("PATCH /api/work-schedules/{id}", s.patchWorkSchedule)
 	mux.HandleFunc("GET /api/calendar-sources", s.listCalendarSources)
 	mux.HandleFunc("POST /api/calendar-sources", s.createCalendarSource)
 	mux.HandleFunc("DELETE /api/calendar-sources/{id}", s.deleteCalendarSource)

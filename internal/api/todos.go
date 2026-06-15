@@ -55,3 +55,19 @@ func (s *Server) listWorkSchedules(w http.ResponseWriter, _ *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, ws)
 }
+
+// PATCH /api/work-schedules/{id} — body {"showOnCalendar":bool}.
+func (s *Server) patchWorkSchedule(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		ShowOnCalendar bool `json:"showOnCalendar"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if err := s.family.SetWorkScheduleVisibility(r.PathValue("id"), body.ShowOnCalendar); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"showOnCalendar": body.ShowOnCalendar})
+}

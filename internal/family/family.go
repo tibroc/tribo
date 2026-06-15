@@ -51,6 +51,22 @@ func (s *Service) ListMembers() ([]Member, error) {
 	return members, rows.Err()
 }
 
+// SetWorkScheduleVisibility toggles whether a schedule shows as a busy stripe.
+func (s *Service) SetWorkScheduleVisibility(id string, show bool) error {
+	v := 0
+	if show {
+		v = 1
+	}
+	res, err := s.db.Exec(`UPDATE work_schedule SET show_on_calendar = ? WHERE id = ?`, v, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // ListWorkSchedules returns all guardian work schedules.
 func (s *Service) ListWorkSchedules() ([]WorkSchedule, error) {
 	rows, err := s.db.Query(

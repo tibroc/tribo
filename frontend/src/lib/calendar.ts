@@ -1,7 +1,7 @@
 // Shared calendar primitives: date math, labels, and event grouping/coloring
 // used across all five calendar views.
 import { SHARED_COLOR } from './tokens'
-import type { FamilyMember, TriboEvent } from './api'
+import type { FamilyMember, TriboEvent, WorkSchedule } from './api'
 
 export type ViewName = 'Day' | 'Week' | 'Month' | 'Quarter' | 'Year'
 export const VIEWS: ViewName[] = ['Day', 'Week', 'Month', 'Quarter', 'Year']
@@ -34,6 +34,7 @@ export interface ViewProps {
   cursor: Date // anchor date for the focused period
   today: Date
   header: HeaderControls
+  workSchedules: WorkSchedule[]
   onNavigate: (k: NavKey) => void
   onAddEvent: () => void
   onEditEvent: (e: TriboEvent) => void

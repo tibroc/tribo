@@ -35,16 +35,19 @@ function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date
   }, [events, members, monday])
 }
 
-export default function WeekView({ members, events, cursor, today, header, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
+export default function WeekView({ members, events, cursor, today, header, workSchedules, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
   const monday = useMemo(() => mondayOf(cursor), [cursor])
   const { perMember, shared } = useWeekData(events, members, monday)
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
+  // (memberId, weekdayIndex) → true if a visible work schedule is active.
+  const busyAt = (memberID: string, di: number) =>
+    workSchedules.some((ws) => ws.memberId === memberID && ws.showOnCalendar && ws.daysOfWeek[di] === '1')
 
   return (
     <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={<ThisWeekPanel members={members} />}>
       {/* Tablet/desktop grid */}
       <Card className="hidden lg:block overflow-hidden">
-        <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} onEditEvent={onEditEvent} />
+        <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} busyAt={busyAt} onEditEvent={onEditEvent} />
       </Card>
 
       {/* Phone agenda */}
@@ -57,12 +60,13 @@ export default function WeekView({ members, events, cursor, today, header, onNav
   )
 }
 
-function WeekGrid({ days, members, perMember, shared, today, onEditEvent }: {
+function WeekGrid({ days, members, perMember, shared, today, busyAt, onEditEvent }: {
   days: Date[]
   members: FamilyMember[]
   perMember: Map<string, Placed[][]>
   shared: Placed[][]
   today: Date
+  busyAt: (memberID: string, di: number) => boolean
   onEditEvent: (e: TriboEvent) => void
 }) {
   const cellBase = { padding: '8px' }
@@ -95,6 +99,7 @@ function WeekGrid({ days, members, perMember, shared, today, onEditEvent }: {
             {days.map((d, di) => (
               <div key={di} style={{ ...cellBase, borderBottom: line, borderRight: di < 6 ? line : 'none', backgroundColor: sameDay(d, today) ? palette.brandSoft : 'transparent', minHeight: 64 }}>
                 {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
+                {busyAt(person.id, di) && <div style={{ fontSize: '9px', color: palette.inkSoft, opacity: 0.7 }}>· busy</div>}
               </div>
             ))}
           </div>

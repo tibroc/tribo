@@ -17,14 +17,25 @@ const TOTAL_HEIGHT = (HOUR_END - HOUR_START) * HOUR_HEIGHT
 const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i)
 
 const fracHour = (d: Date) => d.getHours() + d.getMinutes() / 60
+const clockFrac = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number)
+  return (h || 0) + (m || 0) / 60
+}
+
+interface BusyBlock { start: number; end: number; label: string }
 const clamp = (t: number) => Math.max(HOUR_START, Math.min(HOUR_END, t))
 const timeToY = (t: number) => (clamp(t) - HOUR_START) * HOUR_HEIGHT
 const formatHour = (h: number) => `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`
 
 interface Block { ev: TriboEvent; start: number; end: number; color: string; who?: string }
 
-export default function DayView({ members, events, cursor, today, header, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
+export default function DayView({ members, events, cursor, today, header, workSchedules, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
   const day = useMemo(() => startOfDay(cursor), [cursor])
+  const weekday = (day.getDay() + 6) % 7 // Mon=0
+  const busyFor = (memberID: string): BusyBlock[] =>
+    workSchedules
+      .filter((ws) => ws.memberId === memberID && ws.showOnCalendar && ws.daysOfWeek[weekday] === '1')
+      .map((ws) => ({ start: clockFrac(ws.startTime), end: clockFrac(ws.endTime), label: ws.label }))
   const isToday = sameDay(day, today)
   const nowFrac = fracHour(today)
   const showNow = isToday && nowFrac >= HOUR_START && nowFrac <= HOUR_END
@@ -53,8 +64,8 @@ export default function DayView({ members, events, cursor, today, header, onNavi
   }, [perMember, shared, members])
 
   const columns = [
-    ...members.map((m) => ({ key: m.id, name: m.name, color: m.color, icon: undefined as undefined | typeof Users, blocks: perMember.get(m.id) ?? [] })),
-    { key: 'family', name: 'Family', color: SHARED_COLOR, icon: Users, blocks: shared },
+    ...members.map((m) => ({ key: m.id, name: m.name, color: m.color, icon: undefined as undefined | typeof Users, blocks: perMember.get(m.id) ?? [], busy: busyFor(m.id) })),
+    { key: 'family', name: 'Family', color: SHARED_COLOR, icon: Users, blocks: shared, busy: [] as BusyBlock[] },
   ]
 
   return (
@@ -67,14 +78,14 @@ export default function DayView({ members, events, cursor, today, header, onNavi
 
           <TimeAxis showNow={showNow} nowFrac={nowFrac} />
           {columns.map((c, i) => (
-            <TimelineColumn key={c.key} blocks={c.blocks} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} />
+            <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} />
           ))}
         </div>
 
         {/* Phone: single combined column */}
         <div className="lg:hidden grid" style={{ gridTemplateColumns: '48px 1fr' }}>
           <TimeAxis showNow={showNow} nowFrac={nowFrac} />
-          <TimelineColumn blocks={combined} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} />
+          <TimelineColumn blocks={combined} busy={[]} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} />
         </div>
       </Card>
 
@@ -105,8 +116,9 @@ function TimeAxis({ showNow, nowFrac }: { showNow: boolean; nowFrac: number }) {
   )
 }
 
-function TimelineColumn({ blocks, isLast, showNow, nowFrac, withWho, onEditEvent }: {
+function TimelineColumn({ blocks, busy, isLast, showNow, nowFrac, withWho, onEditEvent }: {
   blocks: Block[]
+  busy: BusyBlock[]
   isLast: boolean
   showNow: boolean
   nowFrac: number
@@ -122,6 +134,12 @@ function TimelineColumn({ blocks, isLast, showNow, nowFrac, withWho, onEditEvent
         backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent ${HOUR_HEIGHT - 1}px, ${palette.line} ${HOUR_HEIGHT - 1}px, ${palette.line} ${HOUR_HEIGHT}px)`,
       }}
     >
+      {/* Faint "busy" stripes from work schedules (behind events). */}
+      {busy.map((bl, i) => (
+        <div key={`busy-${i}`} className="absolute left-0 right-0 overflow-hidden" style={{ top: timeToY(bl.start), height: (clamp(bl.end) - clamp(bl.start)) * HOUR_HEIGHT, backgroundColor: `${palette.inkSoft}14` }}>
+          <div className="px-1" style={{ fontSize: '9px', color: palette.inkSoft }}>{bl.label}</div>
+        </div>
+      ))}
       {blocks.map((b) => (
         <div
           key={b.ev.id}

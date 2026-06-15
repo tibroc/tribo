@@ -229,6 +229,14 @@ export function getWorkSchedules(): Promise<WorkSchedule[]> {
   return fetch('/api/work-schedules').then((r) => json<WorkSchedule[]>(r))
 }
 
+export function setWorkScheduleVisibility(id: string, showOnCalendar: boolean): Promise<void> {
+  return fetch(`/api/work-schedules/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ showOnCalendar }),
+  }).then((r) => json<void>(r))
+}
+
 // ===== Briefing (Home) =====
 export interface Briefing {
   rangeLabel: string

@@ -3,7 +3,7 @@ import {
   addDays, addMonths, mondayOf, startOfDay, startOfMonth, weekRangeLabel,
   FULL_WEEKDAY, MONTHS_FULL, MONTHS_SHORT, type ViewName, type HeaderControls, type ViewProps, type NavKey,
 } from '../lib/calendar'
-import { getCalendarSources, getEvents, getFamilyMembers, type CalendarSource, type FamilyMember, type TriboEvent } from '../lib/api'
+import { getCalendarSources, getEvents, getFamilyMembers, getWorkSchedules, type CalendarSource, type FamilyMember, type TriboEvent, type WorkSchedule } from '../lib/api'
 import DayView from './DayView'
 import WeekView from './WeekView'
 import MonthView from './MonthView'
@@ -62,6 +62,7 @@ export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) =
   const [events, setEvents] = useState<TriboEvent[]>([])
   const [error, setError] = useState<string | null>(null)
   const [sources, setSources] = useState<CalendarSource[]>([])
+  const [workSchedules, setWorkSchedules] = useState<WorkSchedule[]>([])
   // Event form modal: undefined = closed; null = new event; event = edit.
   const [formEvent, setFormEvent] = useState<TriboEvent | null | undefined>(undefined)
 
@@ -70,6 +71,7 @@ export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) =
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch((e) => setError(String(e)))
     getCalendarSources().then(setSources).catch((e) => setError(String(e)))
+    getWorkSchedules().then(setWorkSchedules).catch(() => {})
   }, [])
 
   const reloadEvents = useCallback(() => {
@@ -104,6 +106,7 @@ export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) =
       )}
       <ActiveView
         members={members} events={events} cursor={cursor} today={today} header={header}
+        workSchedules={workSchedules}
         onNavigate={onNavigate}
         onAddEvent={() => setFormEvent(null)}
         onEditEvent={(e) => setFormEvent(e)}
