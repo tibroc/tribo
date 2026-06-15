@@ -81,6 +81,11 @@ export function deleteCalendarSource(id: string): Promise<void> {
   return fetch(`/api/calendar-sources/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
 }
 
+// Returns the Google consent URL to redirect the browser to.
+export function googleConnectUrl(): Promise<{ authUrl: string }> {
+  return fetch('/api/calendar-sources/google/connect').then((r) => json<{ authUrl: string }>(r))
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))

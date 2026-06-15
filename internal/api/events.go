@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,6 +12,43 @@ import (
 	"tribo/internal/calendar"
 	"tribo/internal/calsync"
 )
+
+const gcalStateCookie = "tribo_gcal_state"
+
+// GET /api/calendar-sources/google/connect — returns the Google consent URL.
+func (s *Server) googleConnect(w http.ResponseWriter, r *http.Request) {
+	if !s.sync.GoogleEnabled() {
+		writeError(w, http.StatusBadRequest, "Google sync is not configured on this server")
+		return
+	}
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	state := base64.RawURLEncoding.EncodeToString(b)
+	http.SetCookie(w, &http.Cookie{Name: gcalStateCookie, Value: state, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 600})
+	url, err := s.sync.GoogleAuthURL(state)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"authUrl": url})
+}
+
+// GET /auth/google/callback — open route; exchanges the code and stores the source.
+func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
+	st, err := r.Cookie(gcalStateCookie)
+	if err != nil || st.Value == "" || st.Value != r.URL.Query().Get("state") {
+		http.Error(w, "invalid oauth state", http.StatusBadRequest)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{Name: gcalStateCookie, Value: "", Path: "/", MaxAge: -1})
+	id, err := s.sync.ConnectGoogle(r.Context(), r.URL.Query().Get("code"), "Google Calendar")
+	if err != nil {
+		http.Error(w, "google connect failed: "+err.Error(), http.StatusBadGateway)
+		return
+	}
+	go func() { _ = s.sync.SyncSourceByID(context.Background(), id) }()
+	http.Redirect(w, r, "/", http.StatusFound)
+}
 
 // GET /api/events?from=<RFC3339>&to=<RFC3339>
 // Both query params are optional; omitting them returns all events.

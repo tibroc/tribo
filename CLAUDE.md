@@ -103,8 +103,15 @@ Self-hosted, family-centered organizer. Go backend + SQLite, React frontend, Cad
   re-runnable from Family → Settings. `TRIBO_SEED=false` leaves a fresh instance
   empty so the wizard runs.
 
-**Known gaps / deferred** (not in the 7 milestones): Family/Settings per-row
-edit interactions, the unclaimed-event "claim" action, Google calendar sync
-(scaffolded only), and the work-schedule "busy stripe" rendering. Caveats: OIDC
-login round-trip isn't exercised in-repo (no Authentik); `/mcp` is
-unauthenticated in dev — gate it behind a token/proxy in production.
+**Post-roadmap follow-ups (done):** unclaimed-event claim action
+(`/api/events/{id}/claim` + free-guardian buttons); work-schedule busy stripes
+(Day/Week) with a persisting toggle; Family/Settings CRUD for members, work
+schedules, and chores (`SettingsForms.tsx`); Google Calendar sync (OAuth connect
+flow `/api/calendar-sources/google/connect` → `/auth/google/callback`, pull +
+push via `google.golang.org/api/calendar/v3`, configured via `GOOGLE_*` env).
+
+**Caveats:** OIDC login and Google Calendar sync aren't exercised in-repo (no
+Authentik / Google OAuth client here) — the configured/unconfigured and
+state-rejection paths are tested, but the live token round-trips need real
+providers. `/mcp` is unauthenticated in dev — gate it behind a token/proxy in
+production.

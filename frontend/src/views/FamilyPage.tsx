@@ -7,7 +7,7 @@ import { palette } from '../lib/tokens'
 import type { Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
-  addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility,
+  addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility, googleConnectUrl,
   type FamilyMember, type WorkSchedule, type Chore, type CalendarSource,
 } from '../lib/api'
 import AppShell from '../components/AppShell'
@@ -43,6 +43,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   }, [])
 
   const [showConnect, setShowConnect] = useState(false)
+  const [calError, setCalError] = useState<string | null>(null)
   const [showWizard, setShowWizard] = useState(false)
   const { refresh: refreshSession } = useSession()
   const nameOf = (id?: string) => members.find((m) => m.id === id)?.name ?? ''
@@ -165,13 +166,13 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => setShowConnect(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 mt-2 text-sm font-semibold"
-              style={{ border: `1px dashed ${palette.line}`, color: palette.inkSoft }}
-            >
-              <Plus size={16} /> Add calendar
-            </button>
+            <AddRow label="Add CalDAV calendar" onClick={() => setShowConnect(true)} />
+            <AddRow label="Connect Google Calendar" onClick={() => {
+              googleConnectUrl()
+                .then((r) => { window.location.href = r.authUrl })
+                .catch((e) => setCalError(String(e)))
+            }} />
+            {calError && <div className="text-xs mt-2" style={{ color: '#9b1c1c' }}>{calError}</div>}
           </Section>
         </div>
 

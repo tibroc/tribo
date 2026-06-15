@@ -31,12 +31,8 @@ func deriveKey() []byte {
 	return h[:]
 }
 
-// encrypt seals credentials with AES-GCM → base64(nonce|ciphertext).
-func (e *Engine) encrypt(c creds) (string, error) {
-	plain, err := json.Marshal(c)
-	if err != nil {
-		return "", err
-	}
+// seal encrypts bytes with AES-GCM → base64(nonce|ciphertext).
+func (e *Engine) seal(plain []byte) (string, error) {
 	block, err := aes.NewCipher(e.key)
 	if err != nil {
 		return "", err
@@ -49,31 +45,43 @@ func (e *Engine) encrypt(c creds) (string, error) {
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", err
 	}
-	sealed := gcm.Seal(nonce, nonce, plain, nil)
-	return base64.StdEncoding.EncodeToString(sealed), nil
+	return base64.StdEncoding.EncodeToString(gcm.Seal(nonce, nonce, plain, nil)), nil
+}
+
+func (e *Engine) open(s string) ([]byte, error) {
+	raw, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return nil, err
+	}
+	block, err := aes.NewCipher(e.key)
+	if err != nil {
+		return nil, err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) < gcm.NonceSize() {
+		return nil, errors.New("ciphertext too short")
+	}
+	nonce, ct := raw[:gcm.NonceSize()], raw[gcm.NonceSize():]
+	return gcm.Open(nil, nonce, ct, nil)
+}
+
+// encrypt seals CalDAV credentials.
+func (e *Engine) encrypt(c creds) (string, error) {
+	plain, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+	return e.seal(plain)
 }
 
 func (e *Engine) decrypt(s string) (creds, error) {
 	if s == "" {
 		return creds{}, nil
 	}
-	raw, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return creds{}, err
-	}
-	block, err := aes.NewCipher(e.key)
-	if err != nil {
-		return creds{}, err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return creds{}, err
-	}
-	if len(raw) < gcm.NonceSize() {
-		return creds{}, errors.New("ciphertext too short")
-	}
-	nonce, ct := raw[:gcm.NonceSize()], raw[gcm.NonceSize():]
-	plain, err := gcm.Open(nil, nonce, ct, nil)
+	plain, err := e.open(s)
 	if err != nil {
 		return creds{}, err
 	}

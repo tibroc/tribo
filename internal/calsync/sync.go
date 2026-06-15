@@ -122,7 +122,7 @@ func (e *Engine) syncSource(ctx context.Context, src sourceRow) error {
 	case "caldav":
 		return e.syncCalDAV(ctx, src)
 	case "google":
-		return fmt.Errorf("google sync not yet implemented")
+		return e.syncGoogle(ctx, src)
 	default:
 		return nil
 	}
@@ -194,8 +194,8 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	return nil
 }
 
-// PushEvent writes a locally-created/edited event to a writable CalDAV source.
-// Best-effort: returns nil for non-CalDAV or read-only sources.
+// PushEvent writes a locally-created/edited event to a writable external source
+// (CalDAV or Google). Best-effort: returns nil for internal/read-only sources.
 func (e *Engine) PushEvent(ctx context.Context, eventID string) error {
 	var sourceID, title, startStr, endStr string
 	var desc, loc, externalID *string
@@ -208,7 +208,21 @@ func (e *Engine) PushEvent(ctx context.Context, eventID string) error {
 		return err
 	}
 	src, err := e.loadSource(sourceID)
-	if err != nil || src.typ != "caldav" || src.readOnly {
+	if err != nil || src.readOnly {
+		return nil
+	}
+	if src.typ == "google" {
+		if externalID != nil && *externalID != "" {
+			return nil // update-on-edit for Google isn't handled in v1
+		}
+		newID, err := e.pushGoogle(ctx, src, title, startStr, endStr, allDay != 0)
+		if err != nil {
+			return err
+		}
+		_, _ = e.db.Exec(`UPDATE event SET external_id = ? WHERE id = ?`, newID, eventID)
+		return nil
+	}
+	if src.typ != "caldav" {
 		return nil
 	}
 

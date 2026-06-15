@@ -57,6 +57,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	mux.HandleFunc("DELETE /api/work-schedules/{id}", s.deleteWorkSchedule)
 	mux.HandleFunc("GET /api/calendar-sources", s.listCalendarSources)
 	mux.HandleFunc("POST /api/calendar-sources", s.createCalendarSource)
+	mux.HandleFunc("GET /api/calendar-sources/google/connect", s.googleConnect)
 	mux.HandleFunc("DELETE /api/calendar-sources/{id}", s.deleteCalendarSource)
 	mux.HandleFunc("POST /api/calendar-sources/{id}/sync", s.syncCalendarSource)
 
@@ -84,6 +85,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	// protected /api/ subtree, then the SPA.
 	root := http.NewServeMux()
 	authSvc.RegisterRoutes(root) // /auth/*, /api/session*
+	root.HandleFunc("GET /auth/google/callback", s.googleCallback) // Google Calendar OAuth (open)
 	root.HandleFunc("GET /api/health", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})

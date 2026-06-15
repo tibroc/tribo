@@ -28,6 +28,10 @@ services:
       # CalDAV/Google credentials are encrypted at rest with this key
       # (falls back to SESSION_SECRET if unset):
       # - CREDENTIALS_KEY=change-me-to-a-long-random-string
+      # Google Calendar sync (OAuth). Create a Google Cloud OAuth client and set:
+      # - GOOGLE_CLIENT_ID=...
+      # - GOOGLE_CLIENT_SECRET=...
+      # - GOOGLE_REDIRECT_URL=https://tribo.example.com/auth/google/callback
     volumes:
       - tribo_data:/data
 
