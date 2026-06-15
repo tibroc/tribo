@@ -126,6 +126,33 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ev)
 }
 
+// GET /api/events/{id}/guardians — free guardians who could claim this event.
+func (s *Server) eventGuardians(w http.ResponseWriter, r *http.Request) {
+	free, err := s.events.FreeGuardians(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"free": free})
+}
+
+// POST /api/events/{id}/claim — body {"memberId":"...","force":bool}.
+func (s *Server) claimEvent(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		MemberID string `json:"memberId"`
+		Force    bool   `json:"force"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if err := s.events.Claim(r.PathValue("id"), body.MemberID, body.Force); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"assignedGuardianId": body.MemberID})
+}
+
 // DELETE /api/events/{id}
 func (s *Server) deleteEvent(w http.ResponseWriter, r *http.Request) {
 	if err := s.events.DeleteEvent(r.PathValue("id")); err != nil {

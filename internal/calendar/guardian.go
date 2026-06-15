@@ -1,6 +1,9 @@
 package calendar
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 // Guardian assignment & conflict logic (see docs/roost-data-model.md).
 //
@@ -13,6 +16,65 @@ import "time"
 //   3. Multiple free     → assign the child's default guardian if free, else
 //                          leave unassigned (first-claim), conflict none.
 //   4. Zero free         → unassigned, conflict needs_guardian.
+
+// FreeGuardians returns the ids of guardians with no conflicting commitment
+// during the event's window — the candidates who can claim an unclaimed event.
+func (s *Service) FreeGuardians(eventID string) ([]string, error) {
+	var startStr, endStr string
+	var allDayInt int
+	if err := s.db.QueryRow(`SELECT start_at, end_at, all_day FROM event WHERE id = ?`, eventID).
+		Scan(&startStr, &endStr, &allDayInt); err != nil {
+		return nil, err
+	}
+	start, _ := time.Parse(time.RFC3339, startStr)
+	end, _ := time.Parse(time.RFC3339, endStr)
+	guardians, err := s.guardianIDs()
+	if err != nil {
+		return nil, err
+	}
+	free := []string{}
+	for _, gid := range guardians {
+		ok, err := s.guardianFree(gid, eventID, start, end, allDayInt != 0)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			free = append(free, gid)
+		}
+	}
+	return free, nil
+}
+
+// Claim assigns a specific guardian to an event (first-claim, or "assign anyway"
+// when force is set despite a conflict). Clears the conflict flag.
+func (s *Service) Claim(eventID, memberID string, force bool) error {
+	var role string
+	if err := s.db.QueryRow(`SELECT role FROM family_member WHERE id = ?`, memberID).Scan(&role); err != nil {
+		return errors.New("unknown member")
+	}
+	if role != "guardian" {
+		return errors.New("only guardians can be assigned")
+	}
+	if !force {
+		var startStr, endStr string
+		var allDayInt int
+		if err := s.db.QueryRow(`SELECT start_at, end_at, all_day FROM event WHERE id = ?`, eventID).
+			Scan(&startStr, &endStr, &allDayInt); err != nil {
+			return err
+		}
+		start, _ := time.Parse(time.RFC3339, startStr)
+		end, _ := time.Parse(time.RFC3339, endStr)
+		free, err := s.guardianFree(memberID, eventID, start, end, allDayInt != 0)
+		if err != nil {
+			return err
+		}
+		if !free {
+			return errors.New("guardian is not free at this time")
+		}
+	}
+	_, err := s.db.Exec(`UPDATE event SET assigned_guardian_id = ?, conflict_status = 'none' WHERE id = ?`, memberID, eventID)
+	return err
+}
 
 // recomputeWindow recomputes every guardian-needed event overlapping [start, end].
 func (s *Service) recomputeWindow(start, end time.Time) error {

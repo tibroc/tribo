@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { X, Calendar, Clock, MapPin, AlignLeft, Star, ShieldCheck, AlertTriangle, Check, Trash2, Layers } from 'lucide-react'
 import { palette } from '../lib/tokens'
 import {
-  createEvent, updateEvent, deleteEvent,
+  createEvent, updateEvent, deleteEvent, getEventGuardians, claimEvent,
   type TriboEvent, type NewEvent, type FamilyMember, type CalendarSource,
 } from '../lib/api'
 import PersonAvatar from './PersonAvatar'
@@ -178,6 +178,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                 event={event}
                 members={members}
                 editing={editing}
+                onClaimed={onSaved}
               />
             )}
           </div>
@@ -224,16 +225,32 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
 }
 
 // Shows the computed guardian state for the saved event (assigned / unclaimed /
-// conflict). For a brand-new event the state is computed on save.
-function GuardianCard({ enabled, onToggle, event, members, editing }: {
+// conflict) and lets a guardian claim it. For a brand-new event the state is
+// computed on save.
+function GuardianCard({ enabled, onToggle, event, members, editing, onClaimed }: {
   enabled: boolean
   onToggle: (v: boolean) => void
   event: TriboEvent | null
   members: FamilyMember[]
   editing: boolean
+  onClaimed: () => void
 }) {
   const assigned = event?.assignedGuardianId ? members.find((m) => m.id === event.assignedGuardianId) : undefined
   const conflict = event?.conflictStatus === 'needs_guardian'
+  const guardians = members.filter((m) => m.role === 'guardian')
+  const [freeIDs, setFreeIDs] = useState<string[]>([])
+
+  // Fetch the free-guardian candidates for an unclaimed event.
+  useEffect(() => {
+    if (editing && enabled && event && !assigned && !conflict) {
+      getEventGuardians(event.id).then((r) => setFreeIDs(r.free)).catch(() => setFreeIDs([]))
+    }
+  }, [editing, enabled, event, assigned, conflict])
+
+  const claim = (memberId: string, force: boolean) => {
+    if (!event) return
+    claimEvent(event.id, memberId, force).then(onClaimed).catch(() => {})
+  }
 
   return (
     <div className="rounded-2xl p-3 mt-3" style={{ border: `1px solid ${palette.line}` }}>
@@ -253,23 +270,41 @@ function GuardianCard({ enabled, onToggle, event, members, editing }: {
           ) : assigned ? (
             <div className="flex items-center gap-2.5 rounded-xl p-2.5" style={{ backgroundColor: palette.brandSoft }}>
               <PersonAvatar name={assigned.name} color={assigned.color} size={32} />
-              <div className="text-sm flex-1"><span className="font-semibold">{assigned.name}</span> is free and assigned</div>
+              <div className="text-sm flex-1"><span className="font-semibold">{assigned.name}</span> is assigned</div>
               <Check size={16} style={{ color: palette.brand, flexShrink: 0 }} />
             </div>
           ) : conflict ? (
             <div className="rounded-xl p-2.5" style={{ backgroundColor: palette.amber + '1A', border: `1px solid ${palette.amber}66` }}>
-              <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#9A6B1F' }}>
+              <div className="flex items-center gap-2 text-sm font-semibold mb-2" style={{ color: '#9A6B1F' }}>
                 <AlertTriangle size={14} /> No guardian is free
               </div>
-              <div className="text-xs mt-1" style={{ color: palette.inkSoft }}>Everyone is busy or working during this time.</div>
+              <div className="flex gap-2 flex-wrap">
+                {guardians.map((g) => (
+                  <ClaimButton key={g.id} member={g} onClick={() => claim(g.id, true)} label={`Assign ${g.name} anyway`} />
+                ))}
+              </div>
             </div>
           ) : (
-            <div className="text-sm rounded-xl p-2.5" style={{ backgroundColor: palette.mist }}>
-              More than one guardian is free — whoever opens this first can take it.
+            <div className="rounded-xl p-2.5" style={{ backgroundColor: palette.mist }}>
+              <div className="text-sm mb-2">More than one guardian is free — whoever opens this first can take it.</div>
+              <div className="flex gap-2 flex-wrap">
+                {guardians.filter((g) => freeIDs.includes(g.id)).map((g) => (
+                  <ClaimButton key={g.id} member={g} onClick={() => claim(g.id, false)} label={`Assign ${g.name}`} />
+                ))}
+              </div>
             </div>
           )}
         </div>
       )}
     </div>
+  )
+}
+
+function ClaimButton({ member, label, onClick }: { member: FamilyMember; label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 text-xs font-semibold" style={{ backgroundColor: palette.surface, border: `1px solid ${palette.line}` }}>
+      <PersonAvatar name={member.name} color={member.color} size={20} />
+      {label}
+    </button>
   )
 }

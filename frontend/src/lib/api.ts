@@ -118,6 +118,18 @@ export function deleteEvent(id: string): Promise<void> {
   return fetch(`/api/events/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
 }
 
+export function getEventGuardians(id: string): Promise<{ free: string[] }> {
+  return fetch(`/api/events/${id}/guardians`).then((r) => json<{ free: string[] }>(r))
+}
+
+export function claimEvent(id: string, memberId: string, force = false): Promise<{ assignedGuardianId: string }> {
+  return fetch(`/api/events/${id}/claim`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memberId, force }),
+  }).then((r) => json<{ assignedGuardianId: string }>(r))
+}
+
 // ===== Chores =====
 export interface Chore {
   id: string
