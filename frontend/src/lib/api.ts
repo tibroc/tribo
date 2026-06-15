@@ -93,6 +93,24 @@ export function getFamilyMembers(): Promise<FamilyMember[]> {
   return fetch('/api/family-members').then((r) => json<FamilyMember[]>(r))
 }
 
+export interface MemberInput {
+  name: string
+  color: string
+  role: 'guardian' | 'child'
+  defaultGuardianId?: string | null
+  pin?: string | null
+}
+
+export function createMember(in_: MemberInput): Promise<FamilyMember> {
+  return fetch('/api/family-members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<FamilyMember>(r))
+}
+export function updateMember(id: string, in_: MemberInput): Promise<FamilyMember> {
+  return fetch(`/api/family-members/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<FamilyMember>(r))
+}
+export function deleteMember(id: string): Promise<void> {
+  return fetch(`/api/family-members/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
+}
+
 export function getEvents(from: Date, to: Date): Promise<TriboEvent[]> {
   const qs = new URLSearchParams({ from: from.toISOString(), to: to.toISOString() })
   return fetch(`/api/events?${qs}`).then((r) => json<TriboEvent[]>(r))
@@ -157,6 +175,24 @@ export interface ChoreInstance {
 
 export function getChores(): Promise<Chore[]> {
   return fetch('/api/chores').then((r) => json<Chore[]>(r))
+}
+
+export interface ChoreInput {
+  title: string
+  recurrenceRule: 'daily' | 'weekly' | 'monthly'
+  assignmentMode: 'fixed' | 'rotation'
+  assignedMemberId?: string | null
+  rotationMemberIds?: string[]
+  color?: string
+}
+export function createChore(in_: ChoreInput): Promise<Chore> {
+  return fetch('/api/chores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<Chore>(r))
+}
+export function updateChore(id: string, in_: ChoreInput): Promise<Chore> {
+  return fetch(`/api/chores/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<Chore>(r))
+}
+export function deleteChore(id: string): Promise<void> {
+  return fetch(`/api/chores/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
 }
 
 export function getChoreInstances(from: Date, to: Date): Promise<ChoreInstance[]> {
@@ -235,6 +271,24 @@ export function setWorkScheduleVisibility(id: string, showOnCalendar: boolean): 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ showOnCalendar }),
   }).then((r) => json<void>(r))
+}
+
+export interface WorkScheduleInput {
+  memberId: string
+  daysOfWeek: string // 7 chars Mon..Sun
+  startTime: string
+  endTime: string
+  label: string
+  showOnCalendar: boolean
+}
+export function createWorkSchedule(in_: WorkScheduleInput): Promise<WorkSchedule> {
+  return fetch('/api/work-schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<WorkSchedule>(r))
+}
+export function updateWorkSchedule(id: string, in_: WorkScheduleInput): Promise<WorkSchedule> {
+  return fetch(`/api/work-schedules/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<WorkSchedule>(r))
+}
+export function deleteWorkSchedule(id: string): Promise<void> {
+  return fetch(`/api/work-schedules/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
 }
 
 // ===== Briefing (Home) =====

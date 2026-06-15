@@ -15,6 +15,7 @@ import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
 import OnboardingWizard from './OnboardingWizard'
+import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
 import { useSession } from '../lib/session'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -26,6 +27,14 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [sources, setSources] = useState<CalendarSource[]>([])
   const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
   const reloadSchedules = () => getWorkSchedules().then(setSchedules).catch(() => {})
+  const reloadMembers = () => getFamilyMembers().then(setMembers).catch(() => {})
+  const reloadChores = () => getChores().then(setChores).catch(() => {})
+
+  // Edit modals: undefined = closed; null = add; item = edit.
+  const [memberModal, setMemberModal] = useState<FamilyMember | null | undefined>(undefined)
+  const [choreModal, setChoreModal] = useState<Chore | null | undefined>(undefined)
+  const [wsModal, setWsModal] = useState<WorkSchedule | null | undefined>(undefined)
+  const guardians = members.filter((m) => m.role === 'guardian')
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch(() => {})
     getWorkSchedules().then(setSchedules).catch(() => {})
@@ -59,7 +68,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         <Section title="Family members" icon={Users}>
           <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-x-4">
             {members.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 py-2">
+              <button key={p.id} onClick={() => setMemberModal(p)} className="flex items-center gap-3 py-2 text-left">
                 <PersonAvatar name={p.name} color={p.color} size={40} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold truncate">{p.name}</div>
@@ -68,9 +77,10 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   </div>
                 </div>
                 <ChevronRight size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
-              </div>
+              </button>
             ))}
           </div>
+          <AddRow label="Add family member" onClick={() => setMemberModal(null)} />
         </Section>
 
         {/* Work schedules */}
@@ -81,11 +91,12 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
               const color = m?.color ?? palette.brand
               return (
                 <div key={s.id}>
-                  <div className="flex items-center gap-2 mb-2">
+                  <button onClick={() => setWsModal(s)} className="flex items-center gap-2 mb-2 w-full text-left">
                     <PersonAvatar name={m?.name} color={color} size={28} />
                     <div className="text-sm font-semibold">{m?.name}</div>
-                    <div className="text-xs ml-auto" style={{ color: palette.inkSoft }}>{s.startTime} – {s.endTime}</div>
-                  </div>
+                    <div className="text-xs ml-auto" style={{ color: palette.inkSoft }}>{s.label} · {s.startTime} – {s.endTime}</div>
+                    <ChevronRight size={14} style={{ color: palette.inkSoft }} />
+                  </button>
                   <div className="flex gap-1 mb-2">
                     {DAY_LABELS.map((d, i) => {
                       const on = s.daysOfWeek[i] === '1'
@@ -108,6 +119,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
               )
             })}
           </div>
+          {guardians.length > 0 && <AddRow label="Add work schedule" onClick={() => setWsModal(null)} />}
         </Section>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -115,16 +127,17 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
           <Section title="Chores" icon={CheckSquare}>
             <div className="space-y-2">
               {chores.map((c) => (
-                <div key={c.id} className="flex items-center gap-2 py-1">
+                <button key={c.id} onClick={() => setChoreModal(c)} className="flex items-center gap-2 py-1 w-full text-left">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color ?? palette.brand }} />
                   <span className="text-sm flex-1 truncate">{c.title}</span>
                   <span className="text-xs flex-shrink-0" style={{ color: palette.inkSoft }}>{cap(c.recurrenceRule)} · {choreWho(c)}</span>
                   {c.assignmentMode === 'rotation'
                     ? <Shuffle size={14} style={{ color: palette.inkSoft, flexShrink: 0 }} />
                     : <Repeat size={14} style={{ color: palette.inkSoft, flexShrink: 0 }} />}
-                </div>
+                </button>
               ))}
             </div>
+            <AddRow label="Add chore" onClick={() => setChoreModal(null)} />
           </Section>
 
           {/* Calendars — internal + connected external (CalDAV) sources. */}
@@ -167,6 +180,21 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             onClose={() => setShowConnect(false)}
             onConnected={() => { setShowConnect(false); reloadSources() }}
           />
+        )}
+        {memberModal !== undefined && (
+          <MemberForm member={memberModal ?? undefined} members={members}
+            onClose={() => setMemberModal(undefined)}
+            onSaved={() => { setMemberModal(undefined); reloadMembers(); reloadSchedules() }} />
+        )}
+        {choreModal !== undefined && (
+          <ChoreForm chore={choreModal ?? undefined} members={members}
+            onClose={() => setChoreModal(undefined)}
+            onSaved={() => { setChoreModal(undefined); reloadChores() }} />
+        )}
+        {wsModal !== undefined && (
+          <WorkScheduleForm schedule={wsModal ?? undefined} guardians={guardians}
+            onClose={() => setWsModal(undefined)}
+            onSaved={() => { setWsModal(undefined); reloadSchedules() }} />
         )}
 
         {/* App settings (static) */}
@@ -213,6 +241,14 @@ function SettingRow({ icon: Icon, title, sub }: { icon: typeof MapPin; title: st
 }
 
 function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
+
+function AddRow({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 mt-2 text-sm font-semibold" style={{ border: `1px dashed ${palette.line}`, color: palette.inkSoft }}>
+      <Plus size={16} /> {label}
+    </button>
+  )
+}
 
 // CalDAV connect flow (designed just-in-time per the build brief).
 function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {

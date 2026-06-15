@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"tribo/internal/family"
 	"tribo/internal/todos"
 )
 
@@ -56,18 +57,49 @@ func (s *Server) listWorkSchedules(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, ws)
 }
 
-// PATCH /api/work-schedules/{id} — body {"showOnCalendar":bool}.
+// PATCH /api/work-schedules/{id} — toggles showOnCalendar, or replaces the
+// whole schedule when a full WorkScheduleInput (with memberId) is sent.
 func (s *Server) patchWorkSchedule(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		ShowOnCalendar bool `json:"showOnCalendar"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	var in family.WorkScheduleInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if err := s.family.SetWorkScheduleVisibility(r.PathValue("id"), body.ShowOnCalendar); err != nil {
+	if in.MemberID == "" {
+		// Visibility-only toggle.
+		if err := s.family.SetWorkScheduleVisibility(r.PathValue("id"), in.ShowOnCalendar); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]bool{"showOnCalendar": in.ShowOnCalendar})
+		return
+	}
+	ws, err := s.family.UpdateWorkSchedule(r.PathValue("id"), in)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"showOnCalendar": body.ShowOnCalendar})
+	writeJSON(w, http.StatusOK, ws)
+}
+
+func (s *Server) createWorkSchedule(w http.ResponseWriter, r *http.Request) {
+	var in family.WorkScheduleInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	ws, err := s.family.AddWorkSchedule(in)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, ws)
+}
+
+func (s *Server) deleteWorkSchedule(w http.ResponseWriter, r *http.Request) {
+	if err := s.family.DeleteWorkSchedule(r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }

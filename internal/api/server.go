@@ -48,8 +48,13 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	mux.HandleFunc("GET /api/events/{id}/guardians", s.eventGuardians)
 	mux.HandleFunc("POST /api/events/{id}/claim", s.claimEvent)
 	mux.HandleFunc("GET /api/family-members", s.listFamilyMembers)
+	mux.HandleFunc("POST /api/family-members", s.createFamilyMember)
+	mux.HandleFunc("PATCH /api/family-members/{id}", s.updateFamilyMember)
+	mux.HandleFunc("DELETE /api/family-members/{id}", s.deleteFamilyMember)
 	mux.HandleFunc("GET /api/work-schedules", s.listWorkSchedules)
+	mux.HandleFunc("POST /api/work-schedules", s.createWorkSchedule)
 	mux.HandleFunc("PATCH /api/work-schedules/{id}", s.patchWorkSchedule)
+	mux.HandleFunc("DELETE /api/work-schedules/{id}", s.deleteWorkSchedule)
 	mux.HandleFunc("GET /api/calendar-sources", s.listCalendarSources)
 	mux.HandleFunc("POST /api/calendar-sources", s.createCalendarSource)
 	mux.HandleFunc("DELETE /api/calendar-sources/{id}", s.deleteCalendarSource)
@@ -57,6 +62,8 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 
 	mux.HandleFunc("GET /api/chores", s.listChores)
 	mux.HandleFunc("POST /api/chores", s.createChore)
+	mux.HandleFunc("PATCH /api/chores/{id}", s.updateChore)
+	mux.HandleFunc("DELETE /api/chores/{id}", s.deleteChore)
 	mux.HandleFunc("GET /api/chore-instances", s.listChoreInstances)
 	// {id} is a chore_instance id (matches the documented MCP-facing surface).
 	mux.HandleFunc("POST /api/chores/{id}/complete", s.completeChore)

@@ -31,6 +31,28 @@ func (s *Server) createChore(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, c)
 }
 
+func (s *Server) updateChore(w http.ResponseWriter, r *http.Request) {
+	var in chores.NewChore
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	c, err := s.chores.UpdateChore(r.PathValue("id"), in)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, c)
+}
+
+func (s *Server) deleteChore(w http.ResponseWriter, r *http.Request) {
+	if err := s.chores.DeleteChore(r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
 // GET /api/chore-instances?from=&to= (date-only YYYY-MM-DD, or RFC3339).
 func (s *Server) listChoreInstances(w http.ResponseWriter, r *http.Request) {
 	from, to, err := parseDateRange(r, 7)

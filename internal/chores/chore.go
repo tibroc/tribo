@@ -202,6 +202,48 @@ func (s *Service) CreateChore(in NewChore) (*Chore, error) {
 	return nil, errors.New("chore not found after insert")
 }
 
+// UpdateChore replaces a chore's definition.
+func (s *Service) UpdateChore(id string, in NewChore) (*Chore, error) {
+	if strings.TrimSpace(in.Title) == "" {
+		return nil, errors.New("title is required")
+	}
+	if in.RecurrenceRule == "" {
+		in.RecurrenceRule = "weekly"
+	}
+	if in.AssignmentMode == "" {
+		in.AssignmentMode = "fixed"
+	}
+	var rotation any
+	if len(in.RotationMemberIDs) > 0 {
+		rotation = strings.Join(in.RotationMemberIDs, ",")
+	}
+	res, err := s.db.Exec(
+		`UPDATE chore SET title=?, recurrence_rule=?, assignment_mode=?, assigned_member_id=?, rotation_member_ids=?, color=?, icon=? WHERE id=?`,
+		in.Title, in.RecurrenceRule, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, id)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, errors.New("chore not found")
+	}
+	chores, err := s.ListChores()
+	if err != nil {
+		return nil, err
+	}
+	for i := range chores {
+		if chores[i].ID == id {
+			return &chores[i], nil
+		}
+	}
+	return nil, errors.New("chore not found")
+}
+
+// DeleteChore removes a chore and its instances (cascade).
+func (s *Service) DeleteChore(id string) error {
+	_, err := s.db.Exec(`DELETE FROM chore WHERE id = ?`, id)
+	return err
+}
+
 // ListInstances returns instances whose period overlaps [from, to).
 func (s *Service) ListInstances(from, to time.Time) ([]Instance, error) {
 	rows, err := s.db.Query(
