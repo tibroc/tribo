@@ -50,7 +50,7 @@ jobs:
 
       # PRs build only (push=false) to validate the Dockerfile without publishing.
       - name: Build & push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
