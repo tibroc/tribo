@@ -20,7 +20,7 @@ COPY --from=frontend /app/web/dist ./web/dist
 RUN CGO_ENABLED=0 go build -o /tribo ./cmd/tribo
 
 # 3) Minimal runtime
-FROM alpine:3.20
+FROM alpine:3.24
 RUN apk add --no-cache ca-certificates tzdata && \
     adduser -D -u 10001 tribo && \
     mkdir -p /data && chown tribo /data
