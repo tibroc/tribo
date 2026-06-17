@@ -15,15 +15,17 @@ import (
 	"tribo/internal/family"
 	"tribo/internal/mcp"
 	"tribo/internal/todos"
+	"tribo/internal/weather"
 )
 
 type Server struct {
-	db     *sql.DB
-	events *calendar.Service
-	chores *chores.Service
-	todos  *todos.Service
-	family *family.Service
-	sync   *calsync.Engine
+	db      *sql.DB
+	events  *calendar.Service
+	chores  *chores.Service
+	todos   *todos.Service
+	family  *family.Service
+	weather *weather.Service
+	sync    *calsync.Engine
 }
 
 // NewHandler builds the full HTTP handler: open auth/session routes, the
@@ -31,12 +33,13 @@ type Server struct {
 // everything else. Pass a nil/empty webFS to serve the API only.
 func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *calsync.Engine) http.Handler {
 	s := &Server{
-		db:     db,
-		events: calendar.NewService(db),
-		chores: chores.NewService(db),
-		todos:  todos.NewService(db),
-		family: family.NewService(db),
-		sync:   syncEngine,
+		db:      db,
+		events:  calendar.NewService(db),
+		chores:  chores.NewService(db),
+		todos:   todos.NewService(db),
+		family:  family.NewService(db),
+		weather: weather.NewService(db),
+		sync:    syncEngine,
 	}
 
 	// Protected API surface.
@@ -78,6 +81,11 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)
+
+	mux.HandleFunc("GET /api/weather", s.getWeather)
+	mux.HandleFunc("GET /api/weather/settings", s.getWeatherSettings)
+	mux.HandleFunc("PATCH /api/weather/settings", s.updateWeatherSettings)
+	mux.HandleFunc("GET /api/weather/geocode", s.geocodeWeather)
 
 	mux.HandleFunc("POST /api/onboarding", s.handleOnboarding)
 

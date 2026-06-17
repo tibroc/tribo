@@ -1,8 +1,18 @@
-import type { CSSProperties, ReactNode } from 'react'
-import { Sun } from 'lucide-react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { Sun, CloudSun, Cloud, CloudFog, CloudRain, CloudSnow, CloudLightning } from 'lucide-react'
 import type { HeaderControls } from '../lib/calendar'
+import { getWeather, type Weather as WeatherData } from '../lib/api'
 import Icon from './Icon'
 import ViewSwitcher from './ViewSwitcher'
+
+// Fired by the location picker after a save so the header widget refetches
+// without a full reload (each screen mounts its own AppShell/header).
+export const WEATHER_CHANGED_EVENT = 'tribo:weather-changed'
+
+const WEATHER_ICONS: Record<string, typeof Sun> = {
+  sun: Sun, partly: CloudSun, cloud: Cloud, fog: CloudFog,
+  rain: CloudRain, snow: CloudSnow, storm: CloudLightning,
+}
 
 // Shared header pieces. The AppShell owns the wordmark (left) and the right
 // cluster (weather / bell / profile); these components render only the CENTERED
@@ -46,14 +56,27 @@ export function Wordmark({ size = 'lg' }: { size?: 'sm' | 'lg' }) {
 }
 
 // Weather widget — sits in the header's right cluster (replaces the reference's
-// search button). Styled as a soft pill to echo the .sv-iconbtn row.
+// search button). Styled as a soft pill to echo the .sv-iconbtn row. Shows live
+// conditions for the family's configured location; hidden until one is set.
 export function Weather({ size = 17 }: { size?: number }) {
+  const [w, setW] = useState<WeatherData | null>(null)
+  useEffect(() => {
+    const load = () => getWeather().then(setW).catch(() => setW(null))
+    load()
+    window.addEventListener(WEATHER_CHANGED_EVENT, load)
+    return () => window.removeEventListener(WEATHER_CHANGED_EVENT, load)
+  }, [])
+
+  if (!w || !w.configured) return null
+  const WIcon = WEATHER_ICONS[w.icon] ?? Sun
+  const unit = w.units === 'fahrenheit' ? '°F' : '°C'
   return (
     <div
       className="hidden sm:flex items-center gap-1.5 text-sm rounded-full px-3"
       style={{ height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)', fontWeight: 600 }}
+      title={`${w.condition} · ${w.locationName}`}
     >
-      <Sun size={size} style={{ color: 'var(--t-accent)' }} />72°
+      <WIcon size={size} style={{ color: 'var(--t-accent)' }} />{Math.round(w.temperature)}{unit}
     </div>
   )
 }

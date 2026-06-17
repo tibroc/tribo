@@ -7,10 +7,12 @@ import type { Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
   addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility, googleConnectUrl,
+  getWeatherSettings, updateWeatherSettings, geocodeLocation,
   type FamilyMember, type WorkSchedule, type Chore, type CalendarSource,
+  type WeatherSettings, type WeatherUnits, type GeoResult,
 } from '../lib/api'
 import AppShell from '../components/AppShell'
-import { SimpleHeader } from '../components/chrome'
+import { SimpleHeader, WEATHER_CHANGED_EVENT } from '../components/chrome'
 import Card from '../components/Card'
 import Button from '../components/Button'
 import PersonAvatar from '../components/PersonAvatar'
@@ -26,6 +28,9 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [schedules, setSchedules] = useState<WorkSchedule[]>([])
   const [chores, setChores] = useState<Chore[]>([])
   const [sources, setSources] = useState<CalendarSource[]>([])
+  const [weather, setWeather] = useState<WeatherSettings | null>(null)
+  const [showLocation, setShowLocation] = useState(false)
+  const reloadWeather = () => getWeatherSettings().then(setWeather).catch(() => {})
   const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
   const reloadSchedules = () => getWorkSchedules().then(setSchedules).catch(() => {})
   const reloadMembers = () => getFamilyMembers().then(setMembers).catch(() => {})
@@ -41,6 +46,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
     getWorkSchedules().then(setSchedules).catch(() => {})
     getChores().then(setChores).catch(() => {})
     reloadSources()
+    reloadWeather()
   }, [])
 
   const [showConnect, setShowConnect] = useState(false)
@@ -198,11 +204,18 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             onClose={() => setWsModal(undefined)}
             onSaved={() => { setWsModal(undefined); reloadSchedules() }} />
         )}
+        {showLocation && (
+          <LocationModal settings={weather}
+            onClose={() => setShowLocation(false)}
+            onSaved={() => { setShowLocation(false); reloadWeather(); window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)) }} />
+        )}
 
         {/* App settings (static) */}
         <Section title="App settings">
           <div className="space-y-3">
-            <SettingRow icon={MapPin} title="Location" sub="Lisbon, Portugal — used for weather" />
+            <SettingRow icon={MapPin} title="Location"
+              sub={weather?.locationName ? `${weather.locationName} — used for weather` : 'Set a location for the weather widget'}
+              onClick={() => setShowLocation(true)} />
             <SettingRow icon={Palette} title="Appearance" sub="Default color theme" />
             <SettingRow icon={LogIn} title="Account" sub="Sign-in via Authentik arrives in a later update" />
             <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
@@ -260,17 +273,21 @@ function FamilyBanner({ members, guardians, sources }: { members: FamilyMember[]
   )
 }
 
-function SettingRow({ icon: Icon, title, sub }: { icon: typeof MapPin; title: string; sub: string }) {
-  return (
-    <div className="flex items-center gap-3">
+function SettingRow({ icon: Icon, title, sub, onClick }: { icon: typeof MapPin; title: string; sub: string; onClick?: () => void }) {
+  const inner = (
+    <>
       <Icon size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 text-left">
         <div className="text-sm font-medium">{title}</div>
         <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
       </div>
       <ChevronRight size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-    </div>
+    </>
   )
+  if (onClick) {
+    return <button onClick={onClick} className="flex items-center gap-3 w-full">{inner}</button>
+  }
+  return <div className="flex items-center gap-3">{inner}</div>
 }
 
 function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
@@ -323,6 +340,87 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
             <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded" />
             Read-only (don't push Tribo events to this calendar)
           </label>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Weather location picker: city search via Open-Meteo geocoding + a units toggle.
+function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettings | null; onClose: () => void; onSaved: () => void }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<GeoResult[]>([])
+  const [picked, setPicked] = useState<GeoResult | null>(null)
+  const [units, setUnits] = useState<WeatherUnits>(settings?.units ?? 'celsius')
+  const [searching, setSearching] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Debounced city search.
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 2) { setResults([]); return }
+    const t = setTimeout(() => {
+      setSearching(true)
+      geocodeLocation(q)
+        .then((r) => setResults(r))
+        .catch((e) => setError(String(e)))
+        .finally(() => setSearching(false))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [query])
+
+  const label = (g: GeoResult) => [g.name, g.admin1, g.country].filter(Boolean).join(', ')
+  const save = async () => {
+    if (!picked) { setError('Pick a location from the search results'); return }
+    setBusy(true); setError(null)
+    try {
+      await updateWeatherSettings({ latitude: picked.latitude, longitude: picked.longitude, locationName: label(picked), units })
+      onSaved()
+    } catch (e) { setError(String(e)); setBusy(false) }
+  }
+
+  const field = { border: '1px solid var(--t-line)', background: 'var(--t-surface)', borderRadius: 'var(--t-radius-md)' }
+  return (
+    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+        style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
+        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
+          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Cancel</button>
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>Weather location</div>
+          <button onClick={save} disabled={busy || !picked} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>Save</button>
+        </div>
+        <div className="p-5 space-y-3 overflow-y-auto">
+          {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          {settings?.locationName && !picked && (
+            <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Current: {settings.locationName}</div>
+          )}
+          <input autoFocus className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Search for a city…" value={query} onChange={(e) => { setQuery(e.target.value); setPicked(null) }} />
+          {searching && <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Searching…</div>}
+          {results.length > 0 && (
+            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>
+              {results.map((g, i) => (
+                <button key={`${g.latitude},${g.longitude}`} onClick={() => { setPicked(g); setResults([]); setQuery(label(g)) }}
+                  className="flex items-center gap-2 w-full text-left text-sm px-3 py-2"
+                  style={{ borderBottom: i === results.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
+                  <MapPin size={14} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
+                  <span className="truncate">{label(g)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {picked && <div className="text-sm font-medium flex items-center gap-2"><MapPin size={14} style={{ color: 'var(--t-brand)' }} /> {label(picked)}</div>}
+          <div>
+            <div className="text-xs font-semibold uppercase mb-1" style={{ color: 'var(--t-text-soft)', letterSpacing: '.06em' }}>Units</div>
+            <div className="flex gap-1 rounded-full p-1 w-fit" style={{ background: 'var(--t-shell)', border: '1px solid var(--t-line)' }}>
+              {(['celsius', 'fahrenheit'] as WeatherUnits[]).map((u) => (
+                <button key={u} onClick={() => setUnits(u)} className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                  style={u === units ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text-soft)' }}>
+                  {u === 'celsius' ? '°C' : '°F'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

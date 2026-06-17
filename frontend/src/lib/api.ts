@@ -86,6 +86,54 @@ export function googleConnectUrl(): Promise<{ authUrl: string }> {
   return fetch('/api/calendar-sources/google/connect').then((r) => json<{ authUrl: string }>(r))
 }
 
+// ── Weather ──
+export type WeatherUnits = 'celsius' | 'fahrenheit'
+
+export interface Weather {
+  configured: boolean
+  temperature: number
+  units: WeatherUnits
+  code: number
+  condition: string
+  icon: string // 'sun' | 'partly' | 'cloud' | 'fog' | 'rain' | 'snow' | 'storm'
+  locationName: string
+}
+
+export interface WeatherSettings {
+  latitude: number | null
+  longitude: number | null
+  locationName: string
+  units: WeatherUnits
+}
+
+export interface GeoResult {
+  name: string
+  country: string
+  admin1: string
+  latitude: number
+  longitude: number
+}
+
+export function getWeather(): Promise<Weather> {
+  return fetch('/api/weather').then((r) => json<Weather>(r))
+}
+
+export function getWeatherSettings(): Promise<WeatherSettings> {
+  return fetch('/api/weather/settings').then((r) => json<WeatherSettings>(r))
+}
+
+export function updateWeatherSettings(s: { latitude: number; longitude: number; locationName: string; units: WeatherUnits }): Promise<WeatherSettings> {
+  return fetch('/api/weather/settings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(s),
+  }).then((r) => json<WeatherSettings>(r))
+}
+
+export function geocodeLocation(q: string): Promise<GeoResult[]> {
+  return fetch(`/api/weather/geocode?${new URLSearchParams({ q })}`).then((r) => json<GeoResult[]>(r))
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
