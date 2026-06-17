@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Section, Intent, EventFocus } from './lib/calendar'
 import { palette } from './lib/tokens'
 import { SessionProvider, useSession } from './lib/session'
+import { ThemeProvider } from './lib/theme'
 import { LoginScreen, MapProfileScreen } from './views/AuthScreens'
 import OnboardingWizard from './views/OnboardingWizard'
 import HomePage from './views/HomePage'
@@ -13,9 +14,11 @@ import ReviewPage from './views/ReviewPage'
 
 export default function App() {
   return (
-    <SessionProvider>
-      <Gate />
-    </SessionProvider>
+    <ThemeProvider>
+      <SessionProvider>
+        <Gate />
+      </SessionProvider>
+    </ThemeProvider>
   )
 }
 

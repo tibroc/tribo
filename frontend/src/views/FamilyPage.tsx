@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
-  RefreshCw, Trash2, Plus,
+  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check,
 } from 'lucide-react'
 import type { Section } from '../lib/calendar'
 import {
@@ -20,6 +20,7 @@ import OnboardingWizard from './OnboardingWizard'
 import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
 import { RecurrencePill } from '../components/panels'
 import { useSession } from '../lib/session'
+import { useTheme, type ThemePreference } from '../lib/theme'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
@@ -30,6 +31,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [sources, setSources] = useState<CalendarSource[]>([])
   const [weather, setWeather] = useState<WeatherSettings | null>(null)
   const [showLocation, setShowLocation] = useState(false)
+  const [showAppearance, setShowAppearance] = useState(false)
+  const [showAccount, setShowAccount] = useState(false)
   const reloadWeather = () => getWeatherSettings().then(setWeather).catch(() => {})
   const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
   const reloadSchedules = () => getWorkSchedules().then(setSchedules).catch(() => {})
@@ -52,7 +55,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showConnect, setShowConnect] = useState(false)
   const [calError, setCalError] = useState<string | null>(null)
   const [showWizard, setShowWizard] = useState(false)
-  const { refresh: refreshSession } = useSession()
+  const { session, refresh: refreshSession } = useSession()
+  const theme = useTheme()
   const nameOf = (id?: string) => members.find((m) => m.id === id)?.name ?? ''
 
   if (showWizard) {
@@ -209,6 +213,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             onClose={() => setShowLocation(false)}
             onSaved={() => { setShowLocation(false); reloadWeather(); window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)) }} />
         )}
+        {showAppearance && <AppearanceModal onClose={() => setShowAppearance(false)} />}
+        {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
 
         {/* App settings (static) */}
         <Section title="App settings">
@@ -216,8 +222,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             <SettingRow icon={MapPin} title="Location"
               sub={weather?.locationName ? `${weather.locationName} — used for weather` : 'Set a location for the weather widget'}
               onClick={() => setShowLocation(true)} />
-            <SettingRow icon={Palette} title="Appearance" sub="Default color theme" />
-            <SettingRow icon={LogIn} title="Account" sub="Sign-in via Authentik arrives in a later update" />
+            <SettingRow icon={Palette} title="Appearance" sub={appearanceSub(theme.preference)} onClick={() => setShowAppearance(true)} />
+            <SettingRow icon={LogIn} title="Account" sub={accountSub(session)} onClick={() => setShowAccount(true)} />
             <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
               <Plus size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <div className="flex-1 min-w-0">
@@ -267,7 +273,6 @@ function FamilyBanner({ members, guardians, sources }: { members: FamilyMember[]
             {members.length} member{members.length === 1 ? '' : 's'} · {guardians.length} guardian{guardians.length === 1 ? '' : 's'} · {sharedSources} shared calendar{sharedSources === 1 ? '' : 's'}
           </div>
         </div>
-        <Button variant="outline" size="sm">Invite</Button>
       </div>
     </Card>
   )
@@ -343,6 +348,96 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
         </div>
       </div>
     </div>
+  )
+}
+
+function appearanceSub(p: ThemePreference): string {
+  return p === 'system' ? 'Follows your system setting' : p === 'dark' ? 'Dark theme' : 'Light theme'
+}
+
+function accountSub(session: { authEnabled: boolean; authenticated: boolean } | null): string {
+  if (!session) return 'Loading…'
+  if (!session.authEnabled) return 'Local mode — sign-in not configured'
+  return session.authenticated ? 'Signed in' : 'Not signed in'
+}
+
+// Lightweight settings sheet matching the other modals (full-screen on mobile,
+// centered card on desktop) with a single Done action.
+function SettingsSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+        style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
+        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
+          <span className="w-12" />
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{title}</div>
+          <button onClick={onClose} className="text-sm font-semibold w-12 text-right" style={{ color: 'var(--t-brand)' }}>Done</button>
+        </div>
+        <div className="p-5 space-y-3 overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+// Theme picker — Light / Dark / System, applied live.
+function AppearanceModal({ onClose }: { onClose: () => void }) {
+  const { preference, setPreference } = useTheme()
+  const options: { key: ThemePreference; label: string; icon: typeof Sun }[] = [
+    { key: 'light', label: 'Light', icon: Sun },
+    { key: 'dark', label: 'Dark', icon: Moon },
+    { key: 'system', label: 'System', icon: Monitor },
+  ]
+  return (
+    <SettingsSheet title="Appearance" onClose={onClose}>
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>
+        {options.map((o, i) => {
+          const active = preference === o.key
+          return (
+            <button key={o.key} onClick={() => setPreference(o.key)}
+              className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm"
+              style={{ borderBottom: i === options.length - 1 ? 'none' : '1px solid var(--t-line)', background: active ? 'var(--t-shell)' : 'transparent' }}>
+              <o.icon size={16} style={{ color: active ? 'var(--t-brand)' : 'var(--t-text-soft)', flexShrink: 0 }} />
+              <span className="flex-1 font-medium">{o.label}</span>
+              {active && <Check size={16} style={{ color: 'var(--t-brand)' }} />}
+            </button>
+          )
+        })}
+      </div>
+      <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Theme applies instantly and is remembered on this device.</div>
+    </SettingsSheet>
+  )
+}
+
+// Account / session info + sign-out (when OIDC auth is enabled).
+function AccountModal({ onClose }: { onClose: () => void }) {
+  const { session, activeMember, logout } = useSession()
+  const [busy, setBusy] = useState(false)
+  const signOut = async () => { setBusy(true); try { await logout() } finally { onClose() } }
+  return (
+    <SettingsSheet title="Account" onClose={onClose}>
+      {activeMember && (
+        <div className="flex items-center gap-3">
+          <PersonAvatar name={activeMember.name} color={activeMember.color} size={40} />
+          <div className="min-w-0">
+            <div className="text-sm font-semibold truncate">{activeMember.name}</div>
+            <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Active profile</div>
+          </div>
+        </div>
+      )}
+      {!session?.authEnabled ? (
+        <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}>
+          Running in <strong style={{ color: 'var(--t-text)' }}>local mode</strong> — no sign-in required. To enable per-person login, configure
+          {' '}<code>OIDC_ISSUER_URL</code>, <code>OIDC_CLIENT_ID</code> and <code>OIDC_CLIENT_SECRET</code> on the server.
+        </div>
+      ) : session.authenticated ? (
+        <>
+          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Signed in via your identity provider. Switch profiles from the avatar in the nav.</div>
+          <Button variant="danger" onClick={signOut} disabled={busy} style={{ width: '100%' }}><LogOut size={16} /> Sign out</Button>
+        </>
+      ) : (
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Not signed in.</div>
+      )}
+    </SettingsSheet>
   )
 }
 
