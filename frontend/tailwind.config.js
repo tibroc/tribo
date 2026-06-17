@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Bricolage Grotesque"', 'sans-serif'],
-        body: ['"Plus Jakarta Sans"', 'sans-serif'],
+        display: ['Spectral', 'Georgia', 'serif'],
+        body: ['Figtree', 'system-ui', 'sans-serif'],
       },
     },
   },

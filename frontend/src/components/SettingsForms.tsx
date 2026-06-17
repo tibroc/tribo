@@ -1,16 +1,18 @@
 import { useState, type ReactNode } from 'react'
 import { Trash2 } from 'lucide-react'
-import { palette, PEOPLE } from '../lib/tokens'
+import { markerColor } from '../lib/tokens'
 import {
   createMember, updateMember, deleteMember,
   createChore, updateChore, deleteChore,
   createWorkSchedule, updateWorkSchedule, deleteWorkSchedule,
   type FamilyMember, type Chore, type WorkSchedule,
 } from '../lib/api'
+import Button from './Button'
 
-const COLORS = [PEOPLE.alberto, PEOPLE.hilda, PEOPLE.marie, PEOPLE.guilherme, '#D99A2B', '#3E6259', '#C0506B', '#7A8B5A']
+// Harmonious generated marker palette (slots 0–7) for the member color picker.
+const COLORS = Array.from({ length: 8 }, (_, i) => markerColor(i))
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-const field = { border: `1px solid ${palette.line}`, backgroundColor: palette.surface }
+const field = { border: '1px solid var(--t-line)', background: 'var(--t-surface)', borderRadius: 'var(--t-radius-md)' }
 
 // Shared centered/full-screen modal shell with header actions + optional delete.
 function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
@@ -23,20 +25,23 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
   children: ReactNode
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: palette.ink + '66' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] lg:rounded-2xl lg:shadow-xl overflow-hidden" style={{ backgroundColor: palette.surface }}>
-        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${palette.line}` }}>
-          <button onClick={onClose} className="text-sm" style={{ color: palette.inkSoft }}>Cancel</button>
-          <div className="font-display text-lg font-bold">{title}</div>
-          <button onClick={onSave} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: palette.brand }}>Save</button>
+    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+        style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
+        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
+          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Cancel</button>
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{title}</div>
+          <button onClick={onSave} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>Save</button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
           {children}
           {onDelete && (
-            <button onClick={onDelete} disabled={busy} className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2 mt-2" style={{ color: '#C0506B' }}>
-              <Trash2 size={16} /> Delete
-            </button>
+            <div className="pt-1">
+              <Button variant="danger" onClick={onDelete} disabled={busy} style={{ width: '100%' }}>
+                <Trash2 size={16} /> Delete
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -45,7 +50,7 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
 }
 
 function Labeled({ label, children }: { label: string; children: ReactNode }) {
-  return <div><div className="text-xs font-semibold uppercase mb-1" style={{ color: palette.inkSoft }}>{label}</div>{children}</div>
+  return <div><div className="text-xs font-semibold uppercase mb-1" style={{ color: 'var(--t-text-soft)', letterSpacing: '.06em' }}>{label}</div>{children}</div>
 }
 
 // useSaver wraps a save/delete async call with busy + error state.
@@ -84,8 +89,11 @@ export function MemberForm({ member, members, onClose, onSaved }: {
       onDelete={member ? () => run(() => deleteMember(member.id)) : undefined}>
       <Labeled label="Name"><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={name} onChange={(e) => setName(e.target.value)} /></Labeled>
       <Labeled label="Color">
-        <div className="flex items-center gap-1.5">
-          {COLORS.map((c) => <button key={c} onClick={() => setColor(c)} className="w-7 h-7 rounded-full" style={{ backgroundColor: c, outline: color === c ? `2px solid ${palette.ink}` : 'none', outlineOffset: 2 }} />)}
+        <div className="flex items-center gap-2 flex-wrap">
+          {COLORS.map((c) => (
+            <button key={c} onClick={() => setColor(c)} className="w-8 h-8"
+              style={{ background: c, borderRadius: 'var(--t-squircle, 50% 50% 50% 30%)', outline: color === c ? '2px solid var(--t-text)' : 'none', outlineOffset: 2 }} />
+          ))}
         </div>
       </Labeled>
       <Labeled label="Role">
@@ -123,7 +131,7 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
   const [rotation, setRotation] = useState<string[]>(chore?.rotationMemberIds ?? [])
   const { busy, error, run } = useSaver(onSaved)
 
-  const colorFor = () => members.find((m) => m.id === (mode === 'fixed' ? assignee : rotation[0]))?.color ?? palette.brand
+  const colorFor = () => members.find((m) => m.id === (mode === 'fixed' ? assignee : rotation[0]))?.color ?? '#3E6259'
   const save = () => run(() => {
     const payload = {
       title, recurrenceRule: recurrence, assignmentMode: mode,
@@ -206,7 +214,7 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
         <div className="flex gap-1">
           {DAY_LABELS.map((d, i) => (
             <button key={i} onClick={() => toggleDay(i)} className="flex-1 rounded-md text-center text-xs font-semibold py-1.5"
-              style={days[i] === '1' ? { backgroundColor: palette.brand, color: '#fff' } : { backgroundColor: palette.mist, color: palette.inkSoft }}>{d}</button>
+              style={days[i] === '1' ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { background: 'var(--t-bg)', color: 'var(--t-text-soft)' }}>{d}</button>
           ))}
         </div>
       </Labeled>
@@ -215,7 +223,7 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
         <Labeled label="End"><input type="time" className="text-sm rounded-xl px-3 py-2 outline-none" style={field} value={end} onChange={(e) => setEnd(e.target.value)} /></Labeled>
       </div>
       <Labeled label="Label"><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={label} onChange={(e) => setLabel(e.target.value)} /></Labeled>
-      <label className="flex items-center gap-2 text-sm" style={{ color: palette.inkSoft }}>
+      <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
         <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="w-4 h-4 rounded" />
         Show as "busy" on calendar
       </label>

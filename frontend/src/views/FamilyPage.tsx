@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
-  Users, CalendarDays, CheckSquare, Globe, Repeat, Shuffle, ChevronRight, MapPin, Palette, LogIn,
+  Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
   RefreshCw, Trash2, Plus,
 } from 'lucide-react'
-import { palette } from '../lib/tokens'
 import type { Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
@@ -13,9 +12,11 @@ import {
 import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
+import Button from '../components/Button'
 import PersonAvatar from '../components/PersonAvatar'
 import OnboardingWizard from './OnboardingWizard'
 import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
+import { RecurrencePill } from '../components/panels'
 import { useSession } from '../lib/session'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -64,52 +65,56 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
 
   return (
     <AppShell active="family" onNavigate={go} showFab={false} header={<SimpleHeader title="Family" />}>
-      <div className="space-y-4">
+      <div style={{ padding: '22px 26px' }} className="space-y-4">
+        {/* Banner */}
+        <FamilyBanner members={members} guardians={guardians} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Family members */}
-        <Section title="Family members" icon={Users}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-x-4">
-            {members.map((p) => (
-              <button key={p.id} onClick={() => setMemberModal(p)} className="flex items-center gap-3 py-2 text-left">
-                <PersonAvatar name={p.name} color={p.color} size={40} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold truncate">{p.name}</div>
-                  <div className="text-xs truncate" style={{ color: palette.inkSoft }}>
-                    {p.role === 'guardian' ? 'Guardian' : `Child · Default guardian: ${nameOf(p.defaultGuardianId) || '—'}`}
-                  </div>
+        <Section title="Family members" icon={Users} flush
+          action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setMemberModal(null)}><Plus size={14} /> Add member</Button>}>
+          {members.map((p, i) => (
+            <div key={p.id} className="flex items-center gap-3" style={{ padding: '12px 22px', borderBottom: i === members.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
+              <PersonAvatar name={p.name} color={p.color} index={i} size={40} />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate" style={{ fontFamily: 'var(--t-font-display)', fontWeight: 600 }}>{p.name}</div>
+                <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>
+                  {p.role === 'guardian' ? 'Guardian' : `Child · Default guardian: ${nameOf(p.defaultGuardianId) || '—'}`}
                 </div>
-                <ChevronRight size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
-              </button>
-            ))}
-          </div>
-          <AddRow label="Add family member" onClick={() => setMemberModal(null)} />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setMemberModal(p)}>Edit</Button>
+            </div>
+          ))}
         </Section>
 
         {/* Work schedules */}
-        <Section title="Work schedules" icon={CalendarDays}>
+        <Section title="Work schedules" icon={CalendarDays}
+          action={guardians.length > 0 ? <Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setWsModal(null)}><Plus size={14} /> Add</Button> : undefined}>
           <div className="space-y-4">
             {schedules.map((s) => {
-              const m = members.find((x) => x.id === s.memberId)
-              const color = m?.color ?? palette.brand
+              const mi = members.findIndex((x) => x.id === s.memberId)
+              const m = members[mi]
+              const color = m?.color ?? '#3E6259'
               return (
                 <div key={s.id}>
                   <button onClick={() => setWsModal(s)} className="flex items-center gap-2 mb-2 w-full text-left">
-                    <PersonAvatar name={m?.name} color={color} size={28} />
+                    <PersonAvatar name={m?.name} color={m?.color} index={mi >= 0 ? mi : undefined} size={28} />
                     <div className="text-sm font-semibold">{m?.name}</div>
-                    <div className="text-xs ml-auto" style={{ color: palette.inkSoft }}>{s.label} · {s.startTime} – {s.endTime}</div>
-                    <ChevronRight size={14} style={{ color: palette.inkSoft }} />
+                    <div className="text-xs ml-auto" style={{ color: 'var(--t-text-soft)' }}>{s.label} · {s.startTime} – {s.endTime}</div>
+                    <ChevronRight size={14} style={{ color: 'var(--t-text-soft)' }} />
                   </button>
                   <div className="flex gap-1 mb-2">
                     {DAY_LABELS.map((d, i) => {
                       const on = s.daysOfWeek[i] === '1'
                       return (
                         <div key={i} className="flex-1 rounded-md text-center text-xs font-semibold py-1.5"
-                          style={on ? { backgroundColor: color + '20', color: palette.ink } : { backgroundColor: palette.mist, color: palette.inkSoft }}>
+                          style={on ? { backgroundColor: color + '22', color } : { background: 'var(--t-bg)', color: 'var(--t-text-soft)' }}>
                           {d}
                         </div>
                       )
                     })}
                   </div>
-                  <label className="flex items-center gap-2 text-xs" style={{ color: palette.inkSoft }}>
+                  <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--t-text-soft)' }}>
                     <input
                       type="checkbox" checked={s.showOnCalendar} className="w-3.5 h-3.5 rounded"
                       onChange={(e) => setWorkScheduleVisibility(s.id, e.target.checked).then(reloadSchedules)}
@@ -120,53 +125,49 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
               )
             })}
           </div>
-          {guardians.length > 0 && <AddRow label="Add work schedule" onClick={() => setWsModal(null)} />}
         </Section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Chores */}
-          <Section title="Chores" icon={CheckSquare}>
-            <div className="space-y-2">
-              {chores.map((c) => (
-                <button key={c.id} onClick={() => setChoreModal(c)} className="flex items-center gap-2 py-1 w-full text-left">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color ?? palette.brand }} />
-                  <span className="text-sm flex-1 truncate">{c.title}</span>
-                  <span className="text-xs flex-shrink-0" style={{ color: palette.inkSoft }}>{cap(c.recurrenceRule)} · {choreWho(c)}</span>
-                  {c.assignmentMode === 'rotation'
-                    ? <Shuffle size={14} style={{ color: palette.inkSoft, flexShrink: 0 }} />
-                    : <Repeat size={14} style={{ color: palette.inkSoft, flexShrink: 0 }} />}
-                </button>
-              ))}
-            </div>
-            <AddRow label="Add chore" onClick={() => setChoreModal(null)} />
+          <Section title="Chores" icon={CheckSquare} flush
+            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Plus size={14} /> Add chore</Button>}>
+            {chores.map((c, i) => (
+              <button key={c.id} onClick={() => setChoreModal(c)} className="flex items-center gap-3 w-full text-left" style={{ padding: '12px 22px', borderBottom: i === chores.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color ?? '#3E6259' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm truncate font-medium">{c.title}</div>
+                  <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{choreWho(c)}</div>
+                </div>
+                <RecurrencePill label={c.assignmentMode === 'rotation' ? 'Rotation' : cap(c.recurrenceRule)} rotation={c.assignmentMode === 'rotation'} />
+              </button>
+            ))}
           </Section>
 
           {/* Calendars — internal + connected external (CalDAV) sources. */}
-          <Section title="Calendars" icon={Globe}>
+          <Section title="Calendar sources" icon={Globe}
+            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setShowConnect(true)}><Plus size={14} /> Connect</Button>}>
             <div className="space-y-2">
               {sources.map((c) => (
                 <div key={c.id} className="flex items-center gap-2 py-1">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.isShared ? '#D99A2B' : palette.brand }} />
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.isShared ? 'var(--t-accent)' : 'var(--t-brand)' }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{c.displayName}</div>
-                    <div className="text-xs truncate capitalize" style={{ color: palette.inkSoft }}>
+                    <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>
                       {c.type === 'internal' ? 'Built-in' : `${c.type}${c.readOnly ? ' · read-only' : ''}`}
                     </div>
                   </div>
                   {c.type !== 'internal' && (
                     <>
                       <button aria-label="Sync now" onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
-                        <RefreshCw size={14} style={{ color: palette.inkSoft }} />
+                        <RefreshCw size={14} style={{ color: 'var(--t-text-soft)' }} />
                       </button>
                       <button aria-label="Remove" onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
-                        <Trash2 size={14} style={{ color: palette.inkSoft }} />
+                        <Trash2 size={14} style={{ color: 'var(--t-text-soft)' }} />
                       </button>
                     </>
                   )}
                 </div>
               ))}
             </div>
-            <AddRow label="Add CalDAV calendar" onClick={() => setShowConnect(true)} />
             <AddRow label="Connect Google Calendar" onClick={() => {
               googleConnectUrl()
                 .then((r) => { window.location.href = r.authUrl })
@@ -205,12 +206,12 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             <SettingRow icon={Palette} title="Appearance" sub="Default color theme" />
             <SettingRow icon={LogIn} title="Account" sub="Sign-in via Authentik arrives in a later update" />
             <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
-              <Plus size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+              <Plus size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium">Run setup wizard</div>
-                <div className="text-xs" style={{ color: palette.inkSoft }}>Add members, chores, or a typical week</div>
+                <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Add members, chores, or a typical week</div>
               </div>
-              <ChevronRight size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+              <ChevronRight size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
             </button>
           </div>
         </Section>
@@ -219,11 +220,42 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   )
 }
 
-function Section({ title, icon: Icon, children }: { title: string; icon?: typeof Users; children: React.ReactNode }) {
+function Section({ title, icon: Icon, action, children, flush }: { title: string; icon?: typeof Users; action?: React.ReactNode; children: React.ReactNode; flush?: boolean }) {
   return (
-    <Card className="p-4">
-      <div className="font-display text-base font-bold mb-3 flex items-center gap-2">{Icon && <Icon size={16} />} {title}</div>
+    <Card
+      title={<span className="flex items-center gap-2">{Icon && <Icon size={16} style={{ color: 'var(--t-brand)' }} />}{title}</span>}
+      action={action}
+      padded={!flush}
+    >
       {children}
+    </Card>
+  )
+}
+
+// Family banner: overlapping avatar stack + title + member/guardian summary + Invite.
+function FamilyBanner({ members, guardians }: { members: FamilyMember[]; guardians: FamilyMember[] }) {
+  const sharedSources = 1
+  return (
+    <Card>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center">
+          {members.map((m, i) => (
+            <div key={m.id} style={{ marginLeft: i === 0 ? 0 : -10 }}>
+              <PersonAvatar name={m.name} color={m.color} index={i} size={44} ring />
+            </div>
+          ))}
+          <div style={{ marginLeft: -10 }}>
+            <PersonAvatar family size={44} ring />
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 28, lineHeight: 1.1, color: 'var(--t-text)' }}>Your family</div>
+          <div className="text-sm" style={{ color: 'var(--t-text-soft)', marginTop: 2 }}>
+            {members.length} member{members.length === 1 ? '' : 's'} · {guardians.length} guardian{guardians.length === 1 ? '' : 's'} · {sharedSources} shared calendar
+          </div>
+        </div>
+        <Button variant="outline" size="sm">Invite</Button>
+      </div>
     </Card>
   )
 }
@@ -231,12 +263,12 @@ function Section({ title, icon: Icon, children }: { title: string; icon?: typeof
 function SettingRow({ icon: Icon, title, sub }: { icon: typeof MapPin; title: string; sub: string }) {
   return (
     <div className="flex items-center gap-3">
-      <Icon size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+      <Icon size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium">{title}</div>
-        <div className="text-xs truncate" style={{ color: palette.inkSoft }}>{sub}</div>
+        <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
       </div>
-      <ChevronRight size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+      <ChevronRight size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
     </div>
   )
 }
@@ -245,7 +277,8 @@ function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 function AddRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 mt-2 text-sm font-semibold" style={{ border: `1px dashed ${palette.line}`, color: palette.inkSoft }}>
+    <button onClick={onClick} className="w-full flex items-center justify-center gap-2 py-2.5 mt-2 text-sm font-semibold"
+      style={{ border: '1px dashed var(--t-line)', borderRadius: 'var(--t-radius-md)', color: 'var(--t-text-soft)' }}>
       <Plus size={16} /> {label}
     </button>
   )
@@ -270,22 +303,23 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
     } catch (e) { setError(String(e)); setBusy(false) }
   }
 
-  const field = { border: `1px solid ${palette.line}` }
+  const field = { border: '1px solid var(--t-line)', background: 'var(--t-surface)', borderRadius: 'var(--t-radius-md)' }
   return (
-    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: palette.ink + '66' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:rounded-2xl lg:shadow-xl overflow-hidden" style={{ backgroundColor: palette.surface }}>
-        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${palette.line}` }}>
-          <button onClick={onClose} className="text-sm" style={{ color: palette.inkSoft }}>Cancel</button>
-          <div className="font-display text-lg font-bold">Add CalDAV calendar</div>
-          <button onClick={connect} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: palette.brand }}>Connect</button>
+    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+        style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
+        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
+          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Cancel</button>
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>Add CalDAV calendar</div>
+          <button onClick={connect} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>Connect</button>
         </div>
         <div className="p-5 space-y-3">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
-          <input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-          <input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="CalDAV URL (e.g. https://host/dav/user/calendar/)" value={url} onChange={(e) => setUrl(e.target.value)} />
-          <input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="Username (optional)" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} placeholder="Password (optional)" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <label className="flex items-center gap-2 text-sm" style={{ color: palette.inkSoft }}>
+          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="CalDAV URL (e.g. https://host/dav/user/calendar/)" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Username (optional)" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input type="password" className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Password (optional)" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
             <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded" />
             Read-only (don't push Tribo events to this calendar)
           </label>

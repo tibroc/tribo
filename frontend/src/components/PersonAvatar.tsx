@@ -1,18 +1,46 @@
-import type { LucideIcon } from 'lucide-react'
+import { markerColor, FAMILY_COLOR } from '../lib/tokens'
 
-// Solid-color circle with an initial (or an icon, e.g. the "Family" group).
-export default function PersonAvatar({ name, color, icon: Icon, size = 32 }: {
+const familyGlyph = (s: number) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+)
+
+export default function PersonAvatar({ name, initial, color, index, size = 40, family = false, photo, ring = false }: {
   name?: string
-  color: string
-  icon?: LucideIcon
+  initial?: string
+  color?: string
+  index?: number
   size?: number
+  family?: boolean
+  photo?: string
+  ring?: boolean
 }) {
+  const resolved = family ? FAMILY_COLOR : (color || markerColor(index ?? null))
+  const letter = initial || (name ? name.trim()[0].toUpperCase() : '')
   return (
     <div
-      className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-      style={{ backgroundColor: color, width: size, height: size, fontSize: size * 0.44 }}
+      className="tribo-avatar flex items-center justify-center flex-shrink-0"
+      title={name}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 'var(--t-squircle, 50% 50% 50% 30%)',
+        background: photo ? `center/cover no-repeat url(${photo})` : resolved,
+        color: '#fff',
+        fontFamily: 'var(--t-font-body)',
+        fontWeight: 700,
+        fontSize: Math.round(size * 0.4),
+        boxShadow: ring
+          ? `0 0 0 2px var(--t-shell, #fff), 0 0 0 4px ${resolved}`
+          : '0 2px 8px rgba(0,0,0,.14)',
+      }}
     >
-      {Icon ? <Icon size={size * 0.5} /> : name?.[0]}
+      {!photo && (family ? familyGlyph(Math.round(size * 0.46)) : letter)}
     </div>
   )
 }

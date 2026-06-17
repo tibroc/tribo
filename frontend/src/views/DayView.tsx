@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
-import { Users } from 'lucide-react'
-import { palette, SHARED_COLOR, chipStyle } from '../lib/tokens'
+import { SHARED_COLOR } from '../lib/tokens'
 import { fmtTime, sameDay, startOfDay, type ViewProps } from '../lib/calendar'
 import type { FamilyMember, TriboEvent } from '../lib/api'
 import { useChoresTodos } from '../lib/hooks'
@@ -13,8 +12,9 @@ import { ChoresPanel, TodosPanel } from '../components/panels'
 const HOUR_START = 6
 const HOUR_END = 21 // 6 AM – 9 PM
 const HOUR_HEIGHT = 56
-const TOTAL_HEIGHT = (HOUR_END - HOUR_START) * HOUR_HEIGHT
-const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i)
+const SPAN = HOUR_END - HOUR_START
+const TOTAL_HEIGHT = SPAN * HOUR_HEIGHT // minimum timeline height (scrolls below this)
+const HOURS = Array.from({ length: SPAN }, (_, i) => HOUR_START + i)
 
 const fracHour = (d: Date) => d.getHours() + d.getMinutes() / 60
 const clockFrac = (hhmm: string) => {
@@ -24,8 +24,12 @@ const clockFrac = (hhmm: string) => {
 
 interface BusyBlock { start: number; end: number; label: string }
 const clamp = (t: number) => Math.max(HOUR_START, Math.min(HOUR_END, t))
-const timeToY = (t: number) => (clamp(t) - HOUR_START) * HOUR_HEIGHT
-const formatHour = (h: number) => `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`
+// Vertical position as a percentage of the (fluid) timeline height.
+const pct = (t: number) => ((clamp(t) - HOUR_START) / SPAN) * 100
+const formatHour = (h: number) => (h === 12 ? 'Noon' : `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`)
+
+// Tinted marker-pen fill matching EventChip's color-mix recipe.
+const tint = (color: string) => `color-mix(in oklab, ${color} var(--t-tint, 12%), var(--t-surface))`
 
 interface Block { ev: TriboEvent; start: number; end: number; color: string; who?: string }
 
@@ -64,42 +68,36 @@ export default function DayView({ members, events, cursor, today, header, workSc
   }, [perMember, shared, members])
 
   const columns = [
-    ...members.map((m) => ({ key: m.id, name: m.name, color: m.color, icon: undefined as undefined | typeof Users, blocks: perMember.get(m.id) ?? [], busy: busyFor(m.id) })),
-    { key: 'family', name: 'Family', color: SHARED_COLOR, icon: Users, blocks: shared, busy: [] as BusyBlock[] },
+    ...members.map((m) => ({ key: m.id, name: m.name, color: m.color, isFamily: false, blocks: perMember.get(m.id) ?? [], busy: busyFor(m.id) })),
+    { key: 'family', name: 'Family', color: SHARED_COLOR, isFamily: true, blocks: shared, busy: [] as BusyBlock[] },
   ]
 
   return (
-    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
-      <Card className="overflow-hidden">
-        {/* Tablet: per-person columns */}
-        <div className="hidden lg:grid" style={{ gridTemplateColumns: `56px repeat(${columns.length}, 1fr)` }}>
-          <div style={{ borderBottom: `1px solid ${palette.line}`, borderRight: `1px solid ${palette.line}` }} />
-          {columns.map((c, i) => <ColumnHeader key={c.key} person={c} isLast={i === columns.length - 1} />)}
+    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={<TodayPanel members={members} />}>
+      {/* Tablet: per-person columns — fills the island height */}
+      <div className="hidden lg:grid lg:flex-1 lg:min-h-0" style={{ gridTemplateColumns: `64px repeat(${columns.length}, 1fr)`, gridTemplateRows: `auto minmax(${TOTAL_HEIGHT}px, 1fr)` }}>
+        <div style={{ borderBottom: '1px solid var(--t-line)' }} />
+        {columns.map((c, i) => <ColumnHeader key={c.key} person={c} isLast={i === columns.length - 1} />)}
 
-          <TimeAxis showNow={showNow} nowFrac={nowFrac} />
-          {columns.map((c, i) => (
-            <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} />
-          ))}
-        </div>
+        <TimeAxis showNow={showNow} nowFrac={nowFrac} />
+        {columns.map((c, i) => (
+          <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} />
+        ))}
+      </div>
 
-        {/* Phone: single combined column */}
-        <div className="lg:hidden grid" style={{ gridTemplateColumns: '48px 1fr' }}>
-          <TimeAxis showNow={showNow} nowFrac={nowFrac} />
-          <TimelineColumn blocks={combined} busy={[]} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} />
-        </div>
-      </Card>
-
-      <div className="mt-4">
-        <TodayPanel members={members} />
+      {/* Phone: single combined column */}
+      <div className="lg:hidden grid" style={{ gridTemplateColumns: '64px 1fr', height: TOTAL_HEIGHT }}>
+        <TimeAxis showNow={showNow} nowFrac={nowFrac} />
+        <TimelineColumn blocks={combined} busy={[]} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} />
       </div>
     </AppShell>
   )
 }
 
-function ColumnHeader({ person, isLast }: { person: { name: string; color: string; icon?: typeof Users }; isLast: boolean }) {
+function ColumnHeader({ person }: { person: { name: string; color: string; isFamily: boolean }; isLast: boolean }) {
   return (
-    <div className="flex items-center gap-2 px-2 py-2" style={{ borderBottom: `1px solid ${palette.line}`, borderRight: isLast ? 'none' : `1px solid ${palette.line}` }}>
-      <PersonAvatar name={person.name} color={person.color} icon={person.icon} size={28} />
+    <div className="flex items-center gap-2 px-3 py-3 min-w-0" style={{ borderBottom: '1px solid var(--t-line)', borderLeft: '1px solid var(--t-line)' }}>
+      <PersonAvatar name={person.name} color={person.color} family={person.isFamily} size={30} />
       <div className="text-sm font-semibold truncate">{person.name}</div>
     </div>
   )
@@ -107,19 +105,19 @@ function ColumnHeader({ person, isLast }: { person: { name: string; color: strin
 
 function TimeAxis({ showNow, nowFrac }: { showNow: boolean; nowFrac: number }) {
   return (
-    <div className="relative" style={{ height: TOTAL_HEIGHT }}>
+    <div className="relative h-full">
       {HOURS.map((h) => (
-        <div key={h} className="absolute right-2 text-xs" style={{ top: timeToY(h) - 7, color: palette.inkSoft }}>{formatHour(h)}</div>
+        <div key={h} className="absolute right-2.5 text-xs font-semibold" style={{ top: `${pct(h)}%`, transform: 'translateY(-2px)', color: 'var(--t-text-soft)' }}>{formatHour(h)}</div>
       ))}
-      {showNow && <div className="absolute right-0 rounded-full" style={{ top: timeToY(nowFrac) - 3, width: 6, height: 6, backgroundColor: palette.amber }} />}
+      {showNow && <div className="absolute right-0 rounded-full" style={{ top: `${pct(nowFrac)}%`, marginTop: -4, width: 8, height: 8, backgroundColor: 'var(--t-danger)' }} />}
     </div>
   )
 }
 
-function TimelineColumn({ blocks, busy, isLast, showNow, nowFrac, withWho, onEditEvent }: {
+function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent }: {
   blocks: Block[]
   busy: BusyBlock[]
-  isLast: boolean
+  isLast?: boolean
   showNow: boolean
   nowFrac: number
   withWho: boolean
@@ -127,44 +125,61 @@ function TimelineColumn({ blocks, busy, isLast, showNow, nowFrac, withWho, onEdi
 }) {
   return (
     <div
-      className="relative"
+      className="relative h-full"
       style={{
-        height: TOTAL_HEIGHT,
-        borderRight: isLast ? 'none' : `1px solid ${palette.line}`,
-        backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent ${HOUR_HEIGHT - 1}px, ${palette.line} ${HOUR_HEIGHT - 1}px, ${palette.line} ${HOUR_HEIGHT}px)`,
+        borderLeft: '1px solid var(--t-line)',
+        backgroundImage: `repeating-linear-gradient(to bottom, var(--t-line) 0, var(--t-line) 1px, transparent 1px, transparent calc(100% / ${SPAN}))`,
       }}
     >
       {/* Faint "busy" stripes from work schedules (behind events). */}
       {busy.map((bl, i) => (
-        <div key={`busy-${i}`} className="absolute left-0 right-0 overflow-hidden" style={{ top: timeToY(bl.start), height: (clamp(bl.end) - clamp(bl.start)) * HOUR_HEIGHT, backgroundColor: `${palette.inkSoft}14` }}>
-          <div className="px-1" style={{ fontSize: '9px', color: palette.inkSoft }}>{bl.label}</div>
+        <div key={`busy-${i}`} className="absolute left-0 right-0 overflow-hidden" style={{ top: `${pct(bl.start)}%`, height: `${pct(bl.end) - pct(bl.start)}%`, backgroundColor: 'color-mix(in oklab, var(--t-text-soft) 8%, transparent)' }}>
+          <div className="px-1" style={{ fontSize: '9px', color: 'var(--t-text-soft)' }}>{bl.label}</div>
         </div>
       ))}
       {blocks.map((b) => (
         <div
           key={b.ev.id}
           onClick={() => onEditEvent(b.ev)}
-          className="absolute left-1 right-1 rounded-md px-2 py-1 overflow-hidden cursor-pointer"
-          style={{ top: timeToY(b.start) + 2, height: Math.max(18, (clamp(b.end) - clamp(b.start)) * HOUR_HEIGHT - 4), ...chipStyle(b.color) }}
+          className="absolute overflow-hidden cursor-pointer"
+          style={{
+            top: `${pct(b.start)}%`,
+            height: `${pct(b.end) - pct(b.start)}%`,
+            left: 6, right: 6, minHeight: 18,
+            borderLeft: `4px solid ${b.color}`,
+            borderRadius: '4px 10px 10px 4px',
+            background: tint(b.color),
+            padding: '5px 9px',
+            color: 'var(--t-text)',
+          }}
         >
-          <div className="text-xs font-semibold truncate" style={{ color: palette.ink }}>{b.ev.title}</div>
-          <div className="truncate" style={{ color: palette.inkSoft, fontSize: '10px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t-text-soft)' }}>
             {fmtTime(new Date(b.ev.startAt))} – {fmtTime(new Date(b.ev.endAt))}{withWho && b.who ? ` · ${b.who}` : ''}
           </div>
+          <div className="truncate" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 1 }}>{b.ev.title}</div>
         </div>
       ))}
-      {showNow && <div className="absolute left-0 right-0" style={{ top: timeToY(nowFrac), borderTop: `2px solid ${palette.amber}` }} />}
+      {showNow && (
+        <div className="absolute left-0 right-0" style={{ top: `${pct(nowFrac)}%`, height: 2, background: 'var(--t-danger)', zIndex: 3 }}>
+          <span className="absolute rounded-full" style={{ left: -4, top: -3, width: 8, height: 8, background: 'var(--t-danger)' }} />
+        </div>
+      )}
     </div>
   )
 }
 
-// Live chores + to-dos for the family this week.
+// Live chores + to-dos as two free-floating aside cards.
 function TodayPanel({ members }: { members: FamilyMember[] }) {
   const { instances, todos, toggleChore, toggleTodo, addTodo } = useChoresTodos()
   return (
-    <Card className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <ChoresPanel instances={instances} members={members} onToggle={toggleChore} title="This week's chores" />
-      <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
-    </Card>
+    <>
+      <Card>
+        <ChoresPanel instances={instances} members={members} onToggle={toggleChore} title="This week's chores" />
+      </Card>
+      <Card>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 12 }}>To-dos</div>
+        <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
+      </Card>
+    </>
   )
 }

@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { Cake } from 'lucide-react'
-import { palette } from '../lib/tokens'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey,
   MONTHS_SHORT, type ViewProps,
@@ -28,14 +27,15 @@ export default function YearView({ members, events, cursor, today, header, onNav
 
   return (
     <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
+      <div className="p-4 lg:p-6">
       {/* Year progress */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <div className="font-display text-lg font-bold">{year}</div>
-          {inThisYear && <div className="text-sm" style={{ color: palette.inkSoft }}>Day {dayOfYear} of 365 · {progress}%</div>}
+          {inThisYear && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Day {dayOfYear} of 365 · {progress}%</div>}
         </div>
-        <div className="h-1.5 rounded-full" style={{ backgroundColor: palette.line }}>
-          <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: palette.brand }} />
+        <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--t-track)' }}>
+          <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: 'var(--t-brand)' }} />
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
       <div className="mt-6">
         <div className="font-display text-lg font-bold mb-3">This year</div>
         {highlights.length === 0 ? (
-          <div className="text-sm" style={{ color: palette.inkSoft }}>Nothing notable</div>
+          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Nothing notable</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1.5">
             {highlights.map(({ e, d }) => {
@@ -57,12 +57,13 @@ export default function YearView({ members, events, cursor, today, header, onNav
                     ? <Cake size={14} style={{ color, flexShrink: 0 }} />
                     : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />}
                   <span className="flex-1 truncate">{e.title}</span>
-                  <span className="text-xs flex-shrink-0" style={{ color: palette.inkSoft }}>{MONTHS_SHORT[d.getMonth()]} {d.getDate()}</span>
+                  <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{MONTHS_SHORT[d.getMonth()]} {d.getDate()}</span>
                 </div>
               )
             })}
           </div>
         )}
+      </div>
       </div>
     </AppShell>
   )
@@ -76,9 +77,9 @@ function YearMonth({ year, month, byDay, byId, today }: {
   today: Date
 }) {
   const cells = buildMonthCells(year, month, 42)
-  const line = `1px solid ${palette.line}`
+  const line = '1px solid var(--t-line)'
   return (
-    <Card className="overflow-hidden">
+    <Card padded={false} className="overflow-hidden">
       <div className="font-display text-sm font-bold px-2 py-1.5" style={{ borderBottom: line }}>{MONTHS_SHORT[month]}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {cells.map((cell, i) => {
@@ -87,7 +88,7 @@ function YearMonth({ year, month, byDay, byId, today }: {
           const isToday = sameDay(cell.dateObj, today) && cell.inMonth
           return (
             <div key={i} className="flex flex-col items-center justify-center" style={{ minHeight: 22, opacity: cell.inMonth ? 1 : 0.25 }}>
-              <div className="font-display font-semibold inline-flex items-center justify-center" style={isToday ? { backgroundColor: palette.brand, color: '#fff', width: 16, height: 16, borderRadius: '50%', fontSize: '9px' } : { width: 16, height: 16, fontSize: '9px', color: palette.ink }}>{cell.date}</div>
+              <div className="font-display font-semibold inline-flex items-center justify-center" style={{ width: 16, height: 16, fontSize: '9px', borderRadius: '50%', ...(isToday ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text)' }) }}>{cell.date}</div>
               <span className="rounded-full flex-shrink-0 mt-0.5" style={{ width: 3, height: 3, backgroundColor: milestone ? colorForEvent(milestone, byId) : 'transparent' }} />
             </div>
           )

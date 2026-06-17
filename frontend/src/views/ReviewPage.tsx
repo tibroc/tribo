@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft, Flame } from 'lucide-react'
-import { palette } from '../lib/tokens'
 import type { Section } from '../lib/calendar'
 import { getReview, type Review } from '../lib/api'
 import AppShell from '../components/AppShell'
-import { Weather } from '../components/chrome'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
 
@@ -22,34 +20,33 @@ export default function ReviewPage({ go }: { go: (s: Section) => void }) {
   useEffect(() => { getReview(period).then(setR).catch((e) => setError(String(e))) }, [period])
 
   const header = (
-    <div className="flex items-center gap-4 px-4 py-3 lg:px-6">
-      <button className="flex items-center gap-1 text-sm font-semibold" style={{ color: palette.inkSoft }} onClick={() => go('home')}>
+    <div className="flex items-center gap-4">
+      <button className="flex items-center gap-1 text-sm font-semibold" style={{ color: 'var(--t-text-soft)' }} onClick={() => go('home')}>
         <ChevronLeft size={16} /> Home
       </button>
-      <div className="font-display text-xl lg:text-2xl font-bold" style={{ color: palette.brand }}>Review</div>
-      <div className="flex-1" />
-      <div className="flex gap-1 rounded-full p-1" style={{ backgroundColor: palette.mist }}>
+      <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 24, color: 'var(--t-text)' }}>Review</div>
+      <div className="flex gap-1 rounded-full p-1" style={{ background: 'var(--t-shell)', border: '1px solid var(--t-line)' }}>
         {PERIODS.map((p) => (
           <button key={p.key} onClick={() => setPeriod(p.key)} className="text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap"
-            style={p.key === period ? { backgroundColor: palette.brand, color: '#fff' } : { color: palette.inkSoft }}>
+            style={p.key === period ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text-soft)' }}>
             {p.label}
           </button>
         ))}
       </div>
-      <div className="hidden lg:block"><Weather /></div>
     </div>
   )
 
   return (
     <AppShell active="home" onNavigate={go} header={header}>
-      {error && <div className="rounded-xl p-3 mb-3 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+      <div style={{ padding: '22px 26px' }}>
+      {error && <div className="rounded-xl p-3 mb-3 text-sm" style={{ background: 'color-mix(in oklab, var(--t-danger) 16%, var(--t-shell))', color: 'var(--t-danger)' }}>{error}</div>}
       {!r ? (
-        <div className="text-sm" style={{ color: palette.inkSoft }}>Loading…</div>
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Loading…</div>
       ) : (
         <>
           {/* Hero stats */}
           <div className="mb-4">
-            <div className="text-sm mb-2" style={{ color: palette.inkSoft }}>{r.rangeLabel}</div>
+            <div className="text-sm mb-2" style={{ color: 'var(--t-text-soft)' }}>{r.rangeLabel}</div>
             <div className="grid grid-cols-3 gap-3">
               <StatTile label="Chores" value={`${r.chores.pct}%`} sub={`${r.chores.done}/${r.chores.total}`} />
               <StatTile label="To-dos" value={`${r.todos.pct}%`} sub={`${r.todos.done}/${r.todos.total}`} />
@@ -68,16 +65,16 @@ export default function ReviewPage({ go }: { go: (s: Section) => void }) {
                     <PersonAvatar name={p.name} color={p.color} size={36} />
                     <div className="font-display text-base font-bold">{p.name}</div>
                     {p.streak > 0 && (
-                      <div className="ml-auto flex items-center gap-1 text-xs font-semibold" style={{ color: palette.amber }}>
+                      <div className="ml-auto flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--t-accent)' }}>
                         <Flame size={14} /> {p.streak}-week streak
                       </div>
                     )}
                   </div>
-                  <div className="text-sm mb-1" style={{ color: palette.inkSoft }}>Chores: {p.choresDone}/{p.choresTotal}</div>
-                  <div className="h-1.5 rounded-full mb-3" style={{ backgroundColor: palette.line }}>
+                  <div className="text-sm mb-1" style={{ color: 'var(--t-text-soft)' }}>Chores: {p.choresDone}/{p.choresTotal}</div>
+                  <div className="h-1.5 rounded-full mb-3" style={{ backgroundColor: 'var(--t-track)' }}>
                     <div className="h-1.5 rounded-full" style={{ width: `${chorePct}%`, backgroundColor: p.color }} />
                   </div>
-                  {p.todosTotal > 0 && <div className="text-sm" style={{ color: palette.inkSoft }}>To-dos: {p.todosDone}/{p.todosTotal} done</div>}
+                  {p.todosTotal > 0 && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>To-dos: {p.todosDone}/{p.todosTotal} done</div>}
                 </Card>
               )
             })}
@@ -91,16 +88,16 @@ export default function ReviewPage({ go }: { go: (s: Section) => void }) {
                 <div key={c.choreId} className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
                   <span className="text-sm flex-1 truncate">{c.title}</span>
-                  <span className="hidden lg:block text-xs flex-shrink-0 w-20 truncate" style={{ color: palette.inkSoft }}>{c.who}</span>
+                  <span className="hidden lg:block text-xs flex-shrink-0 w-20 truncate" style={{ color: 'var(--t-text-soft)' }}>{c.who}</span>
                   <div className="flex flex-shrink-0 gap-[3px] lg:gap-1">
                     {c.history.map((done, j) => (
-                      <span key={j} className="rounded-sm flex-shrink-0 w-2 h-2 lg:w-2.5 lg:h-2.5" style={{ backgroundColor: done ? c.color : palette.line }} />
+                      <span key={j} className="rounded-sm flex-shrink-0 w-2 h-2 lg:w-2.5 lg:h-2.5" style={{ backgroundColor: done ? c.color : 'var(--t-track)' }} />
                     ))}
                   </div>
                 </div>
               ))}
             </div>
-            <div className="text-xs mt-3" style={{ color: palette.inkSoft }}>Last 8 weeks</div>
+            <div className="text-xs mt-3" style={{ color: 'var(--t-text-soft)' }}>Last 8 weeks</div>
           </Card>
 
           {/* Year to date */}
@@ -114,6 +111,7 @@ export default function ReviewPage({ go }: { go: (s: Section) => void }) {
           </Card>
         </>
       )}
+      </div>
     </AppShell>
   )
 }
@@ -121,9 +119,9 @@ export default function ReviewPage({ go }: { go: (s: Section) => void }) {
 function StatTile({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <Card className="p-4 text-center">
-      <div className="font-display text-2xl font-bold" style={{ color: palette.brand }}>{value}</div>
-      <div className="text-xs font-semibold uppercase mt-1" style={{ color: palette.inkSoft }}>{label}</div>
-      <div className="text-xs mt-0.5" style={{ color: palette.inkSoft }}>{sub}</div>
+      <div className="font-display text-2xl font-bold" style={{ color: 'var(--t-brand)' }}>{value}</div>
+      <div className="text-xs font-semibold uppercase mt-1" style={{ color: 'var(--t-text-soft)' }}>{label}</div>
+      <div className="text-xs mt-0.5" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
     </Card>
   )
 }
@@ -132,7 +130,7 @@ function YtdStat({ value, label }: { value: number; label: string }) {
   return (
     <div>
       <div className="font-display text-xl font-bold">{value}</div>
-      <div className="text-xs" style={{ color: palette.inkSoft }}>{label}</div>
+      <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{label}</div>
     </div>
   )
 }

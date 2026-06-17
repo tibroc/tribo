@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { X, Calendar, Clock, MapPin, AlignLeft, Star, ShieldCheck, AlertTriangle, Check, Trash2, Layers } from 'lucide-react'
-import { palette } from '../lib/tokens'
 import {
   createEvent, updateEvent, deleteEvent, getEventGuardians, claimEvent,
   type TriboEvent, type NewEvent, type FamilyMember, type CalendarSource,
 } from '../lib/api'
 import PersonAvatar from './PersonAvatar'
+import Button from './Button'
 
-const danger = '#C0506B'
 const pad = (n: number) => String(n).padStart(2, '0')
 
 // Build an RFC3339 timestamp with the browser's local offset, so the server's
@@ -23,8 +22,8 @@ function localRFC3339(d: Date): string {
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button onClick={() => onChange(!checked)} className="rounded-full flex-shrink-0" aria-label="toggle"
-      style={{ width: 40, height: 24, backgroundColor: checked ? palette.brand : palette.line, position: 'relative' }}>
-      <span className="absolute rounded-full" style={{ width: 18, height: 18, top: 3, left: checked ? 19 : 3, backgroundColor: '#fff', transition: 'left 0.15s ease' }} />
+      style={{ width: 42, height: 24, background: checked ? 'var(--t-brand)' : 'var(--t-line)', position: 'relative' }}>
+      <span className="absolute rounded-full" style={{ width: 18, height: 18, top: 3, left: checked ? 21 : 3, backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.25)', transition: 'left 0.18s ease' }} />
     </button>
   )
 }
@@ -110,43 +109,44 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: palette.ink + '66' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[560px] lg:max-h-[85vh] lg:rounded-2xl lg:shadow-xl overflow-hidden" style={{ backgroundColor: palette.surface }}>
+    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[560px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+        style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${palette.line}` }}>
-          <button aria-label="Close" onClick={onClose}><X size={20} style={{ color: palette.inkSoft }} /></button>
-          <div className="font-display text-lg font-bold">{editing ? 'Edit event' : 'New event'}</div>
-          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: palette.brand }} onClick={save} disabled={busy}>Save</button>
+        <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--t-line)' }}>
+          <button aria-label="Close" onClick={onClose}><X size={20} style={{ color: 'var(--t-text-soft)' }} /></button>
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{editing ? 'Edit event' : 'New event'}</div>
+          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy}>Save</button>
         </div>
 
         <div className="p-5 overflow-y-auto">
           {error && <div className="rounded-xl p-2 mb-3 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
 
           <input
-            className="w-full font-display text-2xl font-bold bg-transparent outline-none mb-3"
-            style={{ color: palette.ink }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" autoFocus
+            className="w-full font-display text-2xl bg-transparent outline-none mb-3"
+            style={{ color: 'var(--t-text)', fontWeight: 500 }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" autoFocus
           />
 
           {/* Date & time */}
-          <div className="rounded-2xl px-3" style={{ border: `1px solid ${palette.line}` }}>
-            <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: `1px solid ${palette.line}` }}>
-              <Calendar size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+          <div className="px-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
+            <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
+              <Calendar size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-none text-sm font-medium" />
             </div>
             <div className="flex items-center gap-3 py-2.5">
-              <Clock size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+              <Clock size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <div className="flex-1 flex items-center justify-between">
                 {allDay ? (
-                  <span className="text-sm" style={{ color: palette.inkSoft }}>All day</span>
+                  <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>All day</span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-none" style={{ backgroundColor: palette.mist }} />
-                    <span style={{ color: palette.inkSoft }}>–</span>
-                    <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-none" style={{ backgroundColor: palette.mist }} />
+                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-none" style={{ background: 'var(--t-bg)' }} />
+                    <span style={{ color: 'var(--t-text-soft)' }}>–</span>
+                    <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-none" style={{ background: 'var(--t-bg)' }} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: palette.inkSoft }}>All day</span>
+                  <span className="text-xs" style={{ color: 'var(--t-text-soft)' }}>All day</span>
                   <Switch checked={allDay} onChange={setAllDay} />
                 </div>
               </div>
@@ -155,17 +155,16 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
 
           {/* Attendees */}
           <div className="mt-3">
-            <div className="text-xs font-semibold uppercase mb-2" style={{ color: palette.inkSoft }}>Who's involved</div>
+            <div className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--t-text-soft)', letterSpacing: '.06em' }}>Who's coming?</div>
             <div className="flex gap-3 flex-wrap">
-              {members.map((p) => {
+              {members.map((p, i) => {
                 const sel = attendees.includes(p.id)
                 return (
                   <button key={p.id} onClick={() => toggleAttendee(p.id)} className="flex flex-col items-center gap-1">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={sel ? { backgroundColor: p.color, color: '#fff' } : { color: palette.inkSoft, border: `2px solid ${palette.line}` }}>
-                      {p.name[0]}
+                    <div style={{ opacity: sel ? 1 : 0.3, transition: 'opacity .15s' }}>
+                      <PersonAvatar name={p.name} color={p.color} index={i} size={44} />
                     </div>
-                    <span className="text-xs" style={{ color: sel ? palette.ink : palette.inkSoft }}>{p.name}</span>
+                    <span className="text-xs" style={{ color: sel ? 'var(--t-text)' : 'var(--t-text-soft)' }}>{p.name}</span>
                   </button>
                 )
               })}
@@ -184,39 +183,41 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           </div>
 
           {/* Details */}
-          <div className="rounded-2xl px-3 mt-3" style={{ border: `1px solid ${palette.line}` }}>
-            <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: `1px solid ${palette.line}` }}>
-              <MapPin size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+          <div className="px-3 mt-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
+            <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
+              <MapPin size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <input className="w-full bg-transparent outline-none text-sm" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Add location" />
             </div>
             <div className="flex items-center gap-3 py-2.5">
-              <AlignLeft size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+              <AlignLeft size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <textarea className="w-full bg-transparent outline-none text-sm resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Notes" />
             </div>
           </div>
 
           {/* Important + calendar */}
-          <div className="rounded-2xl px-3 mt-3" style={{ border: `1px solid ${palette.line}` }}>
-            <div className="flex items-center justify-between py-2.5" style={{ borderBottom: `1px solid ${palette.line}` }}>
+          <div className="px-3 mt-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
+            <div className="flex items-center justify-between py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <div className="flex items-center gap-3">
-                <Star size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+                <Star size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
                 <div>
                   <div className="text-sm font-medium">Important</div>
-                  <div className="text-xs" style={{ color: palette.inkSoft }}>Always show, even in Quarter and Year views</div>
+                  <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Always show, even in Quarter and Year views</div>
                 </div>
               </div>
               <Switch checked={important} onChange={setImportant} />
             </div>
             <div className="flex items-center gap-3 py-2.5">
-              <Layers size={16} style={{ color: palette.inkSoft, flexShrink: 0 }} />
+              <Layers size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <span className="text-sm">{attendees.length > 0 ? 'Personal' : 'Family'} calendar</span>
             </div>
           </div>
 
           {editing && (
-            <button onClick={remove} disabled={busy} className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 mt-4" style={{ color: danger }}>
-              <Trash2 size={16} /> Delete event
-            </button>
+            <div className="mt-4">
+              <Button variant="danger" onClick={remove} disabled={busy} style={{ width: '100%' }}>
+                <Trash2 size={16} /> Delete event
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -252,11 +253,13 @@ function GuardianCard({ enabled, onToggle, event, members, editing, onClaimed }:
     claimEvent(event.id, memberId, force).then(onClaimed).catch(() => {})
   }
 
+  const indexOf = (id: string) => members.findIndex((m) => m.id === id)
+
   return (
-    <div className="rounded-2xl p-3 mt-3" style={{ border: `1px solid ${palette.line}` }}>
+    <div className="p-3 mt-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold">
-          <ShieldCheck size={16} style={{ color: palette.inkSoft }} /> Guardian needed
+          <ShieldCheck size={16} style={{ color: 'var(--t-text-soft)' }} /> Requires guardian
         </div>
         <Switch checked={enabled} onChange={onToggle} />
       </div>
@@ -264,32 +267,33 @@ function GuardianCard({ enabled, onToggle, event, members, editing, onClaimed }:
       {enabled && (
         <div className="mt-3">
           {!editing ? (
-            <div className="text-sm rounded-xl p-2.5" style={{ backgroundColor: palette.mist, color: palette.inkSoft }}>
+            <div className="text-sm rounded-xl p-2.5" style={{ background: 'var(--t-bg)', color: 'var(--t-text-soft)' }}>
               A guardian will be assigned automatically when you save.
             </div>
           ) : assigned ? (
-            <div className="flex items-center gap-2.5 rounded-xl p-2.5" style={{ backgroundColor: palette.brandSoft }}>
-              <PersonAvatar name={assigned.name} color={assigned.color} size={32} />
-              <div className="text-sm flex-1"><span className="font-semibold">{assigned.name}</span> is assigned</div>
-              <Check size={16} style={{ color: palette.brand, flexShrink: 0 }} />
+            <div className="flex items-center gap-2.5 rounded-xl p-2.5"
+              style={{ background: 'color-mix(in srgb, var(--t-brand) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--t-brand) 40%, transparent)' }}>
+              <PersonAvatar name={assigned.name} color={assigned.color} index={indexOf(assigned.id)} size={32} />
+              <div className="text-sm flex-1" style={{ color: 'var(--t-brand)' }}><span className="font-semibold">{assigned.name}</span> assigned</div>
+              <Check size={16} style={{ color: 'var(--t-brand)', flexShrink: 0 }} />
             </div>
           ) : conflict ? (
-            <div className="rounded-xl p-2.5" style={{ backgroundColor: palette.amber + '1A', border: `1px solid ${palette.amber}66` }}>
-              <div className="flex items-center gap-2 text-sm font-semibold mb-2" style={{ color: '#9A6B1F' }}>
-                <AlertTriangle size={14} /> No guardian is free
+            <div className="rounded-xl p-2.5" style={{ background: 'color-mix(in srgb, var(--t-accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--t-accent) 40%, transparent)' }}>
+              <div className="flex items-center gap-2 text-sm font-semibold mb-2" style={{ color: 'var(--t-accent)' }}>
+                <AlertTriangle size={14} /> No guardian available
               </div>
               <div className="flex gap-2 flex-wrap">
                 {guardians.map((g) => (
-                  <ClaimButton key={g.id} member={g} onClick={() => claim(g.id, true)} label={`Assign ${g.name} anyway`} />
+                  <ClaimButton key={g.id} member={g} index={indexOf(g.id)} onClick={() => claim(g.id, true)} label={`Claim · ${g.name}`} />
                 ))}
               </div>
             </div>
           ) : (
-            <div className="rounded-xl p-2.5" style={{ backgroundColor: palette.mist }}>
+            <div className="rounded-xl p-2.5" style={{ background: 'var(--t-bg)' }}>
               <div className="text-sm mb-2">More than one guardian is free — whoever opens this first can take it.</div>
               <div className="flex gap-2 flex-wrap">
                 {guardians.filter((g) => freeIDs.includes(g.id)).map((g) => (
-                  <ClaimButton key={g.id} member={g} onClick={() => claim(g.id, false)} label={`Assign ${g.name}`} />
+                  <ClaimButton key={g.id} member={g} index={indexOf(g.id)} onClick={() => claim(g.id, false)} label={`Claim · ${g.name}`} />
                 ))}
               </div>
             </div>
@@ -300,10 +304,10 @@ function GuardianCard({ enabled, onToggle, event, members, editing, onClaimed }:
   )
 }
 
-function ClaimButton({ member, label, onClick }: { member: FamilyMember; label: string; onClick: () => void }) {
+function ClaimButton({ member, index, label, onClick }: { member: FamilyMember; index: number; label: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 text-xs font-semibold" style={{ backgroundColor: palette.surface, border: `1px solid ${palette.line}` }}>
-      <PersonAvatar name={member.name} color={member.color} size={20} />
+    <button onClick={onClick} className="flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 text-xs font-semibold" style={{ background: 'var(--t-surface)', border: '1px solid var(--t-line)' }}>
+      <PersonAvatar name={member.name} color={member.color} index={index} size={20} />
       {label}
     </button>
   )
