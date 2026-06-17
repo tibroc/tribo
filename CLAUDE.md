@@ -26,6 +26,23 @@ Self-hosted, family-centered organizer. Go backend + SQLite, React frontend, Cad
 - Full stack: `docker-compose up` → http://localhost:8080
 - Tests: `go test ./...`
 
+## Browser testing
+
+The chrome-devtools-mcp / playwright MCP servers launch the "chrome" channel,
+which resolves to `/opt/google/chrome/chrome` — not installed by default on this
+Fedora box. A working Chromium lives at `/usr/bin/chromium-browser`, so symlink
+it to the expected path (one-time, needs sudo):
+
+```bash
+sudo mkdir -p /opt/google/chrome
+sudo ln -sf /usr/bin/chromium-browser /opt/google/chrome/chrome
+```
+
+After that, the `verify`/`run` skills and the browser MCP tools can drive the
+live app. Smoke test: run the backend + `npm run dev`, then the seeded instance
+shows a "1" notification-bell badge (Soccer needs a guardian) and a Lisbon
+weather pill.
+
 > Note: the app was renamed **roost → tribo**. Go module is `tribo`, binary is
 > `cmd/tribo`, DB defaults to `tribo.db`. The `docs/roost-*.md` design files keep
 > their original filenames.
