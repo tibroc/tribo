@@ -53,7 +53,7 @@ function periodFor(view: ViewName, cursor: Date): { start: Date; end: Date; labe
   }
 }
 
-export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) => void }) {
+export default function CalendarPage({ onNavigate, openNew }: { onNavigate: (k: NavKey) => void; openNew?: boolean }) {
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState<ViewName>('Week')
   const [cursor, setCursor] = useState<Date>(() => new Date())
@@ -64,7 +64,8 @@ export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) =
   const [sources, setSources] = useState<CalendarSource[]>([])
   const [workSchedules, setWorkSchedules] = useState<WorkSchedule[]>([])
   // Event form modal: undefined = closed; null = new event; event = edit.
-  const [formEvent, setFormEvent] = useState<TriboEvent | null | undefined>(undefined)
+  // Opens straight to a new event when arriving via Home's quick-add chooser.
+  const [formEvent, setFormEvent] = useState<TriboEvent | null | undefined>(openNew ? null : undefined)
 
   const period = useMemo(() => periodFor(view, cursor), [view, cursor])
 

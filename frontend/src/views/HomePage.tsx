@@ -1,19 +1,27 @@
 import { useEffect, useState } from 'react'
 import { Sparkles, Star, Cake, CheckSquare } from 'lucide-react'
-import type { Section } from '../lib/calendar'
+import type { Section, Intent } from '../lib/calendar'
 import { getBriefing, type Briefing } from '../lib/api'
 import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
 
-export default function HomePage({ go }: { go: (s: Section) => void }) {
+export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => void }) {
   const [b, setB] = useState<Briefing | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => { getBriefing().then(setB).catch((e) => setError(String(e))) }, [])
 
+  // Home is a cross-section briefing, so its FAB offers a quick-add chooser that
+  // routes to the relevant screen and opens that screen's add form on arrival.
+  const fabMenu = [
+    { label: 'New event', icon: 'calendar', onClick: () => go('calendar', 'new-event') },
+    { label: 'New chore', icon: 'chores', onClick: () => go('chores', 'new-chore') },
+    { label: 'New to-do', icon: 'todos', onClick: () => go('todos', 'new-todo') },
+  ]
+
   return (
-    <AppShell active="home" onNavigate={go} header={<SimpleHeader />}>
+    <AppShell active="home" onNavigate={go} header={<SimpleHeader />} fabMenu={fabMenu}>
       <div style={{ padding: '22px 26px' }}>
       {error && <div className="rounded-xl p-3 mb-3 text-sm" style={{ background: 'color-mix(in oklab, var(--t-danger) 16%, var(--t-shell))', color: 'var(--t-danger)' }}>{error}</div>}
       {!b ? (

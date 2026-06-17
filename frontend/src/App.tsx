@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Section } from './lib/calendar'
+import type { Section, Intent } from './lib/calendar'
 import { palette } from './lib/tokens'
 import { SessionProvider, useSession } from './lib/session'
 import { LoginScreen, MapProfileScreen } from './views/AuthScreens'
@@ -34,18 +34,21 @@ function Gate() {
 }
 
 // Top-level section router. `go` accepts any Section; the nav rail/bottom bar
-// only surface the five NavKeys, while Review is reached from Home.
+// only surface the five NavKeys, while Review is reached from Home. An optional
+// `intent` lets a navigation also open the target screen's add form on arrival
+// (used by Home's quick-add chooser).
 function Router() {
   const [section, setSection] = useState<Section>('home')
-  const go = (s: Section) => setSection(s)
+  const [intent, setIntent] = useState<Intent | undefined>(undefined)
+  const go = (s: Section, i?: Intent) => { setSection(s); setIntent(i) }
 
   switch (section) {
     case 'calendar':
-      return <CalendarPage onNavigate={go} />
+      return <CalendarPage onNavigate={go} openNew={intent === 'new-event'} />
     case 'chores':
-      return <ChoresPage go={go} />
+      return <ChoresPage go={go} openNew={intent === 'new-chore'} />
     case 'todos':
-      return <TodosPage go={go} />
+      return <TodosPage go={go} openNew={intent === 'new-todo'} />
     case 'family':
       return <FamilyPage go={go} />
     case 'review':

@@ -185,13 +185,14 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
   )
 }
 
-export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush }: {
+export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush, inputRef }: {
   todos: Todo[]
   members?: FamilyMember[]
   onToggle: (t: Todo) => void
   onAdd?: (title: string) => void
   title?: string
   flush?: boolean
+  inputRef?: React.Ref<HTMLInputElement>
 }) {
   const [draft, setDraft] = useState('')
   const indexOf = (id?: string) => {
@@ -251,6 +252,7 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush 
           onSubmit={(e) => { e.preventDefault(); if (draft.trim()) { onAdd(draft.trim()); setDraft('') } }}
         >
           <input
+            ref={inputRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Add a to-do…"

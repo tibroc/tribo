@@ -67,7 +67,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
     <AppShell active="family" onNavigate={go} showFab={false} header={<SimpleHeader title="Family" />}>
       <div style={{ padding: '22px 26px' }} className="space-y-4">
         {/* Banner */}
-        <FamilyBanner members={members} guardians={guardians} />
+        <FamilyBanner members={members} guardians={guardians} sources={sources} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Family members */}
@@ -233,8 +233,8 @@ function Section({ title, icon: Icon, action, children, flush }: { title: string
 }
 
 // Family banner: overlapping avatar stack + title + member/guardian summary + Invite.
-function FamilyBanner({ members, guardians }: { members: FamilyMember[]; guardians: FamilyMember[] }) {
-  const sharedSources = 1
+function FamilyBanner({ members, guardians, sources }: { members: FamilyMember[]; guardians: FamilyMember[]; sources: CalendarSource[] }) {
+  const sharedSources = sources.filter((s) => s.isShared).length
   return (
     <Card>
       <div className="flex items-center gap-4">
@@ -251,7 +251,7 @@ function FamilyBanner({ members, guardians }: { members: FamilyMember[]; guardia
         <div className="flex-1 min-w-0">
           <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 28, lineHeight: 1.1, color: 'var(--t-text)' }}>Your family</div>
           <div className="text-sm" style={{ color: 'var(--t-text-soft)', marginTop: 2 }}>
-            {members.length} member{members.length === 1 ? '' : 's'} · {guardians.length} guardian{guardians.length === 1 ? '' : 's'} · {sharedSources} shared calendar
+            {members.length} member{members.length === 1 ? '' : 's'} · {guardians.length} guardian{guardians.length === 1 ? '' : 's'} · {sharedSources} shared calendar{sharedSources === 1 ? '' : 's'}
           </div>
         </div>
         <Button variant="outline" size="sm">Invite</Button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Section } from '../lib/calendar'
 import { getFamilyMembers, type FamilyMember } from '../lib/api'
 import { useChoresTodos } from '../lib/hooks'
@@ -7,16 +7,20 @@ import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
 import { TodosPanel } from '../components/panels'
 
-export default function TodosPage({ go }: { go: (s: Section) => void }) {
+export default function TodosPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const { todos, toggleTodo, addTodo } = useChoresTodos()
+  const addRef = useRef<HTMLInputElement>(null)
+  const focusAdd = () => addRef.current?.focus()
   useEffect(() => { getFamilyMembers().then(setMembers).catch(() => {}) }, [])
+  // Arriving via Home's quick-add chooser drops the cursor in the add field.
+  useEffect(() => { if (openNew) addRef.current?.focus() }, [openNew])
 
   const openItems = todos.filter((t) => t.status !== 'done')
   const doneItems = todos.filter((t) => t.status === 'done')
 
   return (
-    <AppShell active="todos" onNavigate={go} header={<SimpleHeader title="To-dos" />}>
+    <AppShell active="todos" onNavigate={go} header={<SimpleHeader title="To-dos" />} onFabClick={focusAdd}>
       <div style={{ padding: '22px 26px' }}>
         {/* Hero */}
         <Card padded={false} className="mb-4" style={{ padding: '18px 26px' }}>
@@ -37,7 +41,7 @@ export default function TodosPage({ go }: { go: (s: Section) => void }) {
             action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{openItems.length} open</span>}
             padded={false}
           >
-            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} flush />
+            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} inputRef={addRef} flush />
           </Card>
 
           <Card

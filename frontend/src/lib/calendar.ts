@@ -11,6 +11,10 @@ export const VIEWS: ViewName[] = ['Day', 'Week', 'Month', 'Quarter', 'Year']
 export type Section = 'home' | 'calendar' | 'chores' | 'todos' | 'family' | 'review'
 export type NavKey = 'home' | 'calendar' | 'chores' | 'todos' | 'family'
 
+// Optional add-intent carried alongside a navigation: opens the target
+// screen's add form on arrival (used by Home's quick-add chooser).
+export type Intent = 'new-event' | 'new-chore' | 'new-todo'
+
 export const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 export const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']

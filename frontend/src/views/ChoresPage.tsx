@@ -9,6 +9,7 @@ import Button from '../components/Button'
 import Icon from '../components/Icon'
 import PersonAvatar from '../components/PersonAvatar'
 import { ChoresPanel, RecurrencePill } from '../components/panels'
+import { ChoreForm } from '../components/SettingsForms'
 
 // Hero stats: done/total this week, a per-chore progress bar colored by owner,
 // and the household's best week-streak.
@@ -101,27 +102,30 @@ function RotationCard({ chores, instances, members }: { chores: Chore[]; instanc
   )
 }
 
-export default function ChoresPage({ go }: { go: (s: Section) => void }) {
+export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [chores, setChores] = useState<Chore[]>([])
   const [review, setReview] = useState<Review | null>(null)
-  const { instances, toggleChore } = useChoresTodos()
+  const { instances, toggleChore, reload } = useChoresTodos()
+  // Add-chore modal: undefined = closed; null = add. (Editing happens in Family.)
+  const [choreModal, setChoreModal] = useState<null | undefined>(openNew ? null : undefined)
+  const reloadChores = () => getChores().then(setChores).catch(() => {})
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch(() => {})
-    getChores().then(setChores).catch(() => {})
+    reloadChores()
     getReview('week').then(setReview).catch(() => {})
   }, [])
 
   const streak = review ? Math.max(0, ...review.perPerson.map((p) => p.streak)) : 0
 
   return (
-    <AppShell active="chores" onNavigate={go} header={<SimpleHeader title="Chores" />}>
+    <AppShell active="chores" onNavigate={go} header={<SimpleHeader title="Chores" />} onFabClick={() => setChoreModal(null)}>
       <div style={{ padding: '22px 26px' }}>
         <ChoresHero instances={instances} members={members} streak={streak} />
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 items-start">
           <Card
             title="Chores"
-            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }}><Icon name="plus" size={14} strokeWidth={2.6} /> Add chore</Button>}
+            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Icon name="plus" size={14} strokeWidth={2.6} /> Add chore</Button>}
             padded={false}
           >
             <ChoresPanel instances={instances} members={members} chores={chores} onToggle={toggleChore} flush grouped />
@@ -132,6 +136,11 @@ export default function ChoresPage({ go }: { go: (s: Section) => void }) {
           </div>
         </div>
       </div>
+      {choreModal !== undefined && (
+        <ChoreForm members={members}
+          onClose={() => setChoreModal(undefined)}
+          onSaved={() => { setChoreModal(undefined); reloadChores(); reload() }} />
+      )}
     </AppShell>
   )
 }
