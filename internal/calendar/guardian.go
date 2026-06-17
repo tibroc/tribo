@@ -17,6 +17,52 @@ import (
 //                          leave unassigned (first-claim), conflict none.
 //   4. Zero free         → unassigned, conflict needs_guardian.
 
+// GuardianAlert is an upcoming guardian-needed event still lacking an assigned
+// guardian — either because none is free (Status "needs_guardian") or because
+// several are free and nobody has claimed it yet (Status "unclaimed").
+type GuardianAlert struct {
+	EventID string
+	Title   string
+	StartAt string
+	AllDay  bool
+	Status  string // "needs_guardian" | "unclaimed"
+}
+
+// GuardianAlerts lists guardian-needed events overlapping [from, to) that have
+// no assigned guardian, ordered by start time. Drives the notification bell.
+func (s *Service) GuardianAlerts(from, to time.Time) ([]GuardianAlert, error) {
+	rows, err := s.db.Query(
+		`SELECT id, title, start_at, all_day, conflict_status
+		   FROM event
+		  WHERE requires_guardian = 1
+		    AND assigned_guardian_id IS NULL
+		    AND start_at < ? AND end_at > ?
+		  ORDER BY start_at`,
+		to.Format(time.RFC3339), from.Format(time.RFC3339))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []GuardianAlert{}
+	for rows.Next() {
+		var a GuardianAlert
+		var allDay int
+		var conflict string
+		if err := rows.Scan(&a.EventID, &a.Title, &a.StartAt, &allDay, &conflict); err != nil {
+			return nil, err
+		}
+		a.AllDay = allDay != 0
+		if conflict == "needs_guardian" {
+			a.Status = "needs_guardian"
+		} else {
+			a.Status = "unclaimed"
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
 // FreeGuardians returns the ids of guardians with no conflicting commitment
 // during the event's window — the candidates who can claim an unclaimed event.
 func (s *Service) FreeGuardians(eventID string) ([]string, error) {

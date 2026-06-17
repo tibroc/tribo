@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Section, Intent } from './lib/calendar'
+import type { Section, Intent, EventFocus } from './lib/calendar'
 import { palette } from './lib/tokens'
 import { SessionProvider, useSession } from './lib/session'
 import { LoginScreen, MapProfileScreen } from './views/AuthScreens'
@@ -40,11 +40,12 @@ function Gate() {
 function Router() {
   const [section, setSection] = useState<Section>('home')
   const [intent, setIntent] = useState<Intent | undefined>(undefined)
-  const go = (s: Section, i?: Intent) => { setSection(s); setIntent(i) }
+  const [focus, setFocus] = useState<EventFocus | undefined>(undefined)
+  const go = (s: Section, i?: Intent, f?: EventFocus) => { setSection(s); setIntent(i); setFocus(f) }
 
   switch (section) {
     case 'calendar':
-      return <CalendarPage onNavigate={go} openNew={intent === 'new-event'} />
+      return <CalendarPage onNavigate={go} openNew={intent === 'new-event'} focus={intent === 'open-event' ? focus : undefined} />
     case 'chores':
       return <ChoresPage go={go} openNew={intent === 'new-chore'} />
     case 'todos':

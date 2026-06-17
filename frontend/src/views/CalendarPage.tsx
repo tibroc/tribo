@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   addDays, addMonths, mondayOf, startOfDay, startOfMonth, weekRangeLabel,
-  FULL_WEEKDAY, MONTHS_FULL, MONTHS_SHORT, type ViewName, type HeaderControls, type ViewProps, type NavKey,
+  FULL_WEEKDAY, MONTHS_FULL, MONTHS_SHORT, type ViewName, type HeaderControls, type ViewProps, type NavKey, type EventFocus,
 } from '../lib/calendar'
 import { getCalendarSources, getEvents, getFamilyMembers, getWorkSchedules, type CalendarSource, type FamilyMember, type TriboEvent, type WorkSchedule } from '../lib/api'
 import DayView from './DayView'
@@ -10,6 +10,7 @@ import MonthView from './MonthView'
 import QuarterView from './QuarterView'
 import YearView from './YearView'
 import EventForm from '../components/EventForm'
+import { NOTIFICATIONS_CHANGED_EVENT } from '../components/NotificationBell'
 
 const VIEW_COMPONENTS: Record<ViewName, (p: ViewProps) => JSX.Element> = {
   Day: DayView,
@@ -53,10 +54,12 @@ function periodFor(view: ViewName, cursor: Date): { start: Date; end: Date; labe
   }
 }
 
-export default function CalendarPage({ onNavigate, openNew }: { onNavigate: (k: NavKey) => void; openNew?: boolean }) {
+export default function CalendarPage({ onNavigate, openNew, focus }: { onNavigate: (k: NavKey) => void; openNew?: boolean; focus?: EventFocus }) {
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState<ViewName>('Week')
-  const [cursor, setCursor] = useState<Date>(() => new Date())
+  // Arriving from a notification deep-link jumps to that event's week.
+  const [cursor, setCursor] = useState<Date>(() => (focus ? new Date(focus.date) : new Date()))
+  const [focusedId, setFocusedId] = useState<string | undefined>(focus?.eventId)
 
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [events, setEvents] = useState<TriboEvent[]>([])
@@ -80,6 +83,25 @@ export default function CalendarPage({ onNavigate, openNew }: { onNavigate: (k: 
   }, [period.start, period.end])
 
   useEffect(reloadEvents, [reloadEvents])
+
+  // A notification deep-link can arrive while already on the calendar (no
+  // remount), so react to focus changes by jumping to the event's week.
+  useEffect(() => {
+    if (focus?.eventId) {
+      setCursor(new Date(focus.date))
+      setFocusedId(focus.eventId)
+    }
+  }, [focus])
+
+  // Once the focused event's week has loaded, open its form (deep-link target).
+  useEffect(() => {
+    if (!focusedId) return
+    const ev = events.find((e) => e.id === focusedId)
+    if (ev) {
+      setFormEvent(ev)
+      setFocusedId(undefined)
+    }
+  }, [events, focusedId])
 
   const header: HeaderControls = {
     view,
@@ -119,7 +141,7 @@ export default function CalendarPage({ onNavigate, openNew }: { onNavigate: (k: 
           sources={sources}
           defaultDate={defaultDate}
           onClose={() => setFormEvent(undefined)}
-          onSaved={() => { setFormEvent(undefined); reloadEvents() }}
+          onSaved={() => { setFormEvent(undefined); reloadEvents(); window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT)) }}
         />
       )}
     </>

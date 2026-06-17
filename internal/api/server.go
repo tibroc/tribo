@@ -81,6 +81,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)
+	mux.HandleFunc("GET /api/notifications", s.listNotifications)
 
 	mux.HandleFunc("GET /api/weather", s.getWeather)
 	mux.HandleFunc("GET /api/weather/settings", s.getWeatherSettings)

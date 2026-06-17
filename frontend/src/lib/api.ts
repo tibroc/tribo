@@ -134,6 +134,22 @@ export function geocodeLocation(q: string): Promise<GeoResult[]> {
   return fetch(`/api/weather/geocode?${new URLSearchParams({ q })}`).then((r) => json<GeoResult[]>(r))
 }
 
+// ── Notifications (derived action-center items) ──
+export interface Notification {
+  id: string
+  type: 'needs_guardian' | 'unclaimed'
+  severity: 'warning' | 'info'
+  title: string
+  message: string
+  eventId: string
+  startAt: string
+  section: string
+}
+
+export function getNotifications(): Promise<Notification[]> {
+  return fetch('/api/notifications').then((r) => json<Notification[]>(r))
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))

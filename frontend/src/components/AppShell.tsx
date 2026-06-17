@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import type { NavKey } from '../lib/calendar'
+import type { NavKey, Intent, EventFocus } from '../lib/calendar'
 import { useTheme } from '../lib/theme'
 import Icon from './Icon'
 import { Wordmark, Weather } from './chrome'
+import NotificationBell from './NotificationBell'
 import ProfileSwitcher from './ProfileSwitcher'
 
 const NAV: { key: NavKey; icon: string; label: string }[] = [
@@ -73,7 +74,7 @@ export type FabMenuItem = { label: string; icon: string; onClick: () => void }
 
 export default function AppShell({ active, onNavigate, header, aside, showFab = true, onFabClick, fabMenu, children }: {
   active: NavKey
-  onNavigate: (k: NavKey) => void
+  onNavigate: (k: NavKey, intent?: Intent, focus?: EventFocus) => void
   header: ReactNode
   aside?: ReactNode
   showFab?: boolean
@@ -96,13 +97,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
   )
 
   const bellBtn = (
-    <button
-      className="hidden sm:flex items-center justify-center rounded-full"
-      style={{ width: 38, height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
-      aria-label="Notifications"
-    >
-      <Icon name="bell" size={17} />
-    </button>
+    <NotificationBell onOpenEvent={(eventId, date) => onNavigate('calendar', 'open-event', { eventId, date })} />
   )
 
   return (

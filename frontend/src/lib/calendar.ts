@@ -13,7 +13,12 @@ export type NavKey = 'home' | 'calendar' | 'chores' | 'todos' | 'family'
 
 // Optional add-intent carried alongside a navigation: opens the target
 // screen's add form on arrival (used by Home's quick-add chooser).
-export type Intent = 'new-event' | 'new-chore' | 'new-todo'
+export type Intent = 'new-event' | 'new-chore' | 'new-todo' | 'open-event'
+
+// A specific event to focus + open on arrival at the Calendar (used by the
+// notification bell's deep-links). `date` is the event's start (RFC3339) so the
+// calendar can jump to the right week before opening the event form.
+export type EventFocus = { eventId: string; date: string }
 
 export const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 export const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
