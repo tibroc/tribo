@@ -9,17 +9,20 @@ import (
 	"tribo/internal/family"
 )
 
+// Date/label fields are emitted as raw data (RFC3339 timestamps, Mon=0 weekday
+// indices) so the frontend can format them per the active locale.
 type agendaItem struct {
-	Time   string `json:"time"`
-	Title  string `json:"title"`
-	Color  string `json:"color"`
-	Person string `json:"person"`
+	StartAt string `json:"startAt"` // RFC3339; frontend formats the clock
+	Title   string `json:"title"`
+	Color   string `json:"color"`
+	Person  string `json:"person"` // "" = family-wide
 }
 
 type weekHighlight struct {
-	Label   string `json:"label"`
-	Days    string `json:"days"`
-	Special bool   `json:"special"`
+	Label    string `json:"label"`
+	Weekdays []int  `json:"weekdays"`       // Mon=0..Sun=6, sorted
+	Time     string `json:"time,omitempty"` // RFC3339, only for a single timed occurrence
+	Special  bool   `json:"special"`
 }
 
 type personWeek struct {
@@ -32,13 +35,14 @@ type personWeek struct {
 
 type familyHighlight struct {
 	Title string `json:"title"`
-	Day   string `json:"day"`
+	Date  string `json:"date"` // RFC3339; frontend formats the weekday
 	Color string `json:"color"`
 	Icon  string `json:"icon,omitempty"`
 }
 
 type briefing struct {
-	RangeLabel       string            `json:"rangeLabel"`
+	RangeStart       string            `json:"rangeStart"` // RFC3339 (Mon)
+	RangeEnd         string            `json:"rangeEnd"`   // RFC3339 (Sun)
 	Countdown        *countdown        `json:"countdown,omitempty"`
 	Today            []agendaItem      `json:"today"`
 	PersonWeeks      []personWeek      `json:"personWeeks"`
@@ -76,7 +80,8 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	out := briefing{
-		RangeLabel:       formatRange(weekStart, weekStart.AddDate(0, 0, 6)),
+		RangeStart:       weekStart.Format(time.RFC3339),
+		RangeEnd:         weekStart.AddDate(0, 0, 6).Format(time.RFC3339),
 		Today:            []agendaItem{},
 		PersonWeeks:      []personWeek{},
 		FamilyHighlights: []familyHighlight{},
@@ -89,7 +94,7 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 			continue
 		}
 		out.Today = append(out.Today, agendaItem{
-			Time: formatClock(start), Title: ev.Title,
+			StartAt: ev.StartAt, Title: ev.Title,
 			Color: eventColor(ev, byID), Person: eventPerson(ev, byID),
 		})
 	}
@@ -118,7 +123,7 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 			icon = *ev.Icon
 		}
 		out.FamilyHighlights = append(out.FamilyHighlights, familyHighlight{
-			Title: ev.Title, Day: start.Weekday().String(), Color: eventColor(ev, byID), Icon: icon,
+			Title: ev.Title, Date: start.Format(time.RFC3339), Color: eventColor(ev, byID), Icon: icon,
 		})
 	}
 
@@ -143,11 +148,13 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// highlightsFor groups a member's events this week by title into day-summarized rows.
+// highlightsFor groups a member's events this week by title, returning the
+// weekday indices each series occurs on (+ a time for a single timed day). The
+// frontend turns these into a localized "Mon – Fri" / "Tue, Thu" / "Mon, 9:00 AM".
 func highlightsFor(memberID string, events []calendar.Event) []weekHighlight {
 	type group struct {
 		idxs    []int
-		time    string
+		timeRFC string // representative start (RFC3339) for a timed occurrence
 		special bool
 		order   int
 	}
@@ -173,7 +180,7 @@ func highlightsFor(memberID string, events []calendar.Event) []weekHighlight {
 		}
 		g.idxs = append(g.idxs, weekdayIndex(start))
 		if !ev.AllDay {
-			g.time = formatClock(start)
+			g.timeRFC = ev.StartAt
 		}
 		if ev.VisibilityTag == "milestone" {
 			g.special = true
@@ -189,11 +196,11 @@ func highlightsFor(memberID string, events []calendar.Event) []weekHighlight {
 	for _, t := range titles {
 		g := groups[t]
 		sort.Ints(g.idxs)
-		single := ""
+		tm := ""
 		if len(g.idxs) == 1 {
-			single = g.time
+			tm = g.timeRFC
 		}
-		out = append(out, weekHighlight{Label: t, Days: daysLabel(g.idxs, single), Special: g.special})
+		out = append(out, weekHighlight{Label: t, Weekdays: g.idxs, Time: tm, Special: g.special})
 	}
 	return out
 }
@@ -227,35 +234,4 @@ func (s *Server) tallyFor(from, to time.Time, _ map[string]family.Member) tally 
 
 func sameYMD(a, b time.Time) bool {
 	return a.Year() == b.Year() && a.Month() == b.Month() && a.Day() == b.Day()
-}
-
-var monthsShort = []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
-
-func formatRange(a, b time.Time) string {
-	if a.Month() == b.Month() {
-		return monthsShort[int(a.Month())-1] + " " + itoa(a.Day()) + " – " + itoa(b.Day())
-	}
-	return monthsShort[int(a.Month())-1] + " " + itoa(a.Day()) + " – " + monthsShort[int(b.Month())-1] + " " + itoa(b.Day())
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var b [12]byte
-	i := len(b)
-	for n > 0 {
-		i--
-		b[i] = byte('0' + n%10)
-		n /= 10
-	}
-	if neg {
-		i--
-		b[i] = '-'
-	}
-	return string(b[i:])
 }

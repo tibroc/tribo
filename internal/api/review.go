@@ -25,16 +25,18 @@ type personReview struct {
 }
 
 type choreConsistency struct {
-	ChoreID string `json:"choreId"`
-	Title   string `json:"title"`
-	Color   string `json:"color"`
-	Who     string `json:"who"`
-	History []bool `json:"history"` // last 8 weeks, index 7 = current week
+	ChoreID  string `json:"choreId"`
+	Title    string `json:"title"`
+	Color    string `json:"color"`
+	Who      string `json:"who"`      // member name; "" when Rotation
+	Rotation bool   `json:"rotation"` // frontend shows a localized "Rotation" label
+	History  []bool `json:"history"`  // last 8 weeks, index 7 = current week
 }
 
 type review struct {
 	Period      string             `json:"period"`
-	RangeLabel  string             `json:"rangeLabel"`
+	RangeStart  string             `json:"rangeStart"` // RFC3339
+	RangeEnd    string             `json:"rangeEnd"`   // RFC3339 (today)
 	Chores      stat               `json:"chores"`
 	Todos       stat               `json:"todos"`
 	Events      int                `json:"events"`
@@ -74,7 +76,7 @@ func (s *Server) getReview(w http.ResponseWriter, r *http.Request) {
 		rangeStart = mondayOf(today)
 	}
 
-	out := review{Period: period, RangeLabel: formatRange(rangeStart, today), PerPerson: []personReview{}, Consistency: []choreConsistency{}}
+	out := review{Period: period, RangeStart: rangeStart.Format(time.RFC3339), RangeEnd: today.Format(time.RFC3339), PerPerson: []personReview{}, Consistency: []choreConsistency{}}
 
 	// Hero: chores in range.
 	rangeInstances, _ := s.chores.ListInstances(rangeStart, rangeEnd)
@@ -201,8 +203,10 @@ func (s *Server) choreConsistency(today time.Time) []choreConsistency {
 	}
 
 	for _, c := range cs {
-		who := "Rotation"
+		who := ""
+		rotation := true
 		if c.AssignmentMode == "fixed" && c.AssignedMemberID != nil {
+			rotation = false
 			if m, ok := members[*c.AssignedMemberID]; ok {
 				who = m.Name
 			}
@@ -215,7 +219,7 @@ func (s *Server) choreConsistency(today time.Time) []choreConsistency {
 		for w := 0; w < 8; w++ {
 			hist[w] = doneByChoreWeek[c.ID][w]
 		}
-		out = append(out, choreConsistency{ChoreID: c.ID, Title: c.Title, Color: color, Who: who, History: hist})
+		out = append(out, choreConsistency{ChoreID: c.ID, Title: c.Title, Color: color, Who: who, Rotation: rotation, History: hist})
 	}
 	return out
 }

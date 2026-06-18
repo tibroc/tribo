@@ -26,7 +26,10 @@ i18n
     },
     fallbackLng: 'en',
     supportedLngs: ['en', 'de', 'pt-BR'],
-    nonExplicitSupportedLngs: true, // map 'de-DE' → 'de', 'pt' → 'pt-BR' fallback
+    // Region-stripping (load:'all', the default) already maps 'de-DE'→'de' and
+    // 'en-US'→'en'. We deliberately do NOT set nonExplicitSupportedLngs: it would
+    // resolve lookups for 'pt-BR' down to a base 'pt' (no resource) → English.
+    load: 'all',
     interpolation: { escapeValue: false }, // React already escapes
     detection: {
       order: ['localStorage', 'navigator'],

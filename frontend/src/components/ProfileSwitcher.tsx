@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LogOut, Check } from 'lucide-react'
 import { palette } from '../lib/tokens'
 import { useSession } from '../lib/session'
@@ -7,6 +8,7 @@ import PersonAvatar from './PersonAvatar'
 // The active-profile avatar + dropdown. Switching is PIN-gated when the target
 // member has a PIN. Shown in the nav rail (desktop) and bottom bar (mobile).
 export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; header?: boolean }) {
+  const { t } = useTranslation()
   const { session, activeMember, switchProfile, logout } = useSession()
   const [open, setOpen] = useState(false)
   const [pinFor, setPinFor] = useState<string | null>(null)
@@ -24,7 +26,7 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
   const submitPin = async () => {
     if (!pinFor) return
     try { await switchProfile(pinFor, pin); setPinFor(null); setOpen(false) }
-    catch { setError('Incorrect PIN') }
+    catch { setError(t('profile.incorrectPin')) }
   }
 
   const avatarSize = mobile ? 24 : header ? 38 : 32
@@ -40,12 +42,12 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
       <button
         onClick={() => setOpen((o) => !o)}
         className={mobile ? 'flex flex-col items-center justify-center gap-1 px-3 py-1' : 'flex items-center justify-center'}
-        aria-label="Switch profile"
+        aria-label={t('profile.switch')}
       >
         {activeMember
           ? <PersonAvatar name={activeMember.name} color={activeMember.color} size={avatarSize} ring={header} />
           : <div className="rounded-full" style={{ width: avatarSize, height: avatarSize, backgroundColor: palette.line }} />}
-        {mobile && <span className="text-xs font-medium" style={{ color: palette.inkSoft }}>You</span>}
+        {mobile && <span className="text-xs font-medium" style={{ color: palette.inkSoft }}>{t('profile.you')}</span>}
       </button>
 
       {open && (
@@ -56,13 +58,13 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
             className={`z-50 rounded-2xl p-2 shadow-xl ${dropdownPos}`}
             style={{ backgroundColor: palette.surface, border: `1px solid ${palette.line}` }}
           >
-            <div className="text-xs font-semibold uppercase px-2 py-1" style={{ color: palette.inkSoft }}>Viewing as</div>
+            <div className="text-xs font-semibold uppercase px-2 py-1" style={{ color: palette.inkSoft }}>{t('profile.viewingAs')}</div>
             {session.members.map((m) => {
               const active = m.id === session.activeMemberId
               if (pinFor === m.id) {
                 return (
                   <div key={m.id} className="p-2">
-                    <div className="text-sm font-semibold mb-1">{m.name}'s PIN</div>
+                    <div className="text-sm font-semibold mb-1">{t('profile.pinPrompt', { name: m.name })}</div>
                     <input
                       type="password" value={pin} autoFocus
                       onChange={(e) => setPin(e.target.value)}
@@ -71,7 +73,7 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
                       style={{ border: `1px solid ${palette.line}` }}
                     />
                     {error && <div className="text-xs mt-1" style={{ color: '#9b1c1c' }}>{error}</div>}
-                    <button onClick={submitPin} className="w-full mt-2 rounded-lg py-1.5 text-sm font-semibold" style={{ backgroundColor: palette.brand, color: '#fff' }}>Unlock</button>
+                    <button onClick={submitPin} className="w-full mt-2 rounded-lg py-1.5 text-sm font-semibold" style={{ backgroundColor: palette.brand, color: '#fff' }}>{t('profile.unlock')}</button>
                   </div>
                 )
               }
@@ -85,7 +87,7 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
             })}
             {session.authEnabled && (
               <button onClick={logout} className="w-full flex items-center gap-2 rounded-xl p-2 text-left mt-1" style={{ borderTop: `1px solid ${palette.line}`, color: palette.inkSoft }}>
-                <LogOut size={16} /> <span className="text-sm">Sign out</span>
+                <LogOut size={16} /> <span className="text-sm">{t('profile.signOut')}</span>
               </button>
             )}
           </div>

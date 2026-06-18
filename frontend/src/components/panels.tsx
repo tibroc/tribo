@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
 import Icon from './Icon'
 import PersonAvatar from './PersonAvatar'
@@ -86,9 +87,10 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
   flush?: boolean
   last?: boolean
 }) {
+  const { t } = useTranslation()
   const done = inst.status === 'done'
   const rotation = chore?.assignmentMode === 'rotation'
-  const recur = chore ? cap(chore.recurrenceRule) : null
+  const recur = chore ? t(`chores.recurrence.${chore.recurrenceRule}`) : null
   return (
     <div
       className="flex items-center gap-3"
@@ -109,11 +111,11 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
         </div>
         {recur && (
           <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)', marginTop: 1 }} className="truncate">
-            {rotation ? 'Rotation' : recur}
+            {rotation ? t('chores.rotation') : recur}
           </div>
         )}
       </div>
-      {chore && <RecurrencePill label={rotation ? 'Rotation' : (recur ?? '')} rotation={rotation} />}
+      {chore && <RecurrencePill label={rotation ? t('chores.rotation') : (recur ?? '')} rotation={rotation} />}
       {member && <PersonAvatar name={member.name} color={member.color} index={memberIndex} size={26} />}
     </div>
   )
@@ -128,6 +130,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
   flush?: boolean
   grouped?: boolean
 }) {
+  const { t } = useTranslation()
   const indexOf = (id?: string) => {
     const i = members.findIndex((m) => m.id === id)
     return i < 0 ? undefined : i
@@ -155,8 +158,8 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
     const later: ChoreInstance[] = []
     for (const i of instances) (choreOf(i.choreId)?.recurrenceRule === 'daily' ? today : later).push(i)
     return [
-      { label: 'Today', items: today },
-      { label: 'Later this week', items: later },
+      { label: t('chores.groupToday'), items: today },
+      { label: t('chores.groupLater'), items: later },
     ].filter((g) => g.items.length > 0)
   })()
 
@@ -172,7 +175,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
       )}
       {instances.length === 0 && (
         <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 14, color: 'var(--t-text-soft)', padding: flush ? '12px 22px' : '8px 0' }}>
-          No chores this week
+          {t('chores.noneThisWeek')}
         </div>
       )}
       {groups.map((g, gi) => (
@@ -194,6 +197,7 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush,
   flush?: boolean
   inputRef?: React.Ref<HTMLInputElement>
 }) {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState('')
   const indexOf = (id?: string) => {
     const i = members.findIndex((m) => m.id === id)
@@ -214,7 +218,7 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush,
       )}
       {todos.length === 0 && (
         <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 14, color: 'var(--t-text-soft)', padding: flush ? '12px 22px' : '8px 0' }}>
-          Nothing to do
+          {t('todos.nothingToDo')}
         </div>
       )}
       {todos.map((t, idx) => {
@@ -255,7 +259,7 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush,
             ref={inputRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Add a to-do…"
+            placeholder={t('todos.addPlaceholder')}
             className="flex-1 outline-none"
             style={{
               fontFamily: 'var(--t-font-body)',
@@ -270,7 +274,7 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush,
           <button
             type="submit"
             className="flex items-center justify-center"
-            aria-label="Add to-do"
+            aria-label={t('todos.addAria')}
             style={{
               background: 'var(--t-brand)',
               color: 'var(--t-on-brand)',
@@ -287,5 +291,3 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush,
     </div>
   )
 }
-
-function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }

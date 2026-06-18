@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Bell, AlertTriangle, UserPlus, Check } from 'lucide-react'
 import { getNotifications, type Notification } from '../lib/api'
 import { fmtWeekdayDay } from '../lib/datetime'
@@ -14,6 +15,7 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
   onOpenEvent: (eventId: string, date: string) => void
   size?: number
 }) {
+  const { t } = useTranslation()
   const [items, setItems] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
   const locale = useLocale()
@@ -38,7 +40,7 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
         onClick={toggle}
         className="hidden sm:flex items-center justify-center rounded-full"
         style={{ width: 38, height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
-        aria-label={count > 0 ? `Notifications (${count})` : 'Notifications'}
+        aria-label={count > 0 ? t('notifications.titleCount', { count }) : t('notifications.title')}
         aria-expanded={open}
       >
         <Bell size={size} />
@@ -71,14 +73,14 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
             role="menu"
           >
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
-              <span className="font-display text-base" style={{ fontWeight: 500 }}>Needs attention</span>
-              <span className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{count > 0 ? `${count} item${count === 1 ? '' : 's'}` : ''}</span>
+              <span className="font-display text-base" style={{ fontWeight: 500 }}>{t('notifications.heading')}</span>
+              <span className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{count > 0 ? t('notifications.itemCount', { count }) : ''}</span>
             </div>
 
             {count === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
                 <Check size={22} style={{ color: 'var(--t-brand)' }} />
-                <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>You're all caught up.</div>
+                <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('notifications.allCaught')}</div>
               </div>
             ) : (
               <div className="max-h-[60vh] overflow-y-auto">
@@ -99,7 +101,7 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-semibold truncate" style={{ color: 'var(--t-text)' }}>{n.title}</span>
-                        <span className="block text-xs" style={{ color: 'var(--t-text-soft)' }}>{n.message}</span>
+                        <span className="block text-xs" style={{ color: 'var(--t-text-soft)' }}>{t(`notifications.${n.type}`)}</span>
                       </span>
                       <span className="text-xs flex-shrink-0 whitespace-nowrap" style={{ color: 'var(--t-text-soft)' }}>{formatDay(n.startAt, locale)}</span>
                     </button>

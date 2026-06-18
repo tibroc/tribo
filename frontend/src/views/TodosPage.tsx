@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Section } from '../lib/calendar'
 import { getFamilyMembers, type FamilyMember } from '../lib/api'
 import { useChoresTodos } from '../lib/hooks'
@@ -8,6 +9,7 @@ import Card from '../components/Card'
 import { TodosPanel } from '../components/panels'
 
 export default function TodosPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
+  const { t } = useTranslation()
   const [members, setMembers] = useState<FamilyMember[]>([])
   const { todos, toggleTodo, addTodo } = useChoresTodos()
   const addRef = useRef<HTMLInputElement>(null)
@@ -20,15 +22,15 @@ export default function TodosPage({ go, openNew }: { go: (s: Section) => void; o
   const doneItems = todos.filter((t) => t.status === 'done')
 
   return (
-    <AppShell active="todos" onNavigate={go} header={<SimpleHeader title="To-dos" />} onFabClick={focusAdd}>
+    <AppShell active="todos" onNavigate={go} header={<SimpleHeader title={t('nav.todos')} />} onFabClick={focusAdd}>
       <div style={{ padding: '22px 26px' }}>
         {/* Hero */}
         <Card padded={false} className="mb-4" style={{ padding: '18px 26px' }}>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 24, color: 'var(--t-text)' }}>Shared to-dos</div>
+              <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 24, color: 'var(--t-text)' }}>{t('todos.shared')}</div>
               <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 13, color: 'var(--t-text-soft)', marginTop: 2 }}>
-                {todos.length} item{todos.length === 1 ? '' : 's'} · {openItems.length} open
+                {t('todos.itemsSummary', { count: todos.length, open: openItems.length })}
               </div>
             </div>
           </div>
@@ -37,20 +39,20 @@ export default function TodosPage({ go, openNew }: { go: (s: Section) => void; o
         {/* Board: open + done fill the island width */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <Card
-            title="To do"
-            action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{openItems.length} open</span>}
+            title={t('todos.toDo')}
+            action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{t('todos.openCount', { count: openItems.length })}</span>}
             padded={false}
           >
             <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} inputRef={addRef} flush />
           </Card>
 
           <Card
-            title="Done"
-            action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{doneItems.length} completed</span>}
+            title={t('common.done')}
+            action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{t('todos.completedCount', { count: doneItems.length })}</span>}
             padded={false}
           >
             {doneItems.length === 0
-              ? <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 14, color: 'var(--t-text-soft)', padding: '16px 22px' }}>Nothing completed yet.</div>
+              ? <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 14, color: 'var(--t-text-soft)', padding: '16px 22px' }}>{t('todos.nothingCompleted')}</div>
               : <TodosPanel todos={doneItems} members={members} onToggle={toggleTodo} flush />}
           </Card>
         </div>

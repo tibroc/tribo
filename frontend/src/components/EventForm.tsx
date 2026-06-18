@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, Calendar, Clock, MapPin, AlignLeft, Star, ShieldCheck, AlertTriangle, Check, Trash2, Layers } from 'lucide-react'
 import {
   createEvent, updateEvent, deleteEvent, getEventGuardians, claimEvent,
@@ -20,8 +21,9 @@ function localRFC3339(d: Date): string {
 }
 
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  const { t } = useTranslation()
   return (
-    <button onClick={() => onChange(!checked)} className="rounded-full flex-shrink-0" aria-label="toggle"
+    <button onClick={() => onChange(!checked)} className="rounded-full flex-shrink-0" aria-label={t('event.toggle')}
       style={{ width: 42, height: 24, background: checked ? 'var(--t-brand)' : 'var(--t-line)', position: 'relative' }}>
       <span className="absolute rounded-full" style={{ width: 18, height: 18, top: 3, left: checked ? 21 : 3, backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.25)', transition: 'left 0.18s ease' }} />
     </button>
@@ -36,6 +38,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation()
   const editing = !!event
   const initialStart = event ? new Date(event.startAt) : defaultDate
   const initialEnd = event ? new Date(event.endAt) : new Date(defaultDate.getTime() + 60 * 60 * 1000)
@@ -60,7 +63,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
     setAttendees((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
 
   const save = async () => {
-    if (!title.trim()) { setError('Title is required'); return }
+    if (!title.trim()) { setError(t('event.titleRequired')); return }
     const [y, m, d] = dateStr.split('-').map(Number)
     let startAt: string, endAt: string
     if (allDay) {
@@ -114,9 +117,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--t-line)' }}>
-          <button aria-label="Close" onClick={onClose}><X size={20} style={{ color: 'var(--t-text-soft)' }} /></button>
-          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{editing ? 'Edit event' : 'New event'}</div>
-          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy}>Save</button>
+          <button aria-label={t('common.close')} onClick={onClose}><X size={20} style={{ color: 'var(--t-text-soft)' }} /></button>
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{editing ? t('event.editTitle') : t('event.newTitle')}</div>
+          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy}>{t('common.save')}</button>
         </div>
 
         <div className="p-5 overflow-y-auto">
@@ -124,7 +127,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
 
           <input
             className="w-full font-display text-2xl bg-transparent outline-none mb-3"
-            style={{ color: 'var(--t-text)', fontWeight: 500 }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" autoFocus
+            style={{ color: 'var(--t-text)', fontWeight: 500 }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('event.titlePlaceholder')} autoFocus
           />
 
           {/* Date & time */}
@@ -137,7 +140,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
               <Clock size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <div className="flex-1 flex items-center justify-between">
                 {allDay ? (
-                  <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>All day</span>
+                  <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
                 ) : (
                   <div className="flex items-center gap-2">
                     <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-none" style={{ background: 'var(--t-bg)' }} />
@@ -146,7 +149,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: 'var(--t-text-soft)' }}>All day</span>
+                  <span className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
                   <Switch checked={allDay} onChange={setAllDay} />
                 </div>
               </div>
@@ -155,7 +158,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
 
           {/* Attendees */}
           <div className="mt-3">
-            <div className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--t-text-soft)', letterSpacing: '.06em' }}>Who's coming?</div>
+            <div className="text-xs font-semibold uppercase mb-2" style={{ color: 'var(--t-text-soft)', letterSpacing: '.06em' }}>{t('event.whosComing')}</div>
             <div className="flex gap-3 flex-wrap">
               {members.map((p, i) => {
                 const sel = attendees.includes(p.id)
@@ -186,11 +189,11 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           <div className="px-3 mt-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <MapPin size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <input className="w-full bg-transparent outline-none text-sm" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Add location" />
+              <input className="w-full bg-transparent outline-none text-sm" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('event.addLocation')} />
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <AlignLeft size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <textarea className="w-full bg-transparent outline-none text-sm resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Notes" />
+              <textarea className="w-full bg-transparent outline-none text-sm resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('event.notes')} />
             </div>
           </div>
 
@@ -200,22 +203,22 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
               <div className="flex items-center gap-3">
                 <Star size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
                 <div>
-                  <div className="text-sm font-medium">Important</div>
-                  <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Always show, even in Quarter and Year views</div>
+                  <div className="text-sm font-medium">{t('event.important')}</div>
+                  <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('event.importantHint')}</div>
                 </div>
               </div>
               <Switch checked={important} onChange={setImportant} />
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Layers size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <span className="text-sm">{attendees.length > 0 ? 'Personal' : 'Family'} calendar</span>
+              <span className="text-sm">{attendees.length > 0 ? t('event.personalCalendar') : t('event.familyCalendar')}</span>
             </div>
           </div>
 
           {editing && (
             <div className="mt-4">
               <Button variant="danger" onClick={remove} disabled={busy} style={{ width: '100%' }}>
-                <Trash2 size={16} /> Delete event
+                <Trash2 size={16} /> {t('event.deleteEvent')}
               </Button>
             </div>
           )}
@@ -236,6 +239,7 @@ function GuardianCard({ enabled, onToggle, event, members, editing, onClaimed }:
   editing: boolean
   onClaimed: () => void
 }) {
+  const { t } = useTranslation()
   const assigned = event?.assignedGuardianId ? members.find((m) => m.id === event.assignedGuardianId) : undefined
   const conflict = event?.conflictStatus === 'needs_guardian'
   const guardians = members.filter((m) => m.role === 'guardian')
@@ -259,7 +263,7 @@ function GuardianCard({ enabled, onToggle, event, members, editing, onClaimed }:
     <div className="p-3 mt-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold">
-          <ShieldCheck size={16} style={{ color: 'var(--t-text-soft)' }} /> Requires guardian
+          <ShieldCheck size={16} style={{ color: 'var(--t-text-soft)' }} /> {t('event.requiresGuardian')}
         </div>
         <Switch checked={enabled} onChange={onToggle} />
       </div>
@@ -268,32 +272,32 @@ function GuardianCard({ enabled, onToggle, event, members, editing, onClaimed }:
         <div className="mt-3">
           {!editing ? (
             <div className="text-sm rounded-xl p-2.5" style={{ background: 'var(--t-bg)', color: 'var(--t-text-soft)' }}>
-              A guardian will be assigned automatically when you save.
+              {t('event.guardianAutoAssign')}
             </div>
           ) : assigned ? (
             <div className="flex items-center gap-2.5 rounded-xl p-2.5"
               style={{ background: 'color-mix(in srgb, var(--t-brand) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--t-brand) 40%, transparent)' }}>
               <PersonAvatar name={assigned.name} color={assigned.color} index={indexOf(assigned.id)} size={32} />
-              <div className="text-sm flex-1" style={{ color: 'var(--t-brand)' }}><span className="font-semibold">{assigned.name}</span> assigned</div>
+              <div className="text-sm flex-1 font-semibold" style={{ color: 'var(--t-brand)' }}>{t('event.assignedTo', { name: assigned.name })}</div>
               <Check size={16} style={{ color: 'var(--t-brand)', flexShrink: 0 }} />
             </div>
           ) : conflict ? (
             <div className="rounded-xl p-2.5" style={{ background: 'color-mix(in srgb, var(--t-accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--t-accent) 40%, transparent)' }}>
               <div className="flex items-center gap-2 text-sm font-semibold mb-2" style={{ color: 'var(--t-accent)' }}>
-                <AlertTriangle size={14} /> No guardian available
+                <AlertTriangle size={14} /> {t('event.noGuardianAvailable')}
               </div>
               <div className="flex gap-2 flex-wrap">
                 {guardians.map((g) => (
-                  <ClaimButton key={g.id} member={g} index={indexOf(g.id)} onClick={() => claim(g.id, true)} label={`Claim · ${g.name}`} />
+                  <ClaimButton key={g.id} member={g} index={indexOf(g.id)} onClick={() => claim(g.id, true)} label={t('event.claim', { name: g.name })} />
                 ))}
               </div>
             </div>
           ) : (
             <div className="rounded-xl p-2.5" style={{ background: 'var(--t-bg)' }}>
-              <div className="text-sm mb-2">More than one guardian is free — whoever opens this first can take it.</div>
+              <div className="text-sm mb-2">{t('event.multipleFree')}</div>
               <div className="flex gap-2 flex-wrap">
                 {guardians.filter((g) => freeIDs.includes(g.id)).map((g) => (
-                  <ClaimButton key={g.id} member={g} index={indexOf(g.id)} onClick={() => claim(g.id, false)} label={`Claim · ${g.name}`} />
+                  <ClaimButton key={g.id} member={g} index={indexOf(g.id)} onClick={() => claim(g.id, false)} label={t('event.claim', { name: g.name })} />
                 ))}
               </div>
             </div>

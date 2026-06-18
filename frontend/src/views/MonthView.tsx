@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay,
@@ -154,6 +155,7 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
   onEditEvent: (e: TriboEvent) => void
   locale: string
 }) {
+  const { t } = useTranslation()
   const events = ordered(byDay.get(dayKey(date)) ?? [])
   const isToday = sameDay(date, today)
 
@@ -161,15 +163,15 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
     <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
         <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{date.getDate()}</div>
-        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{fmtWeekdayLongDay(date, locale)}{isToday ? ' · Today' : ''}</div>
+        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{fmtWeekdayLongDay(date, locale)}{isToday ? ` · ${t('common.today')}` : ''}</div>
       </div>
       {events.length === 0 ? (
-        <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>Nothing scheduled</div>
+        <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingScheduled')}</div>
       ) : (
         <div className="space-y-1.5">
           {events.map((ev) => {
             const color = colorForEvent(ev, byId)
-            const who = ev.isShared || ev.attendeeIds.length === 0 ? 'Family' : (byId.get(ev.attendeeIds[0])?.name ?? '')
+            const who = ev.isShared || ev.attendeeIds.length === 0 ? t('common.family') : (byId.get(ev.attendeeIds[0])?.name ?? '')
             return (
               <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
@@ -186,14 +188,15 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
 }
 
 function MonthHighlights({ events, byId, locale }: { events: TriboEvent[]; byId: Map<string, FamilyMember>; locale: string }) {
+  const { t } = useTranslation()
   const highlights = events
     .filter((e) => e.visibilityTag === 'milestone')
     .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt))
   return (
     <Card>
-      <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 20, marginBottom: 10 }} className="flex items-center gap-2"><Cake size={16} /> This month</div>
+      <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 20, marginBottom: 10 }} className="flex items-center gap-2"><Cake size={16} /> {t('calendar.thisMonth')}</div>
       {highlights.length === 0 ? (
-        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Nothing notable</div>
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingNotable')}</div>
       ) : (
         <div className="space-y-2">
           {highlights.map((h) => {

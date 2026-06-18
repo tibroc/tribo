@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { NavKey, Intent, EventFocus } from '../lib/calendar'
 import { useTheme } from '../lib/theme'
 import Icon from './Icon'
@@ -6,12 +7,12 @@ import { Wordmark, Weather } from './chrome'
 import NotificationBell from './NotificationBell'
 import ProfileSwitcher from './ProfileSwitcher'
 
-const NAV: { key: NavKey; icon: string; label: string }[] = [
-  { key: 'home',     icon: 'home',     label: 'Home' },
-  { key: 'calendar', icon: 'calendar', label: 'Calendar' },
-  { key: 'chores',   icon: 'chores',   label: 'Chores' },
-  { key: 'todos',    icon: 'todos',    label: 'To-dos' },
-  { key: 'family',   icon: 'family',   label: 'Family' },
+const NAV: { key: NavKey; icon: string }[] = [
+  { key: 'home',     icon: 'home' },
+  { key: 'calendar', icon: 'calendar' },
+  { key: 'chores',   icon: 'chores' },
+  { key: 'todos',    icon: 'todos' },
+  { key: 'family',   icon: 'family' },
 ]
 
 // Two faint organic blobs behind everything — the Salvia "warm sand" backdrop.
@@ -82,6 +83,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
   fabMenu?: FabMenuItem[]
   children: ReactNode
 }) {
+  const { t } = useTranslation()
   const { theme, toggle } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -90,7 +92,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
       onClick={toggle}
       className="flex items-center justify-center rounded-full"
       style={{ width: 38, height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={theme === 'dark' ? t('appshell.switchToLight') : t('appshell.switchToDark')}
     >
       <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
     </button>
@@ -138,7 +140,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
           }}
         >
           {NAV.map((n) => (
-            <RailNav key={n.key} name={n.icon} label={n.label} active={active === n.key} onClick={() => onNavigate(n.key)} />
+            <RailNav key={n.key} name={n.icon} label={t(`nav.${n.key}`)} active={active === n.key} onClick={() => onNavigate(n.key)} />
           ))}
           <div className="flex-1" style={{ minHeight: 24 }} />
           {themeBtn}
@@ -180,16 +182,16 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
         style={{ borderTop: '1px solid var(--t-line)', background: 'var(--t-surface)', zIndex: 20 }}
       >
         {NAV.map((n) => (
-          <TabNav key={n.key} name={n.icon} label={n.label} active={active === n.key} onClick={() => onNavigate(n.key)} />
+          <TabNav key={n.key} name={n.icon} label={t(`nav.${n.key}`)} active={active === n.key} onClick={() => onNavigate(n.key)} />
         ))}
         <button
           onClick={toggle}
           className="flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1"
           style={{ color: 'var(--t-text-soft)' }}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={theme === 'dark' ? t('appshell.switchToLight') : t('appshell.switchToDark')}
         >
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
-          <span className="text-xs font-medium">Theme</span>
+          <span className="text-xs font-medium">{t('appshell.theme')}</span>
         </button>
         <ProfileSwitcher mobile />
       </nav>
@@ -233,7 +235,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
               boxShadow: '0 10px 26px rgba(210,152,46,.4)', zIndex: 30,
               transform: menuOpen ? 'rotate(45deg)' : undefined,
             }}
-            aria-label="Add"
+            aria-label={t('common.add')}
             aria-haspopup={fabMenu ? 'menu' : undefined}
             aria-expanded={fabMenu ? menuOpen : undefined}
           >

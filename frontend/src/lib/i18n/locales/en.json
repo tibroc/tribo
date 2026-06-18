@@ -19,7 +19,67 @@
     "loading": "Loading…",
     "today": "Today",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "family": "Family"
+  },
+  "home": {
+    "newEvent": "New event",
+    "newChore": "New chore",
+    "newTodo": "New to-do",
+    "greeting": "Good morning!",
+    "weekAhead": "Here's your week ahead — {{range}}",
+    "countdown_one": "{{count}} day until {{title}}",
+    "countdown_other": "{{count}} days until {{title}}",
+    "today": "Today",
+    "nothingToday": "Nothing scheduled today",
+    "personWeek": "{{name}}'s week",
+    "nothingScheduled": "Nothing scheduled",
+    "choresThisWeek": "Chores this week",
+    "thisWeek": "This week",
+    "nothingNotable": "Nothing notable",
+    "lastWeek": "Last week",
+    "lastWeekStats": "{{choresDone}}/{{choresTotal}} chores · {{todosDone}}/{{todosTotal}} to-dos done",
+    "viewReview": "View full review →"
+  },
+  "weather": {
+    "clear": "Clear",
+    "partlyCloudy": "Partly cloudy",
+    "overcast": "Overcast",
+    "fog": "Fog",
+    "drizzle": "Drizzle",
+    "rain": "Rain",
+    "snow": "Snow",
+    "thunderstorm": "Thunderstorm",
+    "unknown": "—"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "titleCount": "Notifications ({{count}})",
+    "heading": "Needs attention",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "allCaught": "You're all caught up.",
+    "needs_guardian": "No guardian is free — needs resolving",
+    "unclaimed": "Needs a guardian to claim it"
+  },
+  "review": {
+    "periodWeek": "This Week",
+    "periodMonth": "This Month",
+    "periodYear": "This Year",
+    "statChores": "Chores",
+    "statTodos": "To-dos",
+    "statEvents": "Events",
+    "happened": "happened",
+    "streak": "{{count}}-week streak",
+    "choresLine": "Chores: {{done}}/{{total}}",
+    "todosLine": "To-dos: {{done}}/{{total}} done",
+    "consistency": "Chore consistency",
+    "last8": "Last 8 weeks",
+    "rotation": "Rotation",
+    "ytd": "Year to date",
+    "ytdChores": "chores done",
+    "ytdTodos": "to-dos done",
+    "ytdBirthdays": "birthdays"
   },
   "language": {
     "title": "Language",
@@ -51,5 +111,297 @@
     "locationUnset": "Set a location for the weather widget",
     "runWizard": "Run setup wizard",
     "runWizardSub": "Add members, chores, or a typical week"
+  },
+  "views": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "quarter": "Quarter",
+    "year": "Year"
+  },
+  "appshell": {
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode",
+    "theme": "Theme"
+  },
+  "profile": {
+    "switch": "Switch profile",
+    "viewingAs": "Viewing as",
+    "you": "You",
+    "pinPrompt": "{{name}}'s PIN",
+    "unlock": "Unlock",
+    "incorrectPin": "Incorrect PIN",
+    "signOut": "Sign out"
+  },
+  "chores": {
+    "doneThisWeek": "done this week",
+    "barsHint": "Every bar is one chore, colored by who owns it.",
+    "weekStreak": "week streak",
+    "byPerson": "By person",
+    "thisWeek": "this week",
+    "thisWeekCap": "This week",
+    "rotation": "Rotation",
+    "addChore": "Add chore",
+    "groupToday": "Today",
+    "groupLater": "Later this week",
+    "noneThisWeek": "No chores this week",
+    "recurrence": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    }
+  },
+  "todos": {
+    "shared": "Shared to-dos",
+    "itemsSummary_one": "{{count}} item · {{open}} open",
+    "itemsSummary_other": "{{count}} items · {{open}} open",
+    "toDo": "To do",
+    "openCount": "{{count}} open",
+    "completedCount": "{{count}} completed",
+    "nothingCompleted": "Nothing completed yet.",
+    "nothingToDo": "Nothing to do",
+    "addPlaceholder": "Add a to-do…",
+    "addAria": "Add to-do"
+  },
+  "family": {
+    "membersTitle": "Family members",
+    "addMember": "Add member",
+    "roleGuardian": "Guardian",
+    "roleChild": "Child · Default guardian: {{name}}",
+    "workSchedulesTitle": "Work schedules",
+    "showBusy": "Show as \"busy\" on calendar",
+    "addChore": "Add chore",
+    "banner": {
+      "title": "Your family",
+      "members_one": "{{count}} member",
+      "members_other": "{{count}} members",
+      "guardians_one": "{{count}} guardian",
+      "guardians_other": "{{count}} guardians",
+      "calendars_one": "{{count}} shared calendar",
+      "calendars_other": "{{count}} shared calendars"
+    },
+    "calendars": {
+      "title": "Calendar sources",
+      "builtin": "Built-in",
+      "readOnly": "read-only",
+      "syncNow": "Sync now",
+      "remove": "Remove",
+      "connectGoogle": "Connect Google Calendar",
+      "addCaldav": "Add CalDAV calendar",
+      "displayName": "Display name",
+      "urlPlaceholder": "CalDAV URL (e.g. https://host/dav/user/calendar/)",
+      "usernamePlaceholder": "Username (optional)",
+      "passwordPlaceholder": "Password (optional)",
+      "readOnlyOption": "Read-only (don't push Tribo events to this calendar)",
+      "urlRequired": "CalDAV URL is required"
+    },
+    "location": {
+      "title": "Weather location",
+      "searchPlaceholder": "Search for a city…",
+      "searching": "Searching…",
+      "current": "Current: {{name}}",
+      "pickResult": "Pick a location from the search results",
+      "units": "Units"
+    }
+  },
+  "event": {
+    "newTitle": "New event",
+    "editTitle": "Edit event",
+    "titlePlaceholder": "Event title",
+    "titleRequired": "Title is required",
+    "allDay": "All day",
+    "whosComing": "Who's coming?",
+    "addLocation": "Add location",
+    "notes": "Notes",
+    "important": "Important",
+    "importantHint": "Always show, even in Quarter and Year views",
+    "personalCalendar": "Personal calendar",
+    "familyCalendar": "Family calendar",
+    "deleteEvent": "Delete event",
+    "requiresGuardian": "Requires guardian",
+    "guardianAutoAssign": "A guardian will be assigned automatically when you save.",
+    "assignedTo": "{{name}} assigned",
+    "noGuardianAvailable": "No guardian available",
+    "multipleFree": "More than one guardian is free — whoever opens this first can take it.",
+    "claim": "Claim · {{name}}",
+    "toggle": "toggle"
+  },
+  "forms": {
+    "addMember": "Add member",
+    "editMember": "Edit member",
+    "addChore": "Add chore",
+    "editChore": "Edit chore",
+    "addWorkSchedule": "Add work schedule",
+    "editWorkSchedule": "Edit work schedule",
+    "name": "Name",
+    "color": "Color",
+    "defaultGuardian": "Default guardian",
+    "none": "None",
+    "pinNew": "PIN (optional)",
+    "pinEdit": "PIN (leave blank to keep current)",
+    "pinPlaceholder": "Profile-switch PIN",
+    "title": "Title",
+    "repeats": "Repeats",
+    "assignment": "Assignment",
+    "assignedTo": "Assigned to",
+    "choose": "Choose…",
+    "rotationInOrder": "Rotation (in order)",
+    "guardian": "Guardian",
+    "days": "Days",
+    "start": "Start",
+    "end": "End",
+    "label": "Label",
+    "showBusy": "Show as \"busy\" on calendar",
+    "role": {
+      "label": "Role",
+      "guardian": "Guardian",
+      "child": "Child"
+    },
+    "recurrence": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "assignmentMode": {
+      "fixed": "Fixed — one person",
+      "rotation": "Rotation — takes turns"
+    }
+  },
+  "calendar": {
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "thisQuarter": "This quarter",
+    "thisYear": "This year",
+    "sharedPlans_one": "{{count}} shared plan",
+    "sharedPlans_other": "{{count}} shared plans",
+    "busy": "busy",
+    "nothingScheduled": "Nothing scheduled",
+    "nothingNotable": "Nothing notable",
+    "choresThisWeek": "This week's chores",
+    "dayOfYear": "Day {{day}} of 365 · {{pct}}%"
+  },
+  "auth": {
+    "welcomeHome": "Welcome home",
+    "loginSubtitle": "Sign in to your family organizer.",
+    "signInWithAuthentik": "Sign in with Authentik",
+    "whoAreYou": "Who are you?",
+    "mapSubtitle": "Link your account to a family member.",
+    "alreadyLinked": "Already linked"
+  },
+  "onboarding": {
+    "welcome": {
+      "headline1": "Plans,",
+      "headline2": "gathered.",
+      "subtitle": "One calm, shared calendar for the whole family — everyone's days, chores and plans in one warm place.",
+      "cta": "Create your family"
+    },
+    "stepCounter": "Step {{step}} of {{total}}",
+    "taglines": {
+      "1": {
+        "lead": "Every family",
+        "before": "starts with a",
+        "accent": "name.",
+        "sub": "This is the home everyone shares — give it a name they'll recognise."
+      },
+      "2": {
+        "before": "Who's in your",
+        "accent": "tribe?",
+        "sub": "Each person gets their own colour, so every plan is theirs at a glance."
+      },
+      "3": {
+        "before": "Bring your calendars",
+        "accent": "together.",
+        "sub": "Tribo gathers what you already use into one shared view."
+      },
+      "4": {
+        "before": "Share the load,",
+        "accent": "together.",
+        "sub": "A few starter chores get everyone pulling their weight."
+      },
+      "5": {
+        "before": "Set the rhythm of",
+        "accent": "your week.",
+        "sub": "Recurring activities keep the shared calendar honest."
+      },
+      "6": {
+        "before": "Your family, all in",
+        "accent": "one place.",
+        "sub": "That's everything — your shared week is ready."
+      }
+    },
+    "titles": {
+      "1": "Name your family",
+      "2": "Add your members",
+      "3": "Connect calendars",
+      "4": "Starter chores",
+      "5": "Your typical week",
+      "6": "You're all set"
+    },
+    "descriptions": {
+      "1": "You can change this later in Family settings.",
+      "2": "Add everyone who shares this calendar — each gets a harmonious colour automatically.",
+      "3": "Link the calendars your family already uses — nothing is moved or changed.",
+      "4": "Pick a few to start with — assign each to someone. (Optional.)",
+      "5": "Common recurring activities. Assign each to someone. (Optional.)",
+      "6": "Welcome to a calmer family week."
+    },
+    "familyStep": {
+      "nameLabel": "Family name",
+      "namePlaceholder": "The Silva Family",
+      "timezoneLabel": "Timezone"
+    },
+    "members": {
+      "namePlaceholder": "Name",
+      "guardian": "Guardian",
+      "child": "Child",
+      "guardianPlaceholder": "Guardian…",
+      "memberN": "Member {{n}}",
+      "addMember": "Add member",
+      "paletteHint": "<0>The next member</0> is automatically given this colour — every family keeps a balanced, harmonious palette."
+    },
+    "calendar": {
+      "note": "A built-in <1>family calendar</1> is created automatically. You can connect an external CalDAV/Google calendar anytime from <3>Family → Calendars</3>."
+    },
+    "recurrence": {
+      "daily": "daily",
+      "weekly": "weekly",
+      "monthly": "monthly"
+    },
+    "choreTemplates": {
+      "recycling": "Take out recycling",
+      "bathroom": "Clean the bathroom",
+      "plants": "Water the plants",
+      "table": "Set the table",
+      "lawn": "Mow the lawn"
+    },
+    "chores": {
+      "assignPlaceholder": "Assign…"
+    },
+    "patternTemplates": {
+      "school": "School",
+      "work": "Work",
+      "gym": "Gym",
+      "soccer": "Soccer"
+    },
+    "typicalWeek": {
+      "forPlaceholder": "For…"
+    },
+    "done": {
+      "familyFallback": "Your family",
+      "membersCount_one": "{{count}} member",
+      "membersCount_other": "{{count}} members",
+      "guardiansCount_one": "{{count}} guardian",
+      "guardiansCount_other": "{{count}} guardians",
+      "sharedCalendar": "shared calendar",
+      "choresSet": "chores set",
+      "weeklyPlans": "weekly plans"
+    },
+    "nav": {
+      "back": "Back",
+      "skip": "Skip",
+      "continue": "Continue",
+      "settingUp": "Setting up…",
+      "enter": "Enter Tribo"
+    }
   }
 }

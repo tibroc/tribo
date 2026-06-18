@@ -19,7 +19,67 @@
     "loading": "Wird geladen…",
     "today": "Heute",
     "previous": "Zurück",
-    "next": "Weiter"
+    "next": "Weiter",
+    "family": "Familie"
+  },
+  "home": {
+    "newEvent": "Neuer Termin",
+    "newChore": "Neue Aufgabe",
+    "newTodo": "Neues To-do",
+    "greeting": "Guten Morgen!",
+    "weekAhead": "Deine Woche im Überblick — {{range}}",
+    "countdown_one": "Noch {{count}} Tag bis {{title}}",
+    "countdown_other": "Noch {{count}} Tage bis {{title}}",
+    "today": "Heute",
+    "nothingToday": "Heute nichts geplant",
+    "personWeek": "Woche von {{name}}",
+    "nothingScheduled": "Nichts geplant",
+    "choresThisWeek": "Aufgaben diese Woche",
+    "thisWeek": "Diese Woche",
+    "nothingNotable": "Nichts Besonderes",
+    "lastWeek": "Letzte Woche",
+    "lastWeekStats": "{{choresDone}}/{{choresTotal}} Aufgaben · {{todosDone}}/{{todosTotal}} To-dos erledigt",
+    "viewReview": "Ganzen Rückblick ansehen →"
+  },
+  "weather": {
+    "clear": "Klar",
+    "partlyCloudy": "Teils bewölkt",
+    "overcast": "Bedeckt",
+    "fog": "Nebel",
+    "drizzle": "Nieselregen",
+    "rain": "Regen",
+    "snow": "Schnee",
+    "thunderstorm": "Gewitter",
+    "unknown": "—"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "titleCount": "Benachrichtigungen ({{count}})",
+    "heading": "Erfordert Aufmerksamkeit",
+    "itemCount_one": "{{count}} Eintrag",
+    "itemCount_other": "{{count}} Einträge",
+    "allCaught": "Alles erledigt.",
+    "needs_guardian": "Keine Aufsichtsperson frei – muss gelöst werden",
+    "unclaimed": "Braucht eine Aufsichtsperson"
+  },
+  "review": {
+    "periodWeek": "Diese Woche",
+    "periodMonth": "Dieser Monat",
+    "periodYear": "Dieses Jahr",
+    "statChores": "Aufgaben",
+    "statTodos": "To-dos",
+    "statEvents": "Termine",
+    "happened": "fanden statt",
+    "streak": "{{count}}-Wochen-Serie",
+    "choresLine": "Aufgaben: {{done}}/{{total}}",
+    "todosLine": "To-dos: {{done}}/{{total}} erledigt",
+    "consistency": "Aufgaben-Konsistenz",
+    "last8": "Letzte 8 Wochen",
+    "rotation": "Rotation",
+    "ytd": "Seit Jahresbeginn",
+    "ytdChores": "Aufgaben erledigt",
+    "ytdTodos": "To-dos erledigt",
+    "ytdBirthdays": "Geburtstage"
   },
   "language": {
     "title": "Sprache",
@@ -51,5 +111,297 @@
     "locationUnset": "Standort für das Wetter-Widget festlegen",
     "runWizard": "Einrichtungsassistent starten",
     "runWizardSub": "Mitglieder, Aufgaben oder eine typische Woche hinzufügen"
+  },
+  "views": {
+    "day": "Tag",
+    "week": "Woche",
+    "month": "Monat",
+    "quarter": "Quartal",
+    "year": "Jahr"
+  },
+  "appshell": {
+    "switchToDark": "Zu dunklem Modus wechseln",
+    "switchToLight": "Zu hellem Modus wechseln",
+    "theme": "Design"
+  },
+  "profile": {
+    "switch": "Profil wechseln",
+    "viewingAs": "Angemeldet als",
+    "you": "Du",
+    "pinPrompt": "PIN von {{name}}",
+    "unlock": "Entsperren",
+    "incorrectPin": "Falsche PIN",
+    "signOut": "Abmelden"
+  },
+  "chores": {
+    "doneThisWeek": "diese Woche erledigt",
+    "barsHint": "Jeder Balken ist eine Aufgabe, gefärbt nach zuständiger Person.",
+    "weekStreak": "Wochen-Serie",
+    "byPerson": "Nach Person",
+    "thisWeek": "diese Woche",
+    "thisWeekCap": "Diese Woche",
+    "rotation": "Rotation",
+    "addChore": "Aufgabe hinzufügen",
+    "groupToday": "Heute",
+    "groupLater": "Später diese Woche",
+    "noneThisWeek": "Keine Aufgaben diese Woche",
+    "recurrence": {
+      "daily": "Täglich",
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich"
+    }
+  },
+  "todos": {
+    "shared": "Gemeinsame To-dos",
+    "itemsSummary_one": "{{count}} Eintrag · {{open}} offen",
+    "itemsSummary_other": "{{count}} Einträge · {{open}} offen",
+    "toDo": "Zu erledigen",
+    "openCount": "{{count}} offen",
+    "completedCount": "{{count}} erledigt",
+    "nothingCompleted": "Noch nichts erledigt.",
+    "nothingToDo": "Nichts zu tun",
+    "addPlaceholder": "To-do hinzufügen…",
+    "addAria": "To-do hinzufügen"
+  },
+  "family": {
+    "membersTitle": "Familienmitglieder",
+    "addMember": "Mitglied hinzufügen",
+    "roleGuardian": "Erziehungsberechtigt",
+    "roleChild": "Kind · Standard-Erziehungsberechtigte/r: {{name}}",
+    "workSchedulesTitle": "Arbeitszeiten",
+    "showBusy": "Als „beschäftigt“ im Kalender anzeigen",
+    "addChore": "Aufgabe hinzufügen",
+    "banner": {
+      "title": "Deine Familie",
+      "members_one": "{{count}} Mitglied",
+      "members_other": "{{count}} Mitglieder",
+      "guardians_one": "{{count}} Erziehungsberechtigte/r",
+      "guardians_other": "{{count}} Erziehungsberechtigte",
+      "calendars_one": "{{count}} geteilter Kalender",
+      "calendars_other": "{{count}} geteilte Kalender"
+    },
+    "calendars": {
+      "title": "Kalenderquellen",
+      "builtin": "Integriert",
+      "readOnly": "schreibgeschützt",
+      "syncNow": "Jetzt synchronisieren",
+      "remove": "Entfernen",
+      "connectGoogle": "Google Kalender verbinden",
+      "addCaldav": "CalDAV-Kalender hinzufügen",
+      "displayName": "Anzeigename",
+      "urlPlaceholder": "CalDAV-URL (z. B. https://host/dav/user/calendar/)",
+      "usernamePlaceholder": "Benutzername (optional)",
+      "passwordPlaceholder": "Passwort (optional)",
+      "readOnlyOption": "Schreibgeschützt (Tribo-Termine nicht in diesen Kalender übertragen)",
+      "urlRequired": "CalDAV-URL ist erforderlich"
+    },
+    "location": {
+      "title": "Wetterort",
+      "searchPlaceholder": "Nach einer Stadt suchen…",
+      "searching": "Suche läuft…",
+      "current": "Aktuell: {{name}}",
+      "pickResult": "Wähle einen Ort aus den Suchergebnissen",
+      "units": "Einheiten"
+    }
+  },
+  "event": {
+    "newTitle": "Neuer Termin",
+    "editTitle": "Termin bearbeiten",
+    "titlePlaceholder": "Titel des Termins",
+    "titleRequired": "Titel ist erforderlich",
+    "allDay": "Ganztägig",
+    "whosComing": "Wer ist dabei?",
+    "addLocation": "Ort hinzufügen",
+    "notes": "Notizen",
+    "important": "Wichtig",
+    "importantHint": "Immer anzeigen, auch in Quartals- und Jahresansicht",
+    "personalCalendar": "Persönlicher Kalender",
+    "familyCalendar": "Familienkalender",
+    "deleteEvent": "Termin löschen",
+    "requiresGuardian": "Aufsicht erforderlich",
+    "guardianAutoAssign": "Beim Speichern wird automatisch eine Aufsichtsperson zugewiesen.",
+    "assignedTo": "{{name}} zugewiesen",
+    "noGuardianAvailable": "Keine Aufsicht verfügbar",
+    "multipleFree": "Mehrere Aufsichtspersonen sind frei — wer zuerst öffnet, übernimmt.",
+    "claim": "Übernehmen · {{name}}",
+    "toggle": "umschalten"
+  },
+  "forms": {
+    "addMember": "Mitglied hinzufügen",
+    "editMember": "Mitglied bearbeiten",
+    "addChore": "Aufgabe hinzufügen",
+    "editChore": "Aufgabe bearbeiten",
+    "addWorkSchedule": "Arbeitszeit hinzufügen",
+    "editWorkSchedule": "Arbeitszeit bearbeiten",
+    "name": "Name",
+    "color": "Farbe",
+    "defaultGuardian": "Standard-Aufsicht",
+    "none": "Keine",
+    "pinNew": "PIN (optional)",
+    "pinEdit": "PIN (leer lassen, um beizubehalten)",
+    "pinPlaceholder": "PIN für Profilwechsel",
+    "title": "Titel",
+    "repeats": "Wiederholung",
+    "assignment": "Zuweisung",
+    "assignedTo": "Zugewiesen an",
+    "choose": "Auswählen…",
+    "rotationInOrder": "Rotation (in Reihenfolge)",
+    "guardian": "Aufsicht",
+    "days": "Tage",
+    "start": "Beginn",
+    "end": "Ende",
+    "label": "Bezeichnung",
+    "showBusy": "Als „beschäftigt“ im Kalender anzeigen",
+    "role": {
+      "label": "Rolle",
+      "guardian": "Aufsicht",
+      "child": "Kind"
+    },
+    "recurrence": {
+      "daily": "Täglich",
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich"
+    },
+    "assignmentMode": {
+      "fixed": "Fest — eine Person",
+      "rotation": "Rotation — im Wechsel"
+    }
+  },
+  "calendar": {
+    "thisWeek": "Diese Woche",
+    "thisMonth": "Dieser Monat",
+    "thisQuarter": "Dieses Quartal",
+    "thisYear": "Dieses Jahr",
+    "sharedPlans_one": "{{count}} gemeinsamer Termin",
+    "sharedPlans_other": "{{count}} gemeinsame Termine",
+    "busy": "beschäftigt",
+    "nothingScheduled": "Nichts geplant",
+    "nothingNotable": "Nichts Besonderes",
+    "choresThisWeek": "Aufgaben dieser Woche",
+    "dayOfYear": "Tag {{day}} von 365 · {{pct}} %"
+  },
+  "auth": {
+    "welcomeHome": "Willkommen zu Hause",
+    "loginSubtitle": "Melde dich bei deinem Familienorganizer an.",
+    "signInWithAuthentik": "Mit Authentik anmelden",
+    "whoAreYou": "Wer bist du?",
+    "mapSubtitle": "Verknüpfe dein Konto mit einem Familienmitglied.",
+    "alreadyLinked": "Bereits verknüpft"
+  },
+  "onboarding": {
+    "welcome": {
+      "headline1": "Pläne,",
+      "headline2": "gebündelt.",
+      "subtitle": "Ein ruhiger, gemeinsamer Kalender für die ganze Familie — alle Tage, Aufgaben und Pläne an einem warmen Ort.",
+      "cta": "Familie erstellen"
+    },
+    "stepCounter": "Schritt {{step}} von {{total}}",
+    "taglines": {
+      "1": {
+        "lead": "Jede Familie",
+        "before": "beginnt mit einem",
+        "accent": "Namen.",
+        "sub": "Das ist das Zuhause, das ihr teilt — gib ihm einen Namen, den alle wiedererkennen."
+      },
+      "2": {
+        "before": "Wer gehört zu eurem",
+        "accent": "Stamm?",
+        "sub": "Jede Person bekommt ihre eigene Farbe, damit jeder Plan auf einen Blick zuzuordnen ist."
+      },
+      "3": {
+        "before": "Bringt eure Kalender",
+        "accent": "zusammen.",
+        "sub": "Tribo bündelt das, was ihr bereits nutzt, in einer gemeinsamen Ansicht."
+      },
+      "4": {
+        "before": "Teilt die Aufgaben,",
+        "accent": "gemeinsam.",
+        "sub": "Ein paar Starter-Aufgaben sorgen dafür, dass alle mit anpacken."
+      },
+      "5": {
+        "before": "Bestimmt den Rhythmus",
+        "accent": "eurer Woche.",
+        "sub": "Wiederkehrende Aktivitäten halten den gemeinsamen Kalender aktuell."
+      },
+      "6": {
+        "before": "Eure Familie, alles an",
+        "accent": "einem Ort.",
+        "sub": "Das war's — eure gemeinsame Woche ist startklar."
+      }
+    },
+    "titles": {
+      "1": "Familie benennen",
+      "2": "Mitglieder hinzufügen",
+      "3": "Kalender verbinden",
+      "4": "Erste Aufgaben",
+      "5": "Eure typische Woche",
+      "6": "Alles bereit"
+    },
+    "descriptions": {
+      "1": "Du kannst dies später in den Familieneinstellungen ändern.",
+      "2": "Füge alle hinzu, die diesen Kalender teilen — jede Person bekommt automatisch eine harmonische Farbe.",
+      "3": "Verknüpfe die Kalender, die deine Familie bereits nutzt — nichts wird verschoben oder geändert.",
+      "4": "Wähle ein paar zum Start — weise jede einer Person zu. (Optional.)",
+      "5": "Häufige wiederkehrende Aktivitäten. Weise jede einer Person zu. (Optional.)",
+      "6": "Willkommen zu einer ruhigeren Familienwoche."
+    },
+    "familyStep": {
+      "nameLabel": "Familienname",
+      "namePlaceholder": "Familie Silva",
+      "timezoneLabel": "Zeitzone"
+    },
+    "members": {
+      "namePlaceholder": "Name",
+      "guardian": "Erziehungsberechtigt",
+      "child": "Kind",
+      "guardianPlaceholder": "Erziehungsberechtigt…",
+      "memberN": "Mitglied {{n}}",
+      "addMember": "Mitglied hinzufügen",
+      "paletteHint": "<0>Das nächste Mitglied</0> erhält automatisch diese Farbe — so behält jede Familie eine ausgewogene, harmonische Palette."
+    },
+    "calendar": {
+      "note": "Ein integrierter <1>Familienkalender</1> wird automatisch erstellt. Du kannst jederzeit einen externen CalDAV-/Google-Kalender unter <3>Familie → Kalender</3> verbinden."
+    },
+    "recurrence": {
+      "daily": "täglich",
+      "weekly": "wöchentlich",
+      "monthly": "monatlich"
+    },
+    "choreTemplates": {
+      "recycling": "Altpapier rausbringen",
+      "bathroom": "Bad putzen",
+      "plants": "Pflanzen gießen",
+      "table": "Tisch decken",
+      "lawn": "Rasen mähen"
+    },
+    "chores": {
+      "assignPlaceholder": "Zuweisen…"
+    },
+    "patternTemplates": {
+      "school": "Schule",
+      "work": "Arbeit",
+      "gym": "Sport",
+      "soccer": "Fußball"
+    },
+    "typicalWeek": {
+      "forPlaceholder": "Für…"
+    },
+    "done": {
+      "familyFallback": "Deine Familie",
+      "membersCount_one": "{{count}} Mitglied",
+      "membersCount_other": "{{count}} Mitglieder",
+      "guardiansCount_one": "{{count}} Erziehungsberechtigter",
+      "guardiansCount_other": "{{count}} Erziehungsberechtigte",
+      "sharedCalendar": "gemeinsamer Kalender",
+      "choresSet": "Aufgaben festgelegt",
+      "weeklyPlans": "Wochenpläne"
+    },
+    "nav": {
+      "back": "Zurück",
+      "skip": "Überspringen",
+      "continue": "Weiter",
+      "settingUp": "Wird eingerichtet…",
+      "enter": "Tribo öffnen"
+    }
   }
 }

@@ -1,9 +1,24 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Sun, CloudSun, Cloud, CloudFog, CloudRain, CloudSnow, CloudLightning } from 'lucide-react'
 import type { HeaderControls } from '../lib/calendar'
 import { getWeather, type Weather as WeatherData } from '../lib/api'
 import Icon from './Icon'
 import ViewSwitcher from './ViewSwitcher'
+
+// WMO weather-interpretation code → translation key (mirrors the backend's
+// describe()), so the condition label localizes on the client.
+function weatherKey(code: number): string {
+  if (code === 0) return 'weather.clear'
+  if (code === 1 || code === 2) return 'weather.partlyCloudy'
+  if (code === 3) return 'weather.overcast'
+  if (code === 45 || code === 48) return 'weather.fog'
+  if (code >= 51 && code <= 57) return 'weather.drizzle'
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return 'weather.rain'
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'weather.snow'
+  if (code >= 95) return 'weather.thunderstorm'
+  return 'weather.unknown'
+}
 
 // Fired by the location picker after a save so the header widget refetches
 // without a full reload (each screen mounts its own AppShell/header).
@@ -59,6 +74,7 @@ export function Wordmark({ size = 'lg' }: { size?: 'sm' | 'lg' }) {
 // search button). Styled as a soft pill to echo the .sv-iconbtn row. Shows live
 // conditions for the family's configured location; hidden until one is set.
 export function Weather({ size = 17 }: { size?: number }) {
+  const { t } = useTranslation()
   const [w, setW] = useState<WeatherData | null>(null)
   useEffect(() => {
     const load = () => getWeather().then(setW).catch(() => setW(null))
@@ -74,7 +90,7 @@ export function Weather({ size = 17 }: { size?: number }) {
     <div
       className="hidden sm:flex items-center gap-1.5 text-sm rounded-full px-3"
       style={{ height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)', fontWeight: 600 }}
-      title={`${w.condition} · ${w.locationName}`}
+      title={`${t(weatherKey(w.code))} · ${w.locationName}`}
     >
       <WIcon size={size} style={{ color: 'var(--t-accent)' }} />{Math.round(w.temperature)}{unit}
     </div>
@@ -98,10 +114,11 @@ function emphasize(label: string): ReactNode {
 
 // Round bordered nav arrow, matching the reference's .sv-arrow.
 function NavArrow({ dir, onClick }: { dir: 'left' | 'right'; onClick?: () => void }) {
+  const { t } = useTranslation()
   return (
     <button
       onClick={onClick}
-      aria-label={dir === 'left' ? 'Previous' : 'Next'}
+      aria-label={dir === 'left' ? t('common.previous') : t('common.next')}
       className="flex items-center justify-center rounded-full transition-transform hover:-translate-y-px"
       style={{ width: 32, height: 32, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
     >
@@ -113,6 +130,7 @@ function NavArrow({ dir, onClick }: { dir: 'left' | 'right'; onClick?: () => voi
 // The calendar header's CENTERED content: period navigation + view switcher.
 // Renders a horizontal row on desktop and a stacked block on mobile.
 export function CalendarHeader({ controls }: { controls: HeaderControls }) {
+  const { t } = useTranslation()
   const { view, onViewChange, periodLabel, onPrev, onNext, onToday } = controls
   return (
     <>
@@ -128,7 +146,7 @@ export function CalendarHeader({ controls }: { controls: HeaderControls }) {
           style={{ border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-brand)' }}
           onClick={onToday}
         >
-          Today
+          {t('common.today')}
         </button>
         <ViewSwitcher active={view} onChange={onViewChange} />
       </div>
@@ -141,7 +159,7 @@ export function CalendarHeader({ controls }: { controls: HeaderControls }) {
             <div className="sv-period-label" style={disp(19, { whiteSpace: 'nowrap' })}>{emphasize(periodLabel)}</div>
             <NavArrow dir="right" onClick={onNext} />
           </div>
-          <button className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' }} onClick={onToday}>Today</button>
+          <button className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' }} onClick={onToday}>{t('common.today')}</button>
         </div>
         <ViewSwitcher active={view} onChange={onViewChange} />
       </div>

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
 import { sameDay, startOfDay, type ViewProps } from '../lib/calendar'
 import { fmtTime, fmtHour } from '../lib/datetime'
@@ -36,6 +37,7 @@ interface Block { ev: TriboEvent; start: number; end: number; color: string; who
 
 export default function DayView({ members, events, cursor, today, header, workSchedules, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
   const locale = useLocale()
+  const { t } = useTranslation()
   const day = useMemo(() => startOfDay(cursor), [cursor])
   const weekday = (day.getDay() + 6) % 7 // Mon=0
   const busyFor = (memberID: string): BusyBlock[] =>
@@ -55,14 +57,14 @@ export default function DayView({ members, events, cursor, today, header, workSc
       const s = new Date(ev.startAt)
       if (ev.allDay || !sameDay(s, day)) continue
       const block: Omit<Block, 'color' | 'who'> = { ev, start: fracHour(s), end: fracHour(new Date(ev.endAt)) }
-      if (ev.isShared || ev.attendeeIds.length === 0) sh.push({ ...block, color: SHARED_COLOR, who: 'Family' })
+      if (ev.isShared || ev.attendeeIds.length === 0) sh.push({ ...block, color: SHARED_COLOR, who: t('common.family') })
       else ev.attendeeIds.forEach((mid) => {
         const m = members.find((x) => x.id === mid)
         if (m) pm.get(mid)!.push({ ...block, color: m.color, who: m.name })
       })
     }
     return { perMember: pm, shared: sh }
-  }, [events, members, day])
+  }, [events, members, day, t])
 
   const combined = useMemo(() => {
     const all: Block[] = [...members.flatMap((m) => perMember.get(m.id) ?? []), ...shared]
@@ -71,7 +73,7 @@ export default function DayView({ members, events, cursor, today, header, workSc
 
   const columns = [
     ...members.map((m) => ({ key: m.id, name: m.name, color: m.color, isFamily: false, blocks: perMember.get(m.id) ?? [], busy: busyFor(m.id) })),
-    { key: 'family', name: 'Family', color: SHARED_COLOR, isFamily: true, blocks: shared, busy: [] as BusyBlock[] },
+    { key: 'family', name: t('common.family'), color: SHARED_COLOR, isFamily: true, blocks: shared, busy: [] as BusyBlock[] },
   ]
 
   return (
@@ -173,14 +175,15 @@ function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent, 
 
 // Live chores + to-dos as two free-floating aside cards.
 function TodayPanel({ members }: { members: FamilyMember[] }) {
+  const { t } = useTranslation()
   const { instances, todos, toggleChore, toggleTodo, addTodo } = useChoresTodos()
   return (
     <>
       <Card>
-        <ChoresPanel instances={instances} members={members} onToggle={toggleChore} title="This week's chores" />
+        <ChoresPanel instances={instances} members={members} onToggle={toggleChore} title={t('calendar.choresThisWeek')} />
       </Card>
       <Card>
-        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 12 }}>To-dos</div>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 12 }}>{t('nav.todos')}</div>
         <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
       </Card>
     </>

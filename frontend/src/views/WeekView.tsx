@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
 import {
   addDays, mondayOf, sameDay, groupByDay, type ViewProps,
@@ -75,6 +76,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
   sharedCount: number
   onEditEvent: (e: TriboEvent) => void
 }) {
+  const { t } = useTranslation()
   const line = '1px solid var(--t-line)'
   // Subtle table polish: a stronger divider under the header row, a faint wash
   // on the label column, and a faint wash on weekend columns.
@@ -88,8 +90,8 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
     <div style={{ display: 'grid', gridTemplateColumns: '158px repeat(7, 1fr)', gridTemplateRows: 'auto', gridAutoRows: 'minmax(104px, 1fr)', height: '100%' }}>
       {/* corner */}
       <div style={{ padding: '18px 18px 14px', borderBottom: headLine, backgroundColor: labelWash }}>
-        <div className="t-eyebrow">This week</div>
-        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 21, marginTop: 3 }}>{sharedCount} shared plan{sharedCount === 1 ? '' : 's'}</div>
+        <div className="t-eyebrow">{t('calendar.thisWeek')}</div>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 21, marginTop: 3 }}>{t('calendar.sharedPlans', { count: sharedCount })}</div>
       </div>
       {days.map((d, i) => {
         const isToday = sameDay(d, today)
@@ -116,7 +118,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
             {days.map((d, di) => (
               <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderBottom: line, borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
                 {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
-                {busyAt(person.id, di) && <div style={{ fontSize: '10.5px', fontWeight: 600, fontStyle: 'italic', color: 'var(--t-text-soft)', opacity: 0.55 }}>busy</div>}
+                {busyAt(person.id, di) && <div style={{ fontSize: '10.5px', fontWeight: 600, fontStyle: 'italic', color: 'var(--t-text-soft)', opacity: 0.55 }}>{t('calendar.busy')}</div>}
               </div>
             ))}
           </div>
@@ -126,7 +128,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
       {/* shared row */}
       <div className="flex items-center gap-3" style={{ padding: '16px 18px', backgroundColor: labelWash }}>
         <PersonAvatar color={SHARED_COLOR} family size={38} />
-        <div className="text-sm font-semibold">Family</div>
+        <div className="text-sm font-semibold">{t('common.family')}</div>
       </div>
       {days.map((d, di) => (
         <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
@@ -147,20 +149,21 @@ function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEdit
   today: Date
   onEditEvent: (e: TriboEvent) => void
 }) {
+  const { t } = useTranslation()
   const isToday = sameDay(day, today)
   const items: { ev: TriboEvent; time?: string; color: string; who: string }[] = []
   members.forEach((p) => (perMember.get(p.id)?.[di] ?? []).forEach((pl) => items.push({ ...pl, color: p.color, who: p.name })))
-  ;(shared[di] ?? []).forEach((pl) => items.push({ ...pl, color: SHARED_COLOR, who: 'Family' }))
+  ;(shared[di] ?? []).forEach((pl) => items.push({ ...pl, color: SHARED_COLOR, who: t('common.family') }))
   items.sort((a, b) => +new Date(a.ev.startAt) - +new Date(b.ev.startAt))
 
   return (
     <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
         <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{day.getDate()}</div>
-        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{weekday}{isToday ? ' · Today' : ''}</div>
+        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{weekday}{isToday ? ` · ${t('common.today')}` : ''}</div>
       </div>
       {items.length === 0 ? (
-        <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>Nothing scheduled</div>
+        <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingScheduled')}</div>
       ) : (
         <div className="space-y-1.5">
           {items.map(({ ev, time, color, who }) => (
@@ -179,13 +182,14 @@ function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEdit
 
 // This-week aside: live chores + to-dos as two free-floating Salvia cards.
 function ThisWeekPanel({ members }: { members: FamilyMember[] }) {
+  const { t } = useTranslation()
   const { instances, todos, toggleChore, toggleTodo, addTodo } = useChoresTodos()
   const done = instances.filter((i) => i.status === 'done').length
   const pct = instances.length ? Math.round((done / instances.length) * 100) : 0
   return (
     <>
       <Card>
-        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 2 }}>This week</div>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 2 }}>{t('calendar.thisWeek')}</div>
         <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{done}/{instances.length} chores done</div>
         <div className="h-2 rounded-full mt-3 mb-4" style={{ backgroundColor: 'var(--t-track)' }}>
           <div className="h-2 rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--t-brand)' }} />
@@ -193,7 +197,7 @@ function ThisWeekPanel({ members }: { members: FamilyMember[] }) {
         <ChoresPanel instances={instances} members={members} onToggle={toggleChore} />
       </Card>
       <Card>
-        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 12 }}>To-dos</div>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 12 }}>{t('nav.todos')}</div>
         <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
       </Card>
     </>

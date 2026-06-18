@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey,
@@ -16,6 +17,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
   const byId = useMemo(() => membersById(members), [members])
   const byDay = useMemo(() => groupByDay(events), [events])
   const locale = useLocale()
+  const { t } = useTranslation()
   const monthsShort = useMemo(() => monthLabels(locale, 'short'), [locale])
 
   // Year progress (only meaningful when viewing the current year).
@@ -36,7 +38,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <div className="font-display text-lg font-bold">{year}</div>
-          {inThisYear && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Day {dayOfYear} of 365 · {progress}%</div>}
+          {inThisYear && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.dayOfYear', { day: dayOfYear, pct: progress })}</div>}
         </div>
         <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--t-track)' }}>
           <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: 'var(--t-brand)' }} />
@@ -48,9 +50,9 @@ export default function YearView({ members, events, cursor, today, header, onNav
       </div>
 
       <div className="mt-6">
-        <div className="font-display text-lg font-bold mb-3">This year</div>
+        <div className="font-display text-lg font-bold mb-3">{t('calendar.thisYear')}</div>
         {highlights.length === 0 ? (
-          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Nothing notable</div>
+          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingNotable')}</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1.5">
             {highlights.map(({ e, d }) => {

@@ -362,17 +362,18 @@ export function deleteWorkSchedule(id: string): Promise<void> {
 
 // ===== Briefing (Home) =====
 export interface Briefing {
-  rangeLabel: string
+  rangeStart: string // RFC3339; formatted client-side per locale
+  rangeEnd: string
   countdown?: { days: number; title: string }
-  today: { time: string; title: string; color: string; person: string }[]
+  today: { startAt: string; title: string; color: string; person: string }[]
   personWeeks: {
     memberId: string
     name: string
     color: string
-    highlights: { label: string; days: string; special: boolean }[]
+    highlights: { label: string; weekdays: number[]; time?: string; special: boolean }[]
     chores: string[]
   }[]
-  familyHighlights: { title: string; day: string; color: string; icon?: string }[]
+  familyHighlights: { title: string; date: string; color: string; icon?: string }[]
   lastWeek: { choresDone: number; choresTotal: number; todosDone: number; todosTotal: number }
 }
 
@@ -383,7 +384,8 @@ export function getBriefing(): Promise<Briefing> {
 // ===== Review =====
 export interface Review {
   period: 'week' | 'month' | 'year'
-  rangeLabel: string
+  rangeStart: string // RFC3339; formatted client-side per locale
+  rangeEnd: string
   chores: { done: number; total: number; pct: number }
   todos: { done: number; total: number; pct: number }
   events: number
@@ -397,7 +399,7 @@ export interface Review {
     todosTotal: number
     streak: number
   }[]
-  consistency: { choreId: string; title: string; color: string; who: string; history: boolean[] }[]
+  consistency: { choreId: string; title: string; color: string; who: string; rotation: boolean; history: boolean[] }[]
   ytd: { chores: number; todos: number; birthdays: number }
 }
 

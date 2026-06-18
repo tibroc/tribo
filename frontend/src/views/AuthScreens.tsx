@@ -1,4 +1,5 @@
 import { LogIn } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useSession } from '../lib/session'
 import { Wordmark } from '../components/chrome'
 import PersonAvatar from '../components/PersonAvatar'
@@ -18,12 +19,13 @@ function AuthShell({ children }: { children: React.ReactNode }) {
 
 export function LoginScreen() {
   const { login } = useSession()
+  const { t } = useTranslation()
   return (
     <AuthShell>
-      <div className="font-display text-lg font-bold text-center mb-1">Welcome home</div>
-      <div className="text-sm text-center mb-5" style={{ color: 'var(--t-text-soft)' }}>Sign in to your family organizer.</div>
+      <div className="font-display text-lg font-bold text-center mb-1">{t('auth.welcomeHome')}</div>
+      <div className="text-sm text-center mb-5" style={{ color: 'var(--t-text-soft)' }}>{t('auth.loginSubtitle')}</div>
       <Button onClick={login} style={{ width: '100%' }}>
-        <LogIn size={16} /> Sign in with Authentik
+        <LogIn size={16} /> {t('auth.signInWithAuthentik')}
       </Button>
     </AuthShell>
   )
@@ -32,11 +34,12 @@ export function LoginScreen() {
 // First-login: link the signed-in account to a family member.
 export function MapProfileScreen() {
   const { session, mapProfile } = useSession()
+  const { t } = useTranslation()
   if (!session) return null
   return (
     <AuthShell>
-      <div className="font-display text-lg font-bold text-center mb-1">Who are you?</div>
-      <div className="text-sm text-center mb-5" style={{ color: 'var(--t-text-soft)' }}>Link your account to a family member.</div>
+      <div className="font-display text-lg font-bold text-center mb-1">{t('auth.whoAreYou')}</div>
+      <div className="text-sm text-center mb-5" style={{ color: 'var(--t-text-soft)' }}>{t('auth.mapSubtitle')}</div>
       <div className="space-y-2">
         {session.members.map((m, i) => {
           const claimed = m.mapped
@@ -51,7 +54,7 @@ export function MapProfileScreen() {
               <PersonAvatar name={m.name} color={m.color} index={i} size={36} />
               <div className="flex-1">
                 <div className="text-sm font-semibold">{m.name}</div>
-                <div className="text-xs capitalize" style={{ color: 'var(--t-text-soft)' }}>{claimed ? 'Already linked' : m.role}</div>
+                <div className="text-xs capitalize" style={{ color: 'var(--t-text-soft)' }}>{claimed ? t('auth.alreadyLinked') : m.role}</div>
               </div>
             </button>
           )

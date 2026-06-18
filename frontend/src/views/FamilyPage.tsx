@@ -80,32 +80,32 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
       : nameOf(c.assignedMemberId)
 
   return (
-    <AppShell active="family" onNavigate={go} showFab={false} header={<SimpleHeader title="Family" />}>
+    <AppShell active="family" onNavigate={go} showFab={false} header={<SimpleHeader title={t('nav.family')} />}>
       <div style={{ padding: '22px 26px' }} className="space-y-4">
         {/* Banner */}
         <FamilyBanner members={members} guardians={guardians} sources={sources} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Family members */}
-        <Section title="Family members" icon={Users} flush
-          action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setMemberModal(null)}><Plus size={14} /> Add member</Button>}>
+        <Section title={t('family.membersTitle')} icon={Users} flush
+          action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setMemberModal(null)}><Plus size={14} /> {t('family.addMember')}</Button>}>
           {members.map((p, i) => (
             <div key={p.id} className="flex items-center gap-3" style={{ padding: '12px 22px', borderBottom: i === members.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
               <PersonAvatar name={p.name} color={p.color} index={i} size={40} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate" style={{ fontFamily: 'var(--t-font-display)', fontWeight: 600 }}>{p.name}</div>
                 <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>
-                  {p.role === 'guardian' ? 'Guardian' : `Child · Default guardian: ${nameOf(p.defaultGuardianId) || '—'}`}
+                  {p.role === 'guardian' ? t('family.roleGuardian') : t('family.roleChild', { name: nameOf(p.defaultGuardianId) || '—' })}
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setMemberModal(p)}>Edit</Button>
+              <Button variant="outline" size="sm" onClick={() => setMemberModal(p)}>{t('common.edit')}</Button>
             </div>
           ))}
         </Section>
 
         {/* Work schedules */}
-        <Section title="Work schedules" icon={CalendarDays}
-          action={guardians.length > 0 ? <Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setWsModal(null)}><Plus size={14} /> Add</Button> : undefined}>
+        <Section title={t('family.workSchedulesTitle')} icon={CalendarDays}
+          action={guardians.length > 0 ? <Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setWsModal(null)}><Plus size={14} /> {t('common.add')}</Button> : undefined}>
           <div className="space-y-4">
             {schedules.map((s) => {
               const mi = members.findIndex((x) => x.id === s.memberId)
@@ -135,7 +135,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                       type="checkbox" checked={s.showOnCalendar} className="w-3.5 h-3.5 rounded"
                       onChange={(e) => setWorkScheduleVisibility(s.id, e.target.checked).then(reloadSchedules)}
                     />
-                    Show as "busy" on calendar
+                    {t('family.showBusy')}
                   </label>
                 </div>
               )
@@ -144,8 +144,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         </Section>
 
           {/* Chores */}
-          <Section title="Chores" icon={CheckSquare} flush
-            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Plus size={14} /> Add chore</Button>}>
+          <Section title={t('nav.chores')} icon={CheckSquare} flush
+            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Plus size={14} /> {t('family.addChore')}</Button>}>
             {chores.map((c, i) => (
               <button key={c.id} onClick={() => setChoreModal(c)} className="flex items-center gap-3 w-full text-left" style={{ padding: '12px 22px', borderBottom: i === chores.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color ?? '#3E6259' }} />
@@ -153,14 +153,14 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <div className="text-sm truncate font-medium">{c.title}</div>
                   <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{choreWho(c)}</div>
                 </div>
-                <RecurrencePill label={c.assignmentMode === 'rotation' ? 'Rotation' : cap(c.recurrenceRule)} rotation={c.assignmentMode === 'rotation'} />
+                <RecurrencePill label={c.assignmentMode === 'rotation' ? t('chores.rotation') : t(`chores.recurrence.${c.recurrenceRule}`)} rotation={c.assignmentMode === 'rotation'} />
               </button>
             ))}
           </Section>
 
           {/* Calendars — internal + connected external (CalDAV) sources. */}
-          <Section title="Calendar sources" icon={Globe}
-            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setShowConnect(true)}><Plus size={14} /> Connect</Button>}>
+          <Section title={t('family.calendars.title')} icon={Globe}
+            action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setShowConnect(true)}><Plus size={14} /> {t('common.connect')}</Button>}>
             <div className="space-y-2">
               {sources.map((c) => (
                 <div key={c.id} className="flex items-center gap-2 py-1">
@@ -168,15 +168,15 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{c.displayName}</div>
                     <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>
-                      {c.type === 'internal' ? 'Built-in' : `${c.type}${c.readOnly ? ' · read-only' : ''}`}
+                      {c.type === 'internal' ? t('family.calendars.builtin') : `${c.type}${c.readOnly ? ' · ' + t('family.calendars.readOnly') : ''}`}
                     </div>
                   </div>
                   {c.type !== 'internal' && (
                     <>
-                      <button aria-label="Sync now" onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
+                      <button aria-label={t('family.calendars.syncNow')} onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
                         <RefreshCw size={14} style={{ color: 'var(--t-text-soft)' }} />
                       </button>
-                      <button aria-label="Remove" onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
+                      <button aria-label={t('family.calendars.remove')} onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
                         <Trash2 size={14} style={{ color: 'var(--t-text-soft)' }} />
                       </button>
                     </>
@@ -184,7 +184,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                 </div>
               ))}
             </div>
-            <AddRow label="Connect Google Calendar" onClick={() => {
+            <AddRow label={t('family.calendars.connectGoogle')} onClick={() => {
               googleConnectUrl()
                 .then((r) => { window.location.href = r.authUrl })
                 .catch((e) => setCalError(String(e)))
@@ -261,7 +261,13 @@ function Section({ title, icon: Icon, action, children, flush }: { title: string
 
 // Family banner: overlapping avatar stack + title + member/guardian summary + Invite.
 function FamilyBanner({ members, guardians, sources }: { members: FamilyMember[]; guardians: FamilyMember[]; sources: CalendarSource[] }) {
+  const { t } = useTranslation()
   const sharedSources = sources.filter((s) => s.isShared).length
+  const summary = [
+    t('family.banner.members', { count: members.length }),
+    t('family.banner.guardians', { count: guardians.length }),
+    t('family.banner.calendars', { count: sharedSources }),
+  ].join(' · ')
   return (
     <Card>
       <div className="flex items-center gap-4">
@@ -276,9 +282,9 @@ function FamilyBanner({ members, guardians, sources }: { members: FamilyMember[]
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 28, lineHeight: 1.1, color: 'var(--t-text)' }}>Your family</div>
+          <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 28, lineHeight: 1.1, color: 'var(--t-text)' }}>{t('family.banner.title')}</div>
           <div className="text-sm" style={{ color: 'var(--t-text-soft)', marginTop: 2 }}>
-            {members.length} member{members.length === 1 ? '' : 's'} · {guardians.length} guardian{guardians.length === 1 ? '' : 's'} · {sharedSources} shared calendar{sharedSources === 1 ? '' : 's'}
+            {summary}
           </div>
         </div>
       </div>
@@ -303,7 +309,6 @@ function SettingRow({ icon: Icon, title, sub, onClick }: { icon: typeof MapPin; 
   return <div className="flex items-center gap-3">{inner}</div>
 }
 
-function cap(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 function AddRow({ label, onClick }: { label: string; onClick: () => void }) {
   return (
@@ -316,6 +321,7 @@ function AddRow({ label, onClick }: { label: string; onClick: () => void }) {
 
 // CalDAV connect flow (designed just-in-time per the build brief).
 function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {
+  const { t } = useTranslation()
   const [displayName, setDisplayName] = useState('')
   const [url, setUrl] = useState('')
   const [username, setUsername] = useState('')
@@ -325,7 +331,7 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
   const [error, setError] = useState<string | null>(null)
 
   const connect = async () => {
-    if (!url.trim()) { setError('CalDAV URL is required'); return }
+    if (!url.trim()) { setError(t('family.calendars.urlRequired')); return }
     setBusy(true); setError(null)
     try {
       await addCalendarSource({ type: 'caldav', displayName: displayName || 'Calendar', url: url.trim(), username, password, readOnly })
@@ -339,19 +345,19 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
       <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
-          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Cancel</button>
-          <div className="font-display text-lg" style={{ fontWeight: 500 }}>Add CalDAV calendar</div>
-          <button onClick={connect} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>Connect</button>
+          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.cancel')}</button>
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{t('family.calendars.addCaldav')}</div>
+          <button onClick={connect} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.connect')}</button>
         </div>
         <div className="p-5 space-y-3">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
-          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="CalDAV URL (e.g. https://host/dav/user/calendar/)" value={url} onChange={(e) => setUrl(e.target.value)} />
-          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Username (optional)" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input type="password" className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Password (optional)" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.displayName')} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.urlPlaceholder')} value={url} onChange={(e) => setUrl(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.usernamePlaceholder')} value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input type="password" className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.passwordPlaceholder')} value={password} onChange={(e) => setPassword(e.target.value)} />
           <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
             <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded" />
-            Read-only (don't push Tribo events to this calendar)
+            {t('family.calendars.readOnlyOption')}
           </label>
         </div>
       </div>
@@ -482,6 +488,7 @@ function AccountModal({ onClose }: { onClose: () => void }) {
 
 // Weather location picker: city search via Open-Meteo geocoding + a units toggle.
 function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettings | null; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GeoResult[]>([])
   const [picked, setPicked] = useState<GeoResult | null>(null)
@@ -494,19 +501,19 @@ function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettin
   useEffect(() => {
     const q = query.trim()
     if (q.length < 2) { setResults([]); return }
-    const t = setTimeout(() => {
+    const handle = setTimeout(() => {
       setSearching(true)
       geocodeLocation(q)
         .then((r) => setResults(r))
         .catch((e) => setError(String(e)))
         .finally(() => setSearching(false))
     }, 300)
-    return () => clearTimeout(t)
+    return () => clearTimeout(handle)
   }, [query])
 
   const label = (g: GeoResult) => [g.name, g.admin1, g.country].filter(Boolean).join(', ')
   const save = async () => {
-    if (!picked) { setError('Pick a location from the search results'); return }
+    if (!picked) { setError(t('family.location.pickResult')); return }
     setBusy(true); setError(null)
     try {
       await updateWeatherSettings({ latitude: picked.latitude, longitude: picked.longitude, locationName: label(picked), units })
@@ -520,17 +527,17 @@ function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettin
       <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
-          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Cancel</button>
-          <div className="font-display text-lg" style={{ fontWeight: 500 }}>Weather location</div>
-          <button onClick={save} disabled={busy || !picked} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>Save</button>
+          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.cancel')}</button>
+          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{t('family.location.title')}</div>
+          <button onClick={save} disabled={busy || !picked} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.save')}</button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
           {settings?.locationName && !picked && (
-            <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Current: {settings.locationName}</div>
+            <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('family.location.current', { name: settings.locationName })}</div>
           )}
-          <input autoFocus className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder="Search for a city…" value={query} onChange={(e) => { setQuery(e.target.value); setPicked(null) }} />
-          {searching && <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Searching…</div>}
+          <input autoFocus className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.location.searchPlaceholder')} value={query} onChange={(e) => { setQuery(e.target.value); setPicked(null) }} />
+          {searching && <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('family.location.searching')}</div>}
           {results.length > 0 && (
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>
               {results.map((g, i) => (
@@ -545,7 +552,7 @@ function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettin
           )}
           {picked && <div className="text-sm font-medium flex items-center gap-2"><MapPin size={14} style={{ color: 'var(--t-brand)' }} /> {label(picked)}</div>}
           <div>
-            <div className="text-xs font-semibold uppercase mb-1" style={{ color: 'var(--t-text-soft)', letterSpacing: '.06em' }}>Units</div>
+            <div className="text-xs font-semibold uppercase mb-1" style={{ color: 'var(--t-text-soft)', letterSpacing: '.06em' }}>{t('family.location.units')}</div>
             <div className="flex gap-1 rounded-full p-1 w-fit" style={{ background: 'var(--t-shell)', border: '1px solid var(--t-line)' }}>
               {(['celsius', 'fahrenheit'] as WeatherUnits[]).map((u) => (
                 <button key={u} onClick={() => setUnits(u)} className="text-xs font-semibold px-3 py-1.5 rounded-full"

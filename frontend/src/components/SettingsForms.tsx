@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Trash2 } from 'lucide-react'
 import { markerColor } from '../lib/tokens'
 import {
@@ -25,14 +26,15 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
   error: string | null
   children: ReactNode
 }) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
       <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
-          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Cancel</button>
+          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.cancel')}</button>
           <div className="font-display text-lg" style={{ fontWeight: 500 }}>{title}</div>
-          <button onClick={onSave} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>Save</button>
+          <button onClick={onSave} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.save')}</button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
@@ -40,7 +42,7 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
           {onDelete && (
             <div className="pt-1">
               <Button variant="danger" onClick={onDelete} disabled={busy} style={{ width: '100%' }}>
-                <Trash2 size={16} /> Delete
+                <Trash2 size={16} /> {t('common.delete')}
               </Button>
             </div>
           )}
@@ -77,6 +79,7 @@ export function MemberForm({ member, members, onClose, onSaved }: {
   const [role, setRole] = useState<'guardian' | 'child'>(member?.role ?? 'guardian')
   const [defaultGuardianId, setDefaultGuardianId] = useState(member?.defaultGuardianId ?? '')
   const [pin, setPin] = useState('')
+  const { t } = useTranslation()
   const { busy, error, run } = useSaver(onSaved)
   const guardians = members.filter((m) => m.role === 'guardian' && m.id !== member?.id)
 
@@ -86,10 +89,10 @@ export function MemberForm({ member, members, onClose, onSaved }: {
   })
 
   return (
-    <Modal title={member ? 'Edit member' : 'Add member'} onClose={onClose} onSave={save} busy={busy} error={error}
+    <Modal title={member ? t('forms.editMember') : t('forms.addMember')} onClose={onClose} onSave={save} busy={busy} error={error}
       onDelete={member ? () => run(() => deleteMember(member.id)) : undefined}>
-      <Labeled label="Name"><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={name} onChange={(e) => setName(e.target.value)} /></Labeled>
-      <Labeled label="Color">
+      <Labeled label={t('forms.name')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={name} onChange={(e) => setName(e.target.value)} /></Labeled>
+      <Labeled label={t('forms.color')}>
         <div className="flex items-center gap-2 flex-wrap">
           {COLORS.map((c) => (
             <button key={c} onClick={() => setColor(c)} className="w-8 h-8"
@@ -97,22 +100,22 @@ export function MemberForm({ member, members, onClose, onSaved }: {
           ))}
         </div>
       </Labeled>
-      <Labeled label="Role">
+      <Labeled label={t('forms.role.label')}>
         <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={role} onChange={(e) => setRole(e.target.value as 'guardian' | 'child')}>
-          <option value="guardian">Guardian</option>
-          <option value="child">Child</option>
+          <option value="guardian">{t('forms.role.guardian')}</option>
+          <option value="child">{t('forms.role.child')}</option>
         </select>
       </Labeled>
       {role === 'child' && (
-        <Labeled label="Default guardian">
+        <Labeled label={t('forms.defaultGuardian')}>
           <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={defaultGuardianId} onChange={(e) => setDefaultGuardianId(e.target.value)}>
-            <option value="">None</option>
+            <option value="">{t('forms.none')}</option>
             {guardians.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </Labeled>
       )}
-      <Labeled label={member ? 'PIN (leave blank to keep current)' : 'PIN (optional)'}>
-        <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={pin} onChange={(e) => setPin(e.target.value)} placeholder="Profile-switch PIN" />
+      <Labeled label={member ? t('forms.pinEdit') : t('forms.pinNew')}>
+        <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={pin} onChange={(e) => setPin(e.target.value)} placeholder={t('forms.pinPlaceholder')} />
       </Labeled>
     </Modal>
   )
@@ -130,6 +133,7 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
   const [mode, setMode] = useState<'fixed' | 'rotation'>(chore?.assignmentMode ?? 'fixed')
   const [assignee, setAssignee] = useState(chore?.assignedMemberId ?? '')
   const [rotation, setRotation] = useState<string[]>(chore?.rotationMemberIds ?? [])
+  const { t } = useTranslation()
   const { busy, error, run } = useSaver(onSaved)
 
   const colorFor = () => members.find((m) => m.id === (mode === 'fixed' ? assignee : rotation[0]))?.color ?? '#3E6259'
@@ -144,29 +148,29 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
   })
 
   return (
-    <Modal title={chore ? 'Edit chore' : 'Add chore'} onClose={onClose} onSave={save} busy={busy} error={error}
+    <Modal title={chore ? t('forms.editChore') : t('forms.addChore')} onClose={onClose} onSave={save} busy={busy} error={error}
       onDelete={chore ? () => run(() => deleteChore(chore.id)) : undefined}>
-      <Labeled label="Title"><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={title} onChange={(e) => setTitle(e.target.value)} /></Labeled>
-      <Labeled label="Repeats">
+      <Labeled label={t('forms.title')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={title} onChange={(e) => setTitle(e.target.value)} /></Labeled>
+      <Labeled label={t('forms.repeats')}>
         <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={recurrence} onChange={(e) => setRecurrence(e.target.value as typeof recurrence)}>
-          <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+          <option value="daily">{t('forms.recurrence.daily')}</option><option value="weekly">{t('forms.recurrence.weekly')}</option><option value="monthly">{t('forms.recurrence.monthly')}</option>
         </select>
       </Labeled>
-      <Labeled label="Assignment">
+      <Labeled label={t('forms.assignment')}>
         <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
-          <option value="fixed">Fixed — one person</option>
-          <option value="rotation">Rotation — takes turns</option>
+          <option value="fixed">{t('forms.assignmentMode.fixed')}</option>
+          <option value="rotation">{t('forms.assignmentMode.rotation')}</option>
         </select>
       </Labeled>
       {mode === 'fixed' ? (
-        <Labeled label="Assigned to">
+        <Labeled label={t('forms.assignedTo')}>
           <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">Choose…</option>
+            <option value="">{t('forms.choose')}</option>
             {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
         </Labeled>
       ) : (
-        <Labeled label="Rotation (in order)">
+        <Labeled label={t('forms.rotationInOrder')}>
           <div className="space-y-1">
             {members.map((m) => (
               <label key={m.id} className="flex items-center gap-2 text-sm">
@@ -195,6 +199,7 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
   const [end, setEnd] = useState(schedule?.endTime ?? '17:00')
   const [label, setLabel] = useState(schedule?.label ?? 'Work')
   const [show, setShow] = useState(schedule?.showOnCalendar ?? false)
+  const { t } = useTranslation()
   const { busy, error, run } = useSaver(onSaved)
   const dayInitials = weekdayLabels(useLocale(), 'narrow')
 
@@ -205,14 +210,14 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
   })
 
   return (
-    <Modal title={schedule ? 'Edit work schedule' : 'Add work schedule'} onClose={onClose} onSave={save} busy={busy} error={error}
+    <Modal title={schedule ? t('forms.editWorkSchedule') : t('forms.addWorkSchedule')} onClose={onClose} onSave={save} busy={busy} error={error}
       onDelete={schedule ? () => run(() => deleteWorkSchedule(schedule.id)) : undefined}>
-      <Labeled label="Guardian">
+      <Labeled label={t('forms.guardian')}>
         <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
           {guardians.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
       </Labeled>
-      <Labeled label="Days">
+      <Labeled label={t('forms.days')}>
         <div className="flex gap-1">
           {dayInitials.map((d, i) => (
             <button key={i} onClick={() => toggleDay(i)} className="flex-1 rounded-md text-center text-xs font-semibold py-1.5"
@@ -221,13 +226,13 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
         </div>
       </Labeled>
       <div className="flex gap-3">
-        <Labeled label="Start"><input type="time" className="text-sm rounded-xl px-3 py-2 outline-none" style={field} value={start} onChange={(e) => setStart(e.target.value)} /></Labeled>
-        <Labeled label="End"><input type="time" className="text-sm rounded-xl px-3 py-2 outline-none" style={field} value={end} onChange={(e) => setEnd(e.target.value)} /></Labeled>
+        <Labeled label={t('forms.start')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-none" style={field} value={start} onChange={(e) => setStart(e.target.value)} /></Labeled>
+        <Labeled label={t('forms.end')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-none" style={field} value={end} onChange={(e) => setEnd(e.target.value)} /></Labeled>
       </div>
-      <Labeled label="Label"><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={label} onChange={(e) => setLabel(e.target.value)} /></Labeled>
+      <Labeled label={t('forms.label')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={label} onChange={(e) => setLabel(e.target.value)} /></Labeled>
       <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
         <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="w-4 h-4 rounded" />
-        Show as "busy" on calendar
+        {t('forms.showBusy')}
       </label>
     </Modal>
   )

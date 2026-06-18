@@ -59,6 +59,33 @@ export function fmtWeekdayLongDay(d: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, { weekday: 'long', month: 'short', day: 'numeric' }).format(d)
 }
 
+// "Monday" — full weekday name on its own.
+export function fmtWeekdayLong(d: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(d)
+}
+
+// Arbitrary day span, e.g. "Jun 1 – 18" / "1.–18. Juni".
+export function fmtRange(startISO: string, endISO: string, locale: string): string {
+  return formatRange({ month: 'short', day: 'numeric' }, locale, new Date(startISO), new Date(endISO))
+}
+
+// Localized weekday summary for a recurring series: a contiguous run of ≥3 →
+// "Mon – Fri"; a single timed day → "Mon, 9:00 AM"; otherwise "Tue, Thu".
+export function daysLabel(weekdays: number[], timeISO: string | undefined, locale: string): string {
+  if (weekdays.length === 0) return ''
+  const wd = weekdayLabels(locale, 'short')
+  if (weekdays.length === 1) {
+    const day = wd[weekdays[0]]
+    return timeISO ? `${day}, ${fmtTime(new Date(timeISO), locale)}` : day
+  }
+  let contiguous = true
+  for (let i = 1; i < weekdays.length; i++) {
+    if (weekdays[i] !== weekdays[i - 1] + 1) { contiguous = false; break }
+  }
+  if (contiguous && weekdays.length >= 3) return `${wd[weekdays[0]]} – ${wd[weekdays[weekdays.length - 1]]}`
+  return weekdays.map((d) => wd[d]).join(', ')
+}
+
 // Monday-first month/weekday label arrays for column headers and day toggles.
 export function weekdayLabels(locale: string, style: 'short' | 'narrow' = 'short'): string[] {
   const fmt = new Intl.DateTimeFormat(locale, { weekday: style })

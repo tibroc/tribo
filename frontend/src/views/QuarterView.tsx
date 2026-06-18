@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey,
@@ -28,6 +29,7 @@ export default function QuarterView({ members, events, cursor, today, header, on
   const byId = useMemo(() => membersById(members), [members])
   const byDay = useMemo(() => groupByDay(events), [events])
   const locale = useLocale()
+  const { t } = useTranslation()
   const monthsFull = useMemo(() => monthLabels(locale, 'long'), [locale])
   const initials = useMemo(() => weekdayLabels(locale, 'narrow'), [locale])
 
@@ -39,7 +41,7 @@ export default function QuarterView({ members, events, cursor, today, header, on
         </div>
 
         <div className="mt-4 lg:mt-6">
-          <div className="font-display text-lg font-bold mb-3">This quarter</div>
+          <div className="font-display text-lg font-bold mb-3">{t('calendar.thisQuarter')}</div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
             {months.map((m) => <MonthHighlightList key={m} monthName={monthsFull[m]} locale={locale} year={year} month={m} events={events} byId={byId} />)}
           </div>
@@ -96,6 +98,7 @@ function MonthHighlightList({ year, month, monthName, locale, events, byId }: {
   events: TriboEvent[]
   byId: Map<string, FamilyMember>
 }) {
+  const { t } = useTranslation()
   const items = events
     .filter((e) => e.visibilityTag === 'milestone')
     .map((e) => ({ e, d: new Date(e.startAt) }))
@@ -105,7 +108,7 @@ function MonthHighlightList({ year, month, monthName, locale, events, byId }: {
     <div>
       <div className="text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--t-text-soft)' }}>{monthName}</div>
       {items.length === 0 ? (
-        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Nothing notable</div>
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingNotable')}</div>
       ) : (
         <div className="space-y-1.5">
           {items.map(({ e, d }) => {

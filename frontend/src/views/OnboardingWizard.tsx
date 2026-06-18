@@ -6,38 +6,32 @@ import Icon from '../components/Icon'
 import Button from '../components/Button'
 import { weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
+import { useTranslation, Trans } from 'react-i18next'
 
 interface MemberDraft { name: string; role: 'guardian' | 'child'; defaultGuardianIndex: number | null }
-interface ChoreTemplate { title: string; recurrence: 'daily' | 'weekly' | 'monthly'; enabled: boolean; assignee: number | null }
-interface PatternTemplate { title: string; startTime: string; durationMin: number; weekdays: number[]; enabled: boolean; member: number | null }
+// `title` is the stable English value persisted to the backend; `labelKey` is its i18n key for display.
+interface ChoreTemplate { title: string; labelKey: string; recurrence: 'daily' | 'weekly' | 'monthly'; enabled: boolean; assignee: number | null }
+interface PatternTemplate { title: string; labelKey: string; startTime: string; durationMin: number; weekdays: number[]; enabled: boolean; member: number | null }
 
 const CHORE_TEMPLATES: Omit<ChoreTemplate, 'enabled' | 'assignee'>[] = [
-  { title: 'Take out recycling', recurrence: 'weekly' },
-  { title: 'Clean the bathroom', recurrence: 'weekly' },
-  { title: 'Water the plants', recurrence: 'weekly' },
-  { title: 'Set the table', recurrence: 'daily' },
-  { title: 'Mow the lawn', recurrence: 'weekly' },
+  { title: 'Take out recycling', labelKey: 'recycling', recurrence: 'weekly' },
+  { title: 'Clean the bathroom', labelKey: 'bathroom', recurrence: 'weekly' },
+  { title: 'Water the plants', labelKey: 'plants', recurrence: 'weekly' },
+  { title: 'Set the table', labelKey: 'table', recurrence: 'daily' },
+  { title: 'Mow the lawn', labelKey: 'lawn', recurrence: 'weekly' },
 ]
 const PATTERN_TEMPLATES: Omit<PatternTemplate, 'enabled' | 'member'>[] = [
-  { title: 'School', startTime: '08:00', durationMin: 420, weekdays: [0, 1, 2, 3, 4] },
-  { title: 'Work', startTime: '09:00', durationMin: 480, weekdays: [0, 1, 2, 3, 4] },
-  { title: 'Gym', startTime: '06:00', durationMin: 60, weekdays: [0, 2, 4] },
-  { title: 'Soccer', startTime: '16:00', durationMin: 90, weekdays: [1, 3] },
+  { title: 'School', labelKey: 'school', startTime: '08:00', durationMin: 420, weekdays: [0, 1, 2, 3, 4] },
+  { title: 'Work', labelKey: 'work', startTime: '09:00', durationMin: 480, weekdays: [0, 1, 2, 3, 4] },
+  { title: 'Gym', labelKey: 'gym', startTime: '06:00', durationMin: 60, weekdays: [0, 2, 4] },
+  { title: 'Soccer', labelKey: 'soccer', startTime: '16:00', durationMin: 90, weekdays: [1, 3] },
 ]
 
-// Steps: 0 = welcome (full-bleed), 1..6 = split-screen.
-const STEPS = ['Welcome', 'Family', 'Members', 'Calendar', 'Chores', 'Typical week', 'Done']
-// Brand-panel taglines, keyed by split-step.
-const TAGLINES: Record<number, { h: React.ReactNode; s: string }> = {
-  1: { h: <>Every family<br />starts with a <em style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>name.</em></>, s: 'This is the home everyone shares — give it a name they’ll recognise.' },
-  2: { h: <>Who’s in your <em style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>tribe?</em></>, s: 'Each person gets their own colour, so every plan is theirs at a glance.' },
-  3: { h: <>Bring your calendars <em style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>together.</em></>, s: 'Tribo gathers what you already use into one shared view.' },
-  4: { h: <>Share the load, <em style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>together.</em></>, s: 'A few starter chores get everyone pulling their weight.' },
-  5: { h: <>Set the rhythm of <em style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>your week.</em></>, s: 'Recurring activities keep the shared calendar honest.' },
-  6: { h: <>Your family, all in <em style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>one place.</em></>, s: 'That’s everything — your shared week is ready.' },
-}
+// Steps: 0 = welcome (full-bleed), 1..6 = split-screen. Labels are i18n keys under onboarding.steps.*
+const STEPS = ['welcome', 'family', 'members', 'calendar', 'chores', 'typicalWeek', 'done']
 
 export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) {
+  const { t } = useTranslation()
   const weekdays = weekdayLabels(useLocale(), 'short')
   const [step, setStep] = useState(0)
   const [familyName, setFamilyName] = useState('')
@@ -91,17 +85,17 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
           <div style={{ fontFamily: 'var(--t-font-display)', fontSize: 34 }}>tr<span style={{ fontStyle: 'italic' }}>i</span>bo</div>
         </div>
         <div className="relative z-10" style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 'clamp(44px, 9vw, 74px)', lineHeight: 1.04, letterSpacing: '-1px' }}>
-          <div>Plans,</div>
-          <div style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>gathered.</div>
+          <div>{t('onboarding.welcome.headline1')}</div>
+          <div style={{ fontStyle: 'italic', color: 'var(--t-accent)' }}>{t('onboarding.welcome.headline2')}</div>
         </div>
         <div className="relative z-10 mt-5" style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 440, opacity: 0.85 }}>
-          One calm, shared calendar for the whole family — everyone’s days, chores and plans in one warm place.
+          {t('onboarding.welcome.subtitle')}
         </div>
         <div className="flex items-center gap-4 mt-10 relative z-10">
-          <Button onClick={next} variant="accent" style={{ padding: '16px 34px', fontSize: 16, borderRadius: 'var(--t-radius-md)' }}>Create your family</Button>
+          <Button onClick={next} variant="accent" style={{ padding: '16px 34px', fontSize: 16, borderRadius: 'var(--t-radius-md)' }}>{t('onboarding.welcome.cta')}</Button>
           {onCancel && (
             <button onClick={onCancel} className="font-semibold" style={{ fontSize: 15, color: 'inherit', opacity: 0.85, background: 'none', border: 'none', cursor: 'pointer' }}>
-              Cancel
+              {t('common.cancel')}
             </button>
           )}
         </div>
@@ -109,6 +103,15 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
     )
   }
 
+  const accent: React.CSSProperties = { fontStyle: 'italic', color: 'var(--t-accent)' }
+  const TAGLINES: Record<number, { h: React.ReactNode; s: string }> = {
+    1: { h: <>{t('onboarding.taglines.1.lead')}<br />{t('onboarding.taglines.1.before')} <em style={accent}>{t('onboarding.taglines.1.accent')}</em></>, s: t('onboarding.taglines.1.sub') },
+    2: { h: <>{t('onboarding.taglines.2.before')} <em style={accent}>{t('onboarding.taglines.2.accent')}</em></>, s: t('onboarding.taglines.2.sub') },
+    3: { h: <>{t('onboarding.taglines.3.before')} <em style={accent}>{t('onboarding.taglines.3.accent')}</em></>, s: t('onboarding.taglines.3.sub') },
+    4: { h: <>{t('onboarding.taglines.4.before')} <em style={accent}>{t('onboarding.taglines.4.accent')}</em></>, s: t('onboarding.taglines.4.sub') },
+    5: { h: <>{t('onboarding.taglines.5.before')} <em style={accent}>{t('onboarding.taglines.5.accent')}</em></>, s: t('onboarding.taglines.5.sub') },
+    6: { h: <>{t('onboarding.taglines.6.before')} <em style={accent}>{t('onboarding.taglines.6.accent')}</em></>, s: t('onboarding.taglines.6.sub') },
+  }
   const tg = TAGLINES[step]
   const isLast = step === STEPS.length - 1
 
@@ -138,18 +141,18 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
 
       {/* Content panel */}
       <div className="flex-1 flex flex-col p-6 lg:p-12 max-w-2xl">
-        <div className="text-xs font-bold uppercase" style={{ color: 'var(--t-brand)', letterSpacing: '.1em' }}>Step {step} of {STEPS.length - 1}</div>
+        <div className="text-xs font-bold uppercase" style={{ color: 'var(--t-brand)', letterSpacing: '.1em' }}>{t('onboarding.stepCounter', { step, total: STEPS.length - 1 })}</div>
         <div className="mt-2.5" style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 32, lineHeight: 1.1 }}>
-          {{ 1: 'Name your family', 2: 'Add your members', 3: 'Connect calendars', 4: 'Starter chores', 5: 'Your typical week', 6: "You're all set" }[step]}
+          {{ 1: t('onboarding.titles.1'), 2: t('onboarding.titles.2'), 3: t('onboarding.titles.3'), 4: t('onboarding.titles.4'), 5: t('onboarding.titles.5'), 6: t('onboarding.titles.6') }[step]}
         </div>
         <div className="mt-2.5" style={{ fontSize: 14.5, lineHeight: 1.55, maxWidth: 440, color: 'var(--t-text-soft)' }}>
           {{
-            1: 'You can change this later in Family settings.',
-            2: 'Add everyone who shares this calendar — each gets a harmonious colour automatically.',
-            3: 'Link the calendars your family already uses — nothing is moved or changed.',
-            4: 'Pick a few to start with — assign each to someone. (Optional.)',
-            5: 'Common recurring activities. Assign each to someone. (Optional.)',
-            6: 'Welcome to a calmer family week.',
+            1: t('onboarding.descriptions.1'),
+            2: t('onboarding.descriptions.2'),
+            3: t('onboarding.descriptions.3'),
+            4: t('onboarding.descriptions.4'),
+            5: t('onboarding.descriptions.5'),
+            6: t('onboarding.descriptions.6'),
           }[step]}
         </div>
 
@@ -158,13 +161,13 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
 
           {step === 1 && (
             <div className="space-y-4" style={{ maxWidth: 440 }}>
-              <Labeled label="Family name">
+              <Labeled label={t('onboarding.familyStep.nameLabel')}>
                 <div className="flex items-center gap-3" style={inputBox(true)}>
                   <Icon name="family" size={20} style={{ color: 'var(--t-brand)', flexShrink: 0 }} />
-                  <input className="w-full bg-transparent outline-none" style={{ fontSize: 16 }} value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder="The Silva Family" />
+                  <input className="w-full bg-transparent outline-none" style={{ fontSize: 16 }} value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder={t('onboarding.familyStep.namePlaceholder')} />
                 </div>
               </Labeled>
-              <Labeled label="Timezone">
+              <Labeled label={t('onboarding.familyStep.timezoneLabel')}>
                 <div style={inputBox(false)}>
                   <input className="w-full bg-transparent outline-none" style={{ fontSize: 16 }} value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Europe/Lisbon" />
                 </div>
@@ -181,31 +184,31 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
                     {m.name.trim() ? m.name.trim()[0].toUpperCase() : i + 1}
                   </div>
                   <div className="flex-1 flex items-center gap-2">
-                    <input className="flex-1 bg-transparent outline-none text-sm font-semibold" value={m.name} placeholder="Name"
+                    <input className="flex-1 bg-transparent outline-none text-sm font-semibold" value={m.name} placeholder={t('onboarding.members.namePlaceholder')}
                       onChange={(e) => updateMember(setMembers, i, { name: e.target.value })} />
                   </div>
-                  <Segmented value={m.role} onChange={(role) => updateMember(setMembers, i, { role })} />
+                  <Segmented value={m.role} guardianLabel={t('onboarding.members.guardian')} childLabel={t('onboarding.members.child')} onChange={(role) => updateMember(setMembers, i, { role })} />
                   {m.role === 'child' && guardians.length > 0 && (
                     <select className="text-sm rounded-lg px-2 py-1.5 outline-none" style={field} value={m.defaultGuardianIndex ?? ''}
                       onChange={(e) => updateMember(setMembers, i, { defaultGuardianIndex: e.target.value === '' ? null : Number(e.target.value) })}>
-                      <option value="">Guardian…</option>
-                      {guardians.map((g) => <option key={g.i} value={g.i}>{g.m.name || `Member ${g.i + 1}`}</option>)}
+                      <option value="">{t('onboarding.members.guardianPlaceholder')}</option>
+                      {guardians.map((g) => <option key={g.i} value={g.i}>{g.m.name || t('onboarding.members.memberN', { n: g.i + 1 })}</option>)}
                     </select>
                   )}
                   {members.length > 1 && (
-                    <button aria-label="Remove" onClick={() => setMembers((cur) => cur.filter((_, j) => j !== i))}><Trash2 size={16} style={{ color: 'var(--t-text-soft)' }} /></button>
+                    <button aria-label={t('common.delete')} onClick={() => setMembers((cur) => cur.filter((_, j) => j !== i))}><Trash2 size={16} style={{ color: 'var(--t-text-soft)' }} /></button>
                   )}
                 </div>
               ))}
               <button onClick={() => setMembers((cur) => [...cur, { name: '', role: 'guardian', defaultGuardianIndex: null }])}
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold"
                 style={{ border: '1px dashed var(--t-line)', borderRadius: 'var(--t-radius-md)', color: 'var(--t-text-soft)' }}>
-                <Plus size={16} /> Add member
+                <Plus size={16} /> {t('onboarding.members.addMember')}
               </button>
               <div className="flex items-center gap-3 mt-3 p-3" style={{ border: '1px dashed var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
                 <span className="flex-shrink-0" style={{ width: 30, height: 30, borderRadius: '50% 50% 50% 30%', background: markerColor(members.length) }} />
                 <div className="text-xs" style={{ color: 'var(--t-text-soft)', lineHeight: 1.4 }}>
-                  <b style={{ color: 'var(--t-text)' }}>The next member</b> is automatically given this colour — every family keeps a balanced, harmonious palette.
+                  <Trans i18nKey="onboarding.members.paletteHint"><b style={{ color: 'var(--t-text)' }}>The next member</b> is automatically given this colour — every family keeps a balanced, harmonious palette.</Trans>
                 </div>
               </div>
             </div>
@@ -215,7 +218,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
             <div className="space-y-3" style={{ maxWidth: 470 }}>
               <div className="flex items-start gap-3 p-3" style={{ background: 'var(--t-today-wash)', borderRadius: 'var(--t-radius-md)', border: '1px solid var(--t-line)' }}>
                 <CalendarDays size={18} style={{ color: 'var(--t-brand)', flexShrink: 0, marginTop: 2 }} />
-                <div className="text-sm">A built-in <b>family calendar</b> is created automatically. You can connect an external CalDAV/Google calendar anytime from <b>Family → Calendars</b>.</div>
+                <div className="text-sm"><Trans i18nKey="onboarding.calendar.note">A built-in <b>family calendar</b> is created automatically. You can connect an external CalDAV/Google calendar anytime from <b>Family → Calendars</b>.</Trans></div>
               </div>
             </div>
           )}
@@ -225,11 +228,11 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
               {chores.map((c, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <input type="checkbox" checked={c.enabled} onChange={(e) => updateChore(setChores, i, { enabled: e.target.checked })} className="w-4 h-4 rounded" />
-                  <span className="text-sm flex-1">{c.title} <span style={{ color: 'var(--t-text-soft)' }}>· {c.recurrence}</span></span>
+                  <span className="text-sm flex-1">{t(`onboarding.choreTemplates.${c.labelKey}`)} <span style={{ color: 'var(--t-text-soft)' }}>· {t(`onboarding.recurrence.${c.recurrence}`)}</span></span>
                   {c.enabled && (
                     <select className="text-sm rounded-lg px-2 py-1 outline-none" style={field} value={c.assignee ?? ''}
                       onChange={(e) => updateChore(setChores, i, { assignee: e.target.value === '' ? null : Number(e.target.value) })}>
-                      <option value="">Assign…</option>
+                      <option value="">{t('onboarding.chores.assignPlaceholder')}</option>
                       {validMembers.map((m) => <option key={members.indexOf(m)} value={members.indexOf(m)}>{m.name}</option>)}
                     </select>
                   )}
@@ -243,11 +246,11 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
               {patterns.map((p, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <input type="checkbox" checked={p.enabled} onChange={(e) => updatePattern(setPatterns, i, { enabled: e.target.checked })} className="w-4 h-4 rounded" />
-                  <span className="text-sm flex-1">{p.title} <span style={{ color: 'var(--t-text-soft)' }}>· {p.weekdays.map((d) => weekdays[d]).join('/')} {p.startTime}</span></span>
+                  <span className="text-sm flex-1">{t(`onboarding.patternTemplates.${p.labelKey}`)} <span style={{ color: 'var(--t-text-soft)' }}>· {p.weekdays.map((d) => weekdays[d]).join('/')} {p.startTime}</span></span>
                   {p.enabled && (
                     <select className="text-sm rounded-lg px-2 py-1 outline-none" style={field} value={p.member ?? ''}
                       onChange={(e) => updatePattern(setPatterns, i, { member: e.target.value === '' ? null : Number(e.target.value) })}>
-                      <option value="">For…</option>
+                      <option value="">{t('onboarding.typicalWeek.forPlaceholder')}</option>
                       {validMembers.map((m) => <option key={members.indexOf(m)} value={members.indexOf(m)}>{m.name}</option>)}
                     </select>
                   )}
@@ -269,17 +272,17 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
                   ))}
                 </div>
                 <div>
-                  <div style={{ fontFamily: 'var(--t-font-display)', fontSize: 19 }}>{familyName || 'Your family'}</div>
+                  <div style={{ fontFamily: 'var(--t-font-display)', fontSize: 19 }}>{familyName || t('onboarding.done.familyFallback')}</div>
                   <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>
-                    {validMembers.length} member{validMembers.length === 1 ? '' : 's'} · {guardians.length} guardian{guardians.length === 1 ? '' : 's'}
+                    {t('onboarding.done.membersCount', { count: validMembers.length })} · {t('onboarding.done.guardiansCount', { count: guardians.length })}
                   </div>
                 </div>
               </div>
               <div className="flex gap-3">
                 {[
-                  ['1', 'shared calendar'],
-                  [String(chores.filter((c) => c.enabled && c.assignee != null).length), 'chores set'],
-                  [String(patterns.filter((p) => p.enabled && p.member != null).length), 'weekly plans'],
+                  ['1', t('onboarding.done.sharedCalendar')],
+                  [String(chores.filter((c) => c.enabled && c.assignee != null).length), t('onboarding.done.choresSet')],
+                  [String(patterns.filter((p) => p.enabled && p.member != null).length), t('onboarding.done.weeklyPlans')],
                 ].map(([n, l]) => (
                   <div key={l} className="flex-1 p-4" style={{ borderRadius: 'var(--t-radius-md)', border: '1px solid var(--t-line)', background: 'var(--t-surface)' }}>
                     <div style={{ fontFamily: 'var(--t-font-display)', fontSize: 26, color: 'var(--t-brand)' }}>{n}</div>
@@ -294,19 +297,19 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
         {/* Footer */}
         <div className="flex items-center gap-3.5 mt-6">
           <button onClick={back} className="flex items-center gap-1.5 font-semibold text-sm" style={{ color: 'var(--t-text-soft)', background: 'none', border: 'none', cursor: 'pointer' }}>
-            <Icon name="left" size={16} /> Back
+            <Icon name="left" size={16} /> {t('onboarding.nav.back')}
           </button>
           {(step === 4 || step === 5) && (
-            <button onClick={next} className="font-semibold text-sm" style={{ color: 'var(--t-text-soft)', background: 'none', border: 'none', cursor: 'pointer' }}>Skip</button>
+            <button onClick={next} className="font-semibold text-sm" style={{ color: 'var(--t-text-soft)', background: 'none', border: 'none', cursor: 'pointer' }}>{t('onboarding.nav.skip')}</button>
           )}
           <div className="ml-auto">
             {!isLast ? (
               <Button onClick={next} disabled={step === 2 && !canFinish} variant="primary">
-                Continue <Icon name="right" size={17} />
+                {t('onboarding.nav.continue')} <Icon name="right" size={17} />
               </Button>
             ) : (
               <Button onClick={finish} disabled={busy || !canFinish} variant="accent">
-                {busy ? 'Setting up…' : 'Enter Tribo'} <Icon name="right" size={17} />
+                {busy ? t('onboarding.nav.settingUp') : t('onboarding.nav.enter')} <Icon name="right" size={17} />
               </Button>
             )}
           </div>
@@ -333,15 +336,15 @@ function Blob({ fill, style }: { fill: string; style: React.CSSProperties }) {
   )
 }
 
-function Segmented({ value, onChange }: { value: 'guardian' | 'child'; onChange: (v: 'guardian' | 'child') => void }) {
+function Segmented({ value, onChange, guardianLabel, childLabel }: { value: 'guardian' | 'child'; onChange: (v: 'guardian' | 'child') => void; guardianLabel: string; childLabel: string }) {
   return (
     <div className="inline-flex p-1 gap-0.5" style={{ background: 'var(--t-bg)', borderRadius: 'var(--t-radius-sm)' }}>
       {(['guardian', 'child'] as const).map((r) => {
         const on = value === r
         return (
-          <button key={r} onClick={() => onChange(r)} className="px-3 py-1.5 text-xs font-semibold capitalize"
+          <button key={r} onClick={() => onChange(r)} className="px-3 py-1.5 text-xs font-semibold"
             style={{ borderRadius: 6, border: 'none', cursor: 'pointer', background: on ? 'var(--t-brand)' : 'transparent', color: on ? 'var(--t-on-brand)' : 'var(--t-text-soft)' }}>
-            {r}
+            {r === 'guardian' ? guardianLabel : childLabel}
           </button>
         )
       })}
