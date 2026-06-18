@@ -94,7 +94,6 @@ export interface Weather {
   temperature: number
   units: WeatherUnits
   code: number
-  condition: string
   icon: string // 'sun' | 'partly' | 'cloud' | 'fog' | 'rain' | 'snow' | 'storm'
   locationName: string
 }
@@ -140,7 +139,6 @@ export interface Notification {
   type: 'needs_guardian' | 'unclaimed'
   severity: 'warning' | 'info'
   title: string
-  message: string
   eventId: string
   startAt: string
   section: string

@@ -113,6 +113,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
   byId: Map<string, FamilyMember>
   onClick: () => void
 }) {
+  const { t } = useTranslation()
   const extra = events.length - 2
   const uniqueColors: string[] = []
   events.forEach((ev) => {
@@ -136,7 +137,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
       {/* Tablet: up to 2 chips + "+N more" */}
       <div className="hidden lg:block space-y-1">
         {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={ev.title} color={colorForEvent(ev, byId)} icon={ev.icon} />)}
-        {extra > 0 && <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--t-text-soft)', paddingLeft: 3 }}>+{extra} more</div>}
+        {extra > 0 && <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--t-text-soft)', paddingLeft: 3 }}>{t('calendar.moreCount', { count: extra })}</div>}
       </div>
 
       {/* Phone: color dots */}

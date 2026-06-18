@@ -278,7 +278,9 @@
     "nothingScheduled": "Nothing scheduled",
     "nothingNotable": "Nothing notable",
     "choresThisWeek": "This week's chores",
-    "dayOfYear": "Day {{day}} of 365 · {{pct}}%"
+    "dayOfYear": "Day {{day}} of {{total}} · {{pct}}%",
+    "choresDone": "{{done}}/{{total}} chores done",
+    "moreCount": "+{{count}} more"
   },
   "auth": {
     "welcomeHome": "Welcome home",

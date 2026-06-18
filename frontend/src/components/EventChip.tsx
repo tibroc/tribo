@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 // Marker-pen event block: tinted fill + colored left edge.
 // `dense` is the compact month-grid variant; default is the week/agenda chip.
 export default function EventChip({ title, color = 'var(--t-brand)', time, icon, dense, allday, warn, conflict, onClick }: {
@@ -11,6 +13,7 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
   conflict?: boolean
   onClick?: () => void
 }) {
+  const { t } = useTranslation()
   const hasWarn = warn || conflict
   const wrap: React.CSSProperties = {
     borderLeft: `${dense ? 3 : 4}px solid ${color}`,
@@ -44,7 +47,7 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
         <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--t-text-soft)', letterSpacing: '.02em' }}>{time}</div>
       )}
       {allday && (
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--t-text-soft)' }}>ALL DAY</div>
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--t-text-soft)', textTransform: 'uppercase' }}>{t('event.allDay')}</div>
       )}
       <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.25, display: 'flex', alignItems: 'center', marginTop: 2 }}>
         {hasWarn && <WarnGlyph />}

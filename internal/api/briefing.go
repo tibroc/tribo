@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"tribo/internal/calendar"
-	"tribo/internal/family"
 )
 
 // Date/label fields are emitted as raw data (RFC3339 timestamps, Mon=0 weekday
@@ -143,7 +142,7 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	// Last week's tally.
-	out.LastWeek = s.tallyFor(weekStart.AddDate(0, 0, -7), weekStart, byID)
+	out.LastWeek = s.tallyFor(weekStart.AddDate(0, 0, -7), weekStart)
 
 	writeJSON(w, http.StatusOK, out)
 }
@@ -206,7 +205,7 @@ func highlightsFor(memberID string, events []calendar.Event) []weekHighlight {
 }
 
 // tallyFor counts chores + todos completed in [from, to).
-func (s *Server) tallyFor(from, to time.Time, _ map[string]family.Member) tally {
+func (s *Server) tallyFor(from, to time.Time) tally {
 	var t tally
 	instances, _ := s.chores.ListInstances(from, to)
 	for _, ci := range instances {

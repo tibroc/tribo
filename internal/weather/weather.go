@@ -56,13 +56,14 @@ type SettingsInput struct {
 
 // Current is the resolved widget payload. Configured is false when no location
 // is set yet (the header hides the widget in that case).
+// The condition label is derived on the client from Code (localized); the
+// backend only sends the structured fields + an icon key.
 type Current struct {
 	Configured   bool    `json:"configured"`
 	Temperature  float64 `json:"temperature"`
 	Units        string  `json:"units"`
-	Code         int     `json:"code"`      // WMO weather-interpretation code
-	Condition    string  `json:"condition"` // human-readable
-	Icon         string  `json:"icon"`      // icon key for the frontend
+	Code         int     `json:"code"` // WMO weather-interpretation code
+	Icon         string  `json:"icon"` // icon key for the frontend
 	LocationName string  `json:"locationName"`
 }
 
@@ -152,14 +153,12 @@ func (s *Service) GetCurrent(ctx context.Context) (*Current, error) {
 		return nil, err
 	}
 
-	cond, icon := describe(body.Current.Code)
 	out := &Current{
 		Configured:   true,
 		Temperature:  body.Current.Temp,
 		Units:        settings.Units,
 		Code:         body.Current.Code,
-		Condition:    cond,
-		Icon:         icon,
+		Icon:         iconForCode(body.Current.Code),
 		LocationName: settings.LocationName,
 	}
 
@@ -224,27 +223,24 @@ func normUnits(u string) string {
 	return "celsius"
 }
 
-// describe maps a WMO weather-interpretation code to a short condition label and
-// an icon key the frontend resolves to a lucide icon.
-func describe(code int) (condition, icon string) {
+// iconForCode maps a WMO weather-interpretation code to an icon key the frontend
+// resolves to a lucide icon. (The condition label is localized client-side from
+// the code, so it isn't computed here.)
+func iconForCode(code int) string {
 	switch code {
 	case 0:
-		return "Clear", "sun"
+		return "sun"
 	case 1, 2:
-		return "Partly cloudy", "partly"
-	case 3:
-		return "Overcast", "cloud"
+		return "partly"
 	case 45, 48:
-		return "Fog", "fog"
-	case 51, 53, 55, 56, 57:
-		return "Drizzle", "rain"
-	case 61, 63, 65, 66, 67, 80, 81, 82:
-		return "Rain", "rain"
+		return "fog"
+	case 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82:
+		return "rain"
 	case 71, 73, 75, 77, 85, 86:
-		return "Snow", "snow"
+		return "snow"
 	case 95, 96, 99:
-		return "Thunderstorm", "storm"
-	default:
-		return "—", "cloud"
+		return "storm"
+	default: // 3 (overcast) and anything unmapped
+		return "cloud"
 	}
 }

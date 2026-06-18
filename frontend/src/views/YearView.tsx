@@ -22,9 +22,10 @@ export default function YearView({ members, events, cursor, today, header, onNav
 
   // Year progress (only meaningful when viewing the current year).
   const startOfYear = new Date(year, 0, 1)
+  const daysInYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 366 : 365
   const dayOfYear = Math.floor((+today - +startOfYear) / 86400000) + 1
   const inThisYear = today.getFullYear() === year
-  const progress = inThisYear ? Math.max(0, Math.min(100, Math.round((dayOfYear / 365) * 100))) : 0
+  const progress = inThisYear ? Math.max(0, Math.min(100, Math.round((dayOfYear / daysInYear) * 100))) : 0
 
   const highlights = useMemo(() => events
     .filter((e) => e.visibilityTag === 'milestone' && new Date(e.startAt).getFullYear() === year)
@@ -58,7 +59,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
         <div className="mb-4 shrink-0">
           <div className="flex items-center justify-between mb-1.5">
             <div className="font-display text-lg font-bold">{year}</div>
-            {inThisYear && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.dayOfYear', { day: dayOfYear, pct: progress })}</div>}
+            {inThisYear && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.dayOfYear', { day: dayOfYear, total: daysInYear, pct: progress })}</div>}
           </div>
           <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--t-track)' }}>
             <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: 'var(--t-brand)' }} />

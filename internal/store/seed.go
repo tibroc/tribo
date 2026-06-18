@@ -168,8 +168,8 @@ func seed(db *sql.DB) error {
 		return err
 	}
 
-	// Year-spanning milestones (birthdays + holidays) so the Month/Quarter/Year
-	// views demonstrate the milestone-dot behavior. All-day, visibility=milestone.
+	// Year-spanning milestones (birthdays + holidays) so the Month/Year views
+	// demonstrate the milestone-dot behavior. All-day, visibility=milestone.
 	// (Recurrence is modeled as one concrete dated event per year until the
 	// recurrence engine lands in a later milestone.)
 	year := monday.Year()

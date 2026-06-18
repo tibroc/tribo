@@ -278,7 +278,9 @@
     "nothingScheduled": "Nichts geplant",
     "nothingNotable": "Nichts Besonderes",
     "choresThisWeek": "Aufgaben dieser Woche",
-    "dayOfYear": "Tag {{day}} von 365 · {{pct}} %"
+    "dayOfYear": "Tag {{day}} von {{total}} · {{pct}} %",
+    "choresDone": "{{done}}/{{total}} Aufgaben erledigt",
+    "moreCount": "+{{count}} weitere"
   },
   "auth": {
     "welcomeHome": "Willkommen zu Hause",

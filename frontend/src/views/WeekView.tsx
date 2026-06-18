@@ -190,7 +190,7 @@ function ThisWeekPanel({ members }: { members: FamilyMember[] }) {
     <>
       <Card>
         <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 2 }}>{t('calendar.thisWeek')}</div>
-        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{done}/{instances.length} chores done</div>
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.choresDone', { done, total: instances.length })}</div>
         <div className="h-2 rounded-full mt-3 mb-4" style={{ backgroundColor: 'var(--t-track)' }}>
           <div className="h-2 rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--t-brand)' }} />
         </div>

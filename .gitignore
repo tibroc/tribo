@@ -20,3 +20,4 @@ frontend/tsconfig.tsbuildinfo
 
 # Local secrets (OIDC, etc.) — never commit
 .env
+/notes

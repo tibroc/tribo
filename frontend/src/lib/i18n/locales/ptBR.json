@@ -278,7 +278,9 @@
     "nothingScheduled": "Nada agendado",
     "nothingNotable": "Nada importante",
     "choresThisWeek": "Tarefas desta semana",
-    "dayOfYear": "Dia {{day}} de 365 · {{pct}}%"
+    "dayOfYear": "Dia {{day}} de {{total}} · {{pct}}%",
+    "choresDone": "{{done}}/{{total}} tarefas feitas",
+    "moreCount": "+{{count}} mais"
   },
   "auth": {
     "welcomeHome": "Bem-vindo ao lar",
