@@ -112,8 +112,8 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
         <div className="flex-1 flex items-center justify-center min-w-0">{header}</div>
         <div className="flex items-center gap-2">
           <Weather />
+          {themeBtn}
           {bellBtn}
-          <ProfileSwitcher header />
         </div>
       </header>
 
@@ -139,11 +139,13 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
             borderRadius: 38, boxShadow: 'var(--t-shadow)',
           }}
         >
-          {NAV.map((n) => (
+          {NAV.filter((n) => n.key !== 'family').map((n) => (
             <RailNav key={n.key} name={n.icon} label={t(`nav.${n.key}`)} active={active === n.key} onClick={() => onNavigate(n.key)} />
           ))}
           <div className="flex-1" style={{ minHeight: 24 }} />
-          {themeBtn}
+          {/* Bottom cluster: Family, then the profile switcher pinned to the very bottom */}
+          <RailNav name="family" label={t('nav.family')} active={active === 'family'} onClick={() => onNavigate('family')} />
+          <ProfileSwitcher />
         </nav>
 
         <main
