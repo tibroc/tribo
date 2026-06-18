@@ -18,7 +18,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
   const byDay = useMemo(() => groupByDay(events), [events])
   const locale = useLocale()
   const { t } = useTranslation()
-  const monthsShort = useMemo(() => monthLabels(locale, 'short'), [locale])
+  const monthsLong = useMemo(() => monthLabels(locale, 'long'), [locale])
 
   // Year progress (only meaningful when viewing the current year).
   const startOfYear = new Date(year, 0, 1)
@@ -72,7 +72,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
 
         {/* 12 month panels — stretched to fill the island (3×4) on desktop. */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 lg:flex-1 lg:min-h-0 lg:[grid-template-rows:repeat(4,minmax(0,1fr))]">
-          {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsShort[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
+          {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsLong[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
         </div>
       </div>
     </AppShell>
@@ -89,22 +89,34 @@ function YearMonth({ year, month, monthName, byDay, byId, today }: {
 }) {
   const cells = buildMonthCells(year, month, 42)
   const line = '1px solid var(--t-line)'
+  // Bespoke card (not <Card>) so the day grid can flex-fill to the bottom.
   return (
-    <Card padded={false} className="overflow-hidden flex flex-col lg:h-full">
-      <div className="font-display text-sm font-bold px-2 py-1.5 shrink-0" style={{ borderBottom: line }}>{monthName}</div>
-      <div className="lg:flex-1 lg:min-h-0 lg:[grid-auto-rows:minmax(0,1fr)]" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+    <div
+      className="overflow-hidden flex flex-col lg:h-full"
+      style={{ background: 'var(--t-shell)', border: line, borderRadius: 'var(--t-radius-lg)', boxShadow: 'var(--t-shadow)' }}
+    >
+      <div className="font-display text-sm font-bold px-2.5 py-2 shrink-0" style={{ borderBottom: line }}>{monthName}</div>
+      <div
+        className="grid flex-1 min-h-0"
+        style={{ gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(0, 1fr)' }}
+      >
         {cells.map((cell, i) => {
-          // Year view: dots ONLY for milestones.
+          // Year view: a corner dot ONLY for milestone days.
           const milestone = cell.inMonth ? (byDay.get(dayKey(cell.dateObj)) ?? []).find((e) => e.visibilityTag === 'milestone') : undefined
           const isToday = sameDay(cell.dateObj, today) && cell.inMonth
           return (
-            <div key={i} className="flex flex-col items-center justify-center" style={{ minHeight: 22, opacity: cell.inMonth ? 1 : 0.25 }}>
-              <div className="font-display font-semibold inline-flex items-center justify-center" style={{ width: 16, height: 16, fontSize: '9px', borderRadius: '50%', ...(isToday ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text)' }) }}>{cell.date}</div>
-              <span className="rounded-full flex-shrink-0 mt-0.5" style={{ width: 3, height: 3, backgroundColor: milestone ? colorForEvent(milestone, byId) : 'transparent' }} />
+            <div key={i} className="relative flex items-center justify-center min-h-[22px]" style={{ opacity: cell.inMonth ? 1 : 0.25 }}>
+              <div
+                className="font-display font-semibold inline-flex items-center justify-center rounded-full w-4 h-4 text-[9px] lg:w-5 lg:h-5 lg:text-xs"
+                style={isToday ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text)' }}
+              >{cell.date}</div>
+              {milestone && (
+                <span className="absolute rounded-full" style={{ bottom: 3, width: 4, height: 4, backgroundColor: colorForEvent(milestone, byId) }} />
+              )}
             </div>
           )
         })}
       </div>
-    </Card>
+    </div>
   )
 }
