@@ -1,138 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Figtree:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   Tribo — design tokens (single source of truth)
-   Salvia system · Spectral + Figtree · earthy warm palette
-   Light + dark. Consumers read from semantic var(--t-*) tokens.
-   ============================================================ */
-
-:root {
-  /* ── raw palette (theme-independent anchors) ───────────── */
-  --tribo-pine:    #22433A;
-  --tribo-salvia:  #3E6259;
-  --tribo-sage:    #6E8C82;
-  --tribo-terra:   #BC5E3C;
-  --tribo-ochre:   #D2982E;
-  --tribo-clay:    #A8754B;
-  --tribo-sand:    #F1EBDE;
-  --tribo-cream:   #FBF7EF;
-  --tribo-shell:   #FEFCF7;
-  --tribo-ink:     #26302B;
-  --tribo-ink-soft:#5E6B64;
-  --tribo-line:    #E2DCCD;
-
-  /* ── typography ────────────────────────────────────────── */
-  --t-font-display: 'Spectral', Georgia, serif;
-  --t-font-body:    'Figtree', system-ui, sans-serif;
-  --t-display-weight: 500;
-
-  --t-size-hero:   74px;  --t-lh-hero: 1.04;
-  --t-size-h1:     34px;  --t-lh-h1: 1.08;
-  --t-size-h2:     24px;  --t-lh-h2: 1.12;
-  --t-size-h3:     20px;  --t-lh-h3: 1.2;
-  --t-size-body:   15px;  --t-lh-body: 1.55;
-  --t-size-sm:     13px;
-  --t-size-label:  11px;  --t-tracking-label: .12em;
-  --t-size-micro:  10.5px;
-
-  /* ── spacing scale (4px base) ──────────────────────────── */
-  --t-space-1: 4px;  --t-space-2: 8px;  --t-space-3: 12px; --t-space-4: 16px;
-  --t-space-5: 22px; --t-space-6: 28px; --t-space-7: 40px; --t-space-8: 56px;
-
-  /* ── radii ─────────────────────────────────────────────── */
-  --t-radius-sm:   8px;
-  --t-radius-md:   14px;
-  --t-radius-lg:   24px;
-  --t-radius-xl:   30px;
-  --t-radius-pill: 999px;
-  --t-squircle: 50% 50% 50% 30%;
-  --t-squircle-chip: 4px 11px 11px 4px;
-
-  /* ── marker (person) colors ─────────────────────────────── */
-  --marker-1: #4F7E91;
-  --marker-2: #BC6678;
-  --marker-3: #7D9A55;
-  --marker-4: #8B6F97;
-  --marker-family: var(--tribo-ochre);
-
-  /* ── semantic tokens · LIGHT (default) ─────────────────── */
-  --t-bg:          var(--tribo-sand);
-  --t-surface:     var(--tribo-cream);
-  --t-surface-2:   var(--tribo-sand);
-  --t-shell:       var(--tribo-shell);
-  --t-text:        var(--tribo-ink);
-  --t-text-soft:   var(--tribo-ink-soft);
-  --t-line:        var(--tribo-line);
-  --t-brand:       var(--tribo-salvia);
-  --t-on-brand:    var(--tribo-shell);
-  --t-accent:      var(--tribo-ochre);
-  --t-on-accent:   var(--tribo-ink);
-  --t-danger:      var(--tribo-terra);
-  --t-today-wash:  rgba(62, 98, 89, .05);
-  --t-nav-hover:   rgba(62, 98, 89, .10);
-  --t-track:       #EAE2D0;
-  --t-tint:        12%;
-  --t-shadow:      0 10px 40px rgba(38, 48, 43, .06);
-  --t-shadow-pop:  0 16px 44px rgba(38, 48, 43, .14);
-  --t-blob-op:     .05;
+.font-display {
+  font-family: 'Bricolage Grotesque', sans-serif;
 }
-
-/* ── semantic tokens · DARK ─────────────────────────────────── */
-:root[data-theme="dark"] {
-  --t-bg:          #161E1A;
-  --t-surface:     #1E2823;
-  --t-surface-2:   #243029;
-  --t-shell:       #243029;
-  --t-text:        #ECEFE9;
-  --t-text-soft:   #93A39B;
-  --t-line:        #313D37;
-  --t-brand:       #5E8E80;
-  --t-on-brand:    #13211C;
-  --t-accent:      #E0A53A;
-  --t-on-accent:   #13211C;
-  --t-danger:      #D2774F;
-  --t-today-wash:  rgba(120, 176, 160, .10);
-  --t-nav-hover:   rgba(120, 176, 160, .16);
-  --t-track:       #2E3A33;
-  --t-tint:        24%;
-  --t-shadow:      0 14px 44px rgba(0, 0, 0, .42);
-  --t-shadow-pop:  0 20px 50px rgba(0, 0, 0, .5);
-  --t-blob-op:     .08;
+.font-body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="auto"] { color-scheme: dark; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-
-/* ── helper classes ──────────────────────────────────────────── */
-.t-display { font-family: var(--t-font-display); font-weight: var(--t-display-weight); }
-.t-italic  { font-style: italic; }
-.t-eyebrow {
-  font-family: var(--t-font-body);
-  font-size: var(--t-size-label);
-  font-weight: 700;
-  letter-spacing: var(--t-tracking-label);
-  text-transform: uppercase;
-  color: var(--t-text-soft);
-}
-
-.font-display { font-family: var(--t-font-display); font-weight: var(--t-display-weight); }
-.font-body    { font-family: var(--t-font-body); }
-
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
-
-/* Period label: the date-range portion (wrapped in <em>) reads terra italic. */
-.sv-period-label em { color: var(--t-danger); font-style: italic; font-weight: var(--t-display-weight); }
-
-/* Soft lift used by floating chips / interactive cards. */
-.sv-lift { transition: transform .16s, box-shadow .16s; }
-.sv-lift:hover { transform: translateY(-2px); box-shadow: var(--t-shadow-pop); }
-
-@media (prefers-reduced-motion: reduce) {
-  .sv-lift, .sv-lift:hover { transition: none; transform: none; }
+.no-scrollbar {
+  scrollbar-width: none;
 }

@@ -6,7 +6,7 @@ import PersonAvatar from './PersonAvatar'
 
 // The active-profile avatar + dropdown. Switching is PIN-gated when the target
 // member has a PIN. Shown in the nav rail (desktop) and bottom bar (mobile).
-export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; header?: boolean }) {
+export default function ProfileSwitcher({ mobile }: { mobile?: boolean }) {
   const { session, activeMember, switchProfile, logout } = useSession()
   const [open, setOpen] = useState(false)
   const [pinFor, setPinFor] = useState<string | null>(null)
@@ -27,14 +27,6 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
     catch { setError('Incorrect PIN') }
   }
 
-  const avatarSize = mobile ? 24 : header ? 38 : 32
-  // Dropdown anchor: rail opens up-right, header opens down-right, mobile floats.
-  const dropdownPos = mobile
-    ? 'fixed bottom-20 left-1/2 -translate-x-1/2 w-64'
-    : header
-      ? 'absolute right-0 top-12 w-60'
-      : 'absolute left-14 bottom-0 w-60'
-
   return (
     <div className={mobile ? '' : 'relative'}>
       <button
@@ -43,8 +35,8 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
         aria-label="Switch profile"
       >
         {activeMember
-          ? <PersonAvatar name={activeMember.name} color={activeMember.color} size={avatarSize} ring={header} />
-          : <div className="rounded-full" style={{ width: avatarSize, height: avatarSize, backgroundColor: palette.line }} />}
+          ? <PersonAvatar name={activeMember.name} color={activeMember.color} size={mobile ? 24 : 32} />
+          : <div className="rounded-full" style={{ width: mobile ? 24 : 32, height: mobile ? 24 : 32, backgroundColor: palette.line }} />}
         {mobile && <span className="text-xs font-medium" style={{ color: palette.inkSoft }}>You</span>}
       </button>
 
@@ -53,7 +45,7 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
           {/* Click-away backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setPinFor(null) }} />
           <div
-            className={`z-50 rounded-2xl p-2 shadow-xl ${dropdownPos}`}
+            className={`z-50 rounded-2xl p-2 shadow-xl ${mobile ? 'fixed bottom-20 left-1/2 -translate-x-1/2 w-64' : 'absolute left-14 bottom-0 w-60'}`}
             style={{ backgroundColor: palette.surface, border: `1px solid ${palette.line}` }}
           >
             <div className="text-xs font-semibold uppercase px-2 py-1" style={{ color: palette.inkSoft }}>Viewing as</div>

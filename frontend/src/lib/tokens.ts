@@ -1,52 +1,37 @@
-// Design tokens — thin JS compatibility layer over the CSS variable system.
-// The canonical token definitions live in index.css (--t-* vars, Salvia system).
-// Components that still use inline styles read from `palette`; new code prefers
-// CSS variables directly.
+// Design tokens — the single source of truth for colors and type.
+// Ported from docs/roost-build-brief.md §2. Do NOT redefine these per-component;
+// import from here. Applied via inline styles, matching the design prototypes.
 
 export const palette = {
-  mist: '#F1EBDE',       // --t-bg (sand page background)
-  surface: '#FBF7EF',    // --t-surface (cream cards)
-  shell: '#FEFCF7',      // --t-shell (lightest surface)
-  ink: '#26302B',        // --t-text
-  inkSoft: '#5E6B64',    // --t-text-soft
-  line: '#E2DCCD',       // --t-line
-  brand: '#3E6259',      // --t-brand (salvia)
-  brandSoft: 'rgba(62, 98, 89, 0.05)', // --t-today-wash
-  amber: '#D2982E',      // --t-accent (ochre)
+  mist: '#EEF1EE', // page background
+  surface: '#FFFFFF', // cards/panels
+  ink: '#28342F', // primary text
+  inkSoft: '#5C6B65', // secondary text
+  line: '#DCE2DD', // borders/dividers
+  brand: '#3E6259', // nav active, "today" marker, primary accents
+  brandSoft: '#3E62590F', // brand at ~6% — "today" column/row wash
+  amber: '#F6B042', // FAB, CTAs, "selected day" outline, highlight chip
 } as const
 
-// ── generated marker color system ────────────────────────────────
-// Slots 0–3: curated originals. Slots 4+: oklch(66% 0.097 H) stepping
-// through MARKER_HUES, intentionally skipping brand hues so any family
-// size stays harmonious. Family (ochre) is reserved — never a person.
-export const MARKER_CURATED = ['#4F7E91', '#BC6678', '#7D9A55', '#8B6F97'] as const
-export const MARKER_HUES = [255, 350, 132, 300, 25, 200, 282, 112, 332, 232] as const
-export const FAMILY_COLOR = '#D2982E'
-
-export function markerColor(i: number | null | undefined): string {
-  if (i == null) return FAMILY_COLOR
-  return i < MARKER_CURATED.length
-    ? MARKER_CURATED[i]
-    : `oklch(66% 0.097 ${MARKER_HUES[i % MARKER_HUES.length]})`
-}
-
-// Per-person marker colors (index-matched to API FamilyMember order).
+// Per-person marker colors. Authoritative colors come from the API
+// (FamilyMember.color); these are the design reference / fallbacks.
 export const PEOPLE = {
-  alberto:   MARKER_CURATED[0],  // azulejo teal-blue
-  hilda:     MARKER_CURATED[1],  // dusty rose
-  marie:     MARKER_CURATED[2],  // olive-leaf
-  guilherme: MARKER_CURATED[3],  // muted plum
+  alberto: '#4C7EA8', // denim
+  hilda: '#D1577A', // raspberry
+  marie: '#5C9460', // moss
+  guilherme: '#8A6BB8', // violet
 } as const
 
-export const SHARED_COLOR = FAMILY_COLOR
+// Gold — family-wide / external people (e.g. "Grandma"). Used for shared events.
+export const SHARED_COLOR = '#D99A2B'
 
 export const fonts = {
-  display: 'Spectral, Georgia, serif',
-  body: 'Figtree, system-ui, sans-serif',
+  display: '"Bricolage Grotesque", sans-serif',
+  body: '"Plus Jakarta Sans", sans-serif',
 } as const
 
-// Legacy chip helper — superseded by color-mix() in the new EventChip,
-// but kept for any inline usages that haven't been ported yet.
+// Event chip styling helper: 12%-tint background + 3px left border (the
+// "marker-pen on a whiteboard" metaphor from the build brief).
 export function chipStyle(color: string) {
   return {
     backgroundColor: color + '20',
