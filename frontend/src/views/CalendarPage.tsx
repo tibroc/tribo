@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  addDays, addMonths, mondayOf, startOfDay, startOfMonth, weekRangeLabel,
-  FULL_WEEKDAY, MONTHS_FULL, MONTHS_SHORT, type ViewName, type HeaderControls, type ViewProps, type NavKey, type EventFocus,
+  addDays, addMonths, mondayOf, startOfDay, startOfMonth,
+  type ViewName, type HeaderControls, type ViewProps, type NavKey, type EventFocus,
 } from '../lib/calendar'
+import { fmtDayLong, fmtMonthYear, fmtWeekRange, fmtQuarterRange } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 import { getCalendarSources, getEvents, getFamilyMembers, getWorkSchedules, type CalendarSource, type FamilyMember, type TriboEvent, type WorkSchedule } from '../lib/api'
 import DayView from './DayView'
 import WeekView from './WeekView'
@@ -21,7 +23,7 @@ const VIEW_COMPONENTS: Record<ViewName, (p: ViewProps) => JSX.Element> = {
 }
 
 // The fetch window + header label + nav step for the active view, given the cursor.
-function periodFor(view: ViewName, cursor: Date): { start: Date; end: Date; label: string; step: (dir: -1 | 1) => Date } {
+function periodFor(view: ViewName, cursor: Date, locale: string): { start: Date; end: Date; label: string; step: (dir: -1 | 1) => Date } {
   const year = cursor.getFullYear()
   switch (view) {
     case 'Day': {
@@ -29,23 +31,23 @@ function periodFor(view: ViewName, cursor: Date): { start: Date; end: Date; labe
       return {
         start,
         end: addDays(start, 1),
-        label: `${FULL_WEEKDAY[(start.getDay() + 6) % 7]}, ${MONTHS_FULL[start.getMonth()]} ${start.getDate()}`,
+        label: fmtDayLong(start, locale),
         step: (dir) => addDays(cursor, dir),
       }
     }
     case 'Week': {
       const start = mondayOf(cursor)
-      return { start, end: addDays(start, 7), label: weekRangeLabel(start), step: (dir) => addDays(cursor, 7 * dir) }
+      return { start, end: addDays(start, 7), label: fmtWeekRange(start, locale), step: (dir) => addDays(cursor, 7 * dir) }
     }
     case 'Month': {
       const start = startOfMonth(cursor)
-      return { start, end: addMonths(start, 1), label: `${MONTHS_FULL[start.getMonth()]} ${year}`, step: (dir) => addMonths(cursor, dir) }
+      return { start, end: addMonths(start, 1), label: fmtMonthYear(start, locale), step: (dir) => addMonths(cursor, dir) }
     }
     case 'Quarter': {
       const qStart = Math.floor(cursor.getMonth() / 3) * 3
       const start = new Date(year, qStart, 1)
       const end = new Date(year, qStart + 3, 1)
-      return { start, end, label: `${MONTHS_SHORT[qStart]} – ${MONTHS_SHORT[qStart + 2]} ${year}`, step: (dir) => addMonths(cursor, 3 * dir) }
+      return { start, end, label: fmtQuarterRange(start, locale), step: (dir) => addMonths(cursor, 3 * dir) }
     }
     case 'Year': {
       const start = new Date(year, 0, 1)
@@ -55,6 +57,7 @@ function periodFor(view: ViewName, cursor: Date): { start: Date; end: Date; labe
 }
 
 export default function CalendarPage({ onNavigate, openNew, focus }: { onNavigate: (k: NavKey) => void; openNew?: boolean; focus?: EventFocus }) {
+  const locale = useLocale()
   const today = useMemo(() => new Date(), [])
   const [view, setView] = useState<ViewName>('Week')
   // Arriving from a notification deep-link jumps to that event's week.
@@ -70,7 +73,7 @@ export default function CalendarPage({ onNavigate, openNew, focus }: { onNavigat
   // Opens straight to a new event when arriving via Home's quick-add chooser.
   const [formEvent, setFormEvent] = useState<TriboEvent | null | undefined>(openNew ? null : undefined)
 
-  const period = useMemo(() => periodFor(view, cursor), [view, cursor])
+  const period = useMemo(() => periodFor(view, cursor, locale), [view, cursor, locale])
 
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch((e) => setError(String(e)))
@@ -107,8 +110,8 @@ export default function CalendarPage({ onNavigate, openNew, focus }: { onNavigat
     view,
     onViewChange: setView,
     periodLabel: period.label,
-    onPrev: () => setCursor((c) => periodFor(view, c).step(-1)),
-    onNext: () => setCursor((c) => periodFor(view, c).step(1)),
+    onPrev: () => setCursor((c) => periodFor(view, c, locale).step(-1)),
+    onNext: () => setCursor((c) => periodFor(view, c, locale).step(1)),
     onToday: () => setCursor(new Date()),
   }
 

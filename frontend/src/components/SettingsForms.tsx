@@ -8,10 +8,11 @@ import {
   type FamilyMember, type Chore, type WorkSchedule,
 } from '../lib/api'
 import Button from './Button'
+import { weekdayLabels } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 
 // Harmonious generated marker palette (slots 0–7) for the member color picker.
 const COLORS = Array.from({ length: 8 }, (_, i) => markerColor(i))
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const field = { border: '1px solid var(--t-line)', background: 'var(--t-surface)', borderRadius: 'var(--t-radius-md)' }
 
 // Shared centered/full-screen modal shell with header actions + optional delete.
@@ -195,6 +196,7 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
   const [label, setLabel] = useState(schedule?.label ?? 'Work')
   const [show, setShow] = useState(schedule?.showOnCalendar ?? false)
   const { busy, error, run } = useSaver(onSaved)
+  const dayInitials = weekdayLabels(useLocale(), 'narrow')
 
   const toggleDay = (i: number) => setDays((cur) => cur.substring(0, i) + (cur[i] === '1' ? '0' : '1') + cur.substring(i + 1))
   const save = () => run(() => {
@@ -212,7 +214,7 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
       </Labeled>
       <Labeled label="Days">
         <div className="flex gap-1">
-          {DAY_LABELS.map((d, i) => (
+          {dayInitials.map((d, i) => (
             <button key={i} onClick={() => toggleDay(i)} className="flex-1 rounded-md text-center text-xs font-semibold py-1.5"
               style={days[i] === '1' ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { background: 'var(--t-bg)', color: 'var(--t-text-soft)' }}>{d}</button>
           ))}

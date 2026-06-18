@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Bell, AlertTriangle, UserPlus, Check } from 'lucide-react'
 import { getNotifications, type Notification } from '../lib/api'
+import { fmtWeekdayDay } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 
 // Fired after an action that may resolve a notification (e.g. assigning a
 // guardian) so the bell refetches without a full reload.
@@ -14,6 +16,7 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
 }) {
   const [items, setItems] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
+  const locale = useLocale()
 
   useEffect(() => {
     const load = () => getNotifications().then(setItems).catch(() => setItems([]))
@@ -98,7 +101,7 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
                         <span className="block text-sm font-semibold truncate" style={{ color: 'var(--t-text)' }}>{n.title}</span>
                         <span className="block text-xs" style={{ color: 'var(--t-text-soft)' }}>{n.message}</span>
                       </span>
-                      <span className="text-xs flex-shrink-0 whitespace-nowrap" style={{ color: 'var(--t-text-soft)' }}>{formatDay(n.startAt)}</span>
+                      <span className="text-xs flex-shrink-0 whitespace-nowrap" style={{ color: 'var(--t-text-soft)' }}>{formatDay(n.startAt, locale)}</span>
                     </button>
                   )
                 })}
@@ -111,8 +114,8 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
   )
 }
 
-function formatDay(iso: string): string {
+function formatDay(iso: string, locale: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+  return fmtWeekdayDay(d, locale)
 }

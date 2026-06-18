@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { Cake } from 'lucide-react'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey,
-  MONTHS_FULL, MONTHS_SHORT, WEEKDAY_INITIALS, type ViewProps,
+  type ViewProps,
 } from '../lib/calendar'
+import { fmtMonthDay, monthLabels, weekdayLabels } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
 import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
@@ -25,18 +27,21 @@ export default function QuarterView({ members, events, cursor, today, header, on
   const months = [qStart, qStart + 1, qStart + 2]
   const byId = useMemo(() => membersById(members), [members])
   const byDay = useMemo(() => groupByDay(events), [events])
+  const locale = useLocale()
+  const monthsFull = useMemo(() => monthLabels(locale, 'long'), [locale])
+  const initials = useMemo(() => weekdayLabels(locale, 'narrow'), [locale])
 
   return (
     <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
       <div className="p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
-          {months.map((m) => <MiniMonth key={m} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
+          {months.map((m) => <MiniMonth key={m} monthName={monthsFull[m]} initials={initials} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
         </div>
 
         <div className="mt-4 lg:mt-6">
           <div className="font-display text-lg font-bold mb-3">This quarter</div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-            {months.map((m) => <MonthHighlightList key={m} year={year} month={m} events={events} byId={byId} />)}
+            {months.map((m) => <MonthHighlightList key={m} monthName={monthsFull[m]} locale={locale} year={year} month={m} events={events} byId={byId} />)}
           </div>
         </div>
       </div>
@@ -44,9 +49,11 @@ export default function QuarterView({ members, events, cursor, today, header, on
   )
 }
 
-function MiniMonth({ year, month, byDay, byId, today }: {
+function MiniMonth({ year, month, monthName, initials, byDay, byId, today }: {
   year: number
   month: number
+  monthName: string
+  initials: string[]
   byDay: Map<string, TriboEvent[]>
   byId: Map<string, FamilyMember>
   today: Date
@@ -55,9 +62,9 @@ function MiniMonth({ year, month, byDay, byId, today }: {
   const line = '1px solid var(--t-line)'
   return (
     <Card padded={false} className="overflow-hidden">
-      <div className="font-display text-base font-bold px-3 py-2" style={{ borderBottom: line }}>{MONTHS_FULL[month]}</div>
+      <div className="font-display text-base font-bold px-3 py-2" style={{ borderBottom: line }}>{monthName}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-        {WEEKDAY_INITIALS.map((d, i) => (
+        {initials.map((d, i) => (
           <div key={i} className="text-center text-xs font-semibold uppercase py-1" style={{ color: 'var(--t-text-soft)' }}>{d}</div>
         ))}
       </div>
@@ -81,9 +88,11 @@ function MiniMonth({ year, month, byDay, byId, today }: {
   )
 }
 
-function MonthHighlightList({ year, month, events, byId }: {
+function MonthHighlightList({ year, month, monthName, locale, events, byId }: {
   year: number
   month: number
+  monthName: string
+  locale: string
   events: TriboEvent[]
   byId: Map<string, FamilyMember>
 }) {
@@ -94,7 +103,7 @@ function MonthHighlightList({ year, month, events, byId }: {
     .sort((a, b) => +a.d - +b.d)
   return (
     <div>
-      <div className="text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--t-text-soft)' }}>{MONTHS_FULL[month]}</div>
+      <div className="text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--t-text-soft)' }}>{monthName}</div>
       {items.length === 0 ? (
         <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Nothing notable</div>
       ) : (
@@ -107,7 +116,7 @@ function MonthHighlightList({ year, month, events, byId }: {
                   ? <Cake size={14} style={{ color, flexShrink: 0 }} />
                   : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />}
                 <span className="flex-1 truncate">{e.title}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{MONTHS_SHORT[month]} {d.getDate()}</span>
+                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
               </div>
             )
           })}

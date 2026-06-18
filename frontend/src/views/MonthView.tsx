@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Cake } from 'lucide-react'
 import {
-  buildMonthCells, colorForEvent, fmtTime, groupByDay, membersById, sameDay,
-  dayKey, MONTHS_SHORT, WEEKDAY_LABELS, FULL_WEEKDAY, type ViewProps, type MonthCell,
+  buildMonthCells, colorForEvent, groupByDay, membersById, sameDay,
+  dayKey, type ViewProps, type MonthCell,
 } from '../lib/calendar'
+import { fmtTime, fmtMonthDay, fmtWeekdayLongDay, weekdayLabels } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
 import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
@@ -16,6 +18,8 @@ function ordered(events: TriboEvent[]): TriboEvent[] {
 }
 
 export default function MonthView({ members, events, cursor, today, header, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
+  const locale = useLocale()
+  const weekdays = useMemo(() => weekdayLabels(locale, 'short'), [locale])
   const year = cursor.getFullYear()
   const month = cursor.getMonth()
   const byId = useMemo(() => membersById(members), [members])
@@ -42,15 +46,15 @@ export default function MonthView({ members, events, cursor, today, header, onNa
       header={<CalendarHeader controls={header} />}
       aside={
         <>
-          <SelectedDayPanel date={selected} byDay={byDay} byId={byId} today={today} onEditEvent={onEditEvent} />
-          <MonthHighlights events={events} byId={byId} />
+          <SelectedDayPanel date={selected} byDay={byDay} byId={byId} today={today} onEditEvent={onEditEvent} locale={locale} />
+          <MonthHighlights events={events} byId={byId} locale={locale} />
         </>
       }
     >
       <div className="hidden lg:flex flex-col h-full">
         <div className="shrink-0" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-          {WEEKDAY_LABELS.map((d, i) => (
-            <div key={d} className="text-xs font-bold uppercase tracking-wider px-3.5 py-3"
+          {weekdays.map((d, i) => (
+            <div key={i} className="text-xs font-bold uppercase tracking-wider px-3.5 py-3"
               style={{ color: 'var(--t-text-soft)', borderBottom: '2px solid color-mix(in oklab, var(--t-text-soft) 22%, var(--t-line))', borderLeft: i === 0 ? 'none' : '1px solid var(--t-line)', backgroundColor: i >= 5 ? 'color-mix(in oklab, var(--t-text-soft) 4%, transparent)' : 'transparent' }}>{d}</div>
           ))}
         </div>
@@ -142,22 +146,22 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
   )
 }
 
-function SelectedDayPanel({ date, byDay, byId, today, onEditEvent }: {
+function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
   date: Date
   byDay: Map<string, TriboEvent[]>
   byId: Map<string, FamilyMember>
   today: Date
   onEditEvent: (e: TriboEvent) => void
+  locale: string
 }) {
   const events = ordered(byDay.get(dayKey(date)) ?? [])
   const isToday = sameDay(date, today)
-  const weekday = FULL_WEEKDAY[(date.getDay() + 6) % 7]
 
   return (
     <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
         <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{date.getDate()}</div>
-        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{weekday}, {MONTHS_SHORT[date.getMonth()]} {date.getDate()}{isToday ? ' · Today' : ''}</div>
+        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{fmtWeekdayLongDay(date, locale)}{isToday ? ' · Today' : ''}</div>
       </div>
       {events.length === 0 ? (
         <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>Nothing scheduled</div>
@@ -169,7 +173,7 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent }: {
             return (
               <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                {!ev.allDay && <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt))}</span>}
+                {!ev.allDay && <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>}
                 <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.icon === 'cake' && <Cake size={12} />}{ev.title}</span>
                 <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
               </div>
@@ -181,7 +185,7 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent }: {
   )
 }
 
-function MonthHighlights({ events, byId }: { events: TriboEvent[]; byId: Map<string, FamilyMember> }) {
+function MonthHighlights({ events, byId, locale }: { events: TriboEvent[]; byId: Map<string, FamilyMember>; locale: string }) {
   const highlights = events
     .filter((e) => e.visibilityTag === 'milestone')
     .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt))
@@ -198,7 +202,7 @@ function MonthHighlights({ events, byId }: { events: TriboEvent[]; byId: Map<str
               <div key={h.id} className="flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForEvent(h, byId) }} />
                 <span className="flex-1 truncate">{h.title}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{MONTHS_SHORT[d.getMonth()]} {d.getDate()}</span>
+                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
               </div>
             )
           })}

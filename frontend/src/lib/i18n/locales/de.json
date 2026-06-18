@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "home": "Start",
+    "calendar": "Kalender",
+    "chores": "Aufgaben",
+    "todos": "To-dos",
+    "family": "Familie",
+    "review": "Rückblick"
+  },
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "done": "Fertig",
+    "add": "Hinzufügen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "close": "Schließen",
+    "connect": "Verbinden",
+    "loading": "Wird geladen…",
+    "today": "Heute",
+    "previous": "Zurück",
+    "next": "Weiter"
+  },
+  "language": {
+    "title": "Sprache",
+    "subtitle": "App-Sprache für dieses Gerät",
+    "hint": "Die Sprache gilt für dieses Gerät und wird gespeichert."
+  },
+  "settings": {
+    "appSettings": "App-Einstellungen",
+    "appearance": "Darstellung",
+    "appearanceLight": "Helles Design",
+    "appearanceDark": "Dunkles Design",
+    "appearanceSystem": "Folgt der Systemeinstellung",
+    "themeHint": "Das Design wird sofort übernommen und auf diesem Gerät gespeichert.",
+    "themeLight": "Hell",
+    "themeDark": "Dunkel",
+    "themeSystem": "System",
+    "account": "Konto",
+    "accountLoading": "Wird geladen…",
+    "accountLocal": "Lokaler Modus – Anmeldung nicht konfiguriert",
+    "accountSignedIn": "Angemeldet",
+    "accountNotSignedIn": "Nicht angemeldet",
+    "accountActiveProfile": "Aktives Profil",
+    "accountLocalBody": "Im lokalen Modus – keine Anmeldung nötig. Für eine persönliche Anmeldung diese Werte auf dem Server konfigurieren:",
+    "accountSignedInBody": "Über deinen Identitätsanbieter angemeldet. Profile wechselst du über das Avatar in der Navigation.",
+    "accountNotSignedInBody": "Nicht angemeldet.",
+    "signOut": "Abmelden",
+    "location": "Standort",
+    "locationSet": "{{name}} – für das Wetter verwendet",
+    "locationUnset": "Standort für das Wetter-Widget festlegen",
+    "runWizard": "Einrichtungsassistent starten",
+    "runWizardSub": "Mitglieder, Aufgaben oder eine typische Woche hinzufügen"
+  }
+}

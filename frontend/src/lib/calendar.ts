@@ -20,11 +20,8 @@ export type Intent = 'new-event' | 'new-chore' | 'new-todo' | 'open-event'
 // calendar can jump to the right week before opening the event form.
 export type EventFocus = { eventId: string; date: string }
 
-export const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-export const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-export const WEEKDAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-export const FULL_WEEKDAY = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+// Locale-aware month/weekday labels + time/range formatting now live in
+// ./datetime.ts (Intl-based, keyed off the active locale).
 
 // Props the AppShell header needs; produced by CalendarPage, consumed by every view.
 export interface HeaderControls {
@@ -78,22 +75,6 @@ export function sameDay(a: Date, b: Date): boolean {
 }
 export function dayKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-}
-
-export function fmtTime(d: Date): string {
-  let h = d.getHours()
-  const m = d.getMinutes()
-  const ampm = h < 12 ? 'AM' : 'PM'
-  h = h % 12 || 12
-  return m === 0 ? `${h}:00 ${ampm}` : `${h}:${String(m).padStart(2, '0')} ${ampm}`
-}
-
-export function weekRangeLabel(monday: Date): string {
-  const sunday = addDays(monday, 6)
-  if (monday.getMonth() === sunday.getMonth()) {
-    return `${MONTHS_SHORT[monday.getMonth()]} ${monday.getDate()} – ${sunday.getDate()}`
-  }
-  return `${MONTHS_SHORT[monday.getMonth()]} ${monday.getDate()} – ${MONTHS_SHORT[sunday.getMonth()]} ${sunday.getDate()}`
 }
 
 // ===== Color =====

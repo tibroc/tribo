@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
-  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check,
+  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages,
 } from 'lucide-react'
 import type { Section } from '../lib/calendar'
 import {
@@ -21,8 +21,10 @@ import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsF
 import { RecurrencePill } from '../components/panels'
 import { useSession } from '../lib/session'
 import { useTheme, type ThemePreference } from '../lib/theme'
-
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+import { weekdayLabels } from '../lib/datetime'
+import { useLocale, LANGUAGES } from '../lib/i18n'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [members, setMembers] = useState<FamilyMember[]>([])
@@ -33,6 +35,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showLocation, setShowLocation] = useState(false)
   const [showAppearance, setShowAppearance] = useState(false)
   const [showAccount, setShowAccount] = useState(false)
+  const [showLanguage, setShowLanguage] = useState(false)
   const reloadWeather = () => getWeatherSettings().then(setWeather).catch(() => {})
   const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
   const reloadSchedules = () => getWorkSchedules().then(setSchedules).catch(() => {})
@@ -57,6 +60,9 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showWizard, setShowWizard] = useState(false)
   const { session, refresh: refreshSession } = useSession()
   const theme = useTheme()
+  const { t, i18n } = useTranslation()
+  const currentLang = LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES.find((l) => i18n.language.startsWith(l.code.slice(0, 2))) ?? LANGUAGES[0]
+  const dayInitials = weekdayLabels(useLocale(), 'narrow')
   const nameOf = (id?: string) => members.find((m) => m.id === id)?.name ?? ''
 
   if (showWizard) {
@@ -114,7 +120,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                     <ChevronRight size={14} style={{ color: 'var(--t-text-soft)' }} />
                   </button>
                   <div className="flex gap-1 mb-2">
-                    {DAY_LABELS.map((d, i) => {
+                    {dayInitials.map((d, i) => {
                       const on = s.daysOfWeek[i] === '1'
                       return (
                         <div key={i} className="flex-1 rounded-md text-center text-xs font-semibold py-1.5"
@@ -215,20 +221,22 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         )}
         {showAppearance && <AppearanceModal onClose={() => setShowAppearance(false)} />}
         {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
+        {showLanguage && <LanguageModal onClose={() => setShowLanguage(false)} />}
 
-        {/* App settings (static) */}
-        <Section title="App settings">
+        {/* App settings */}
+        <Section title={t('settings.appSettings')}>
           <div className="space-y-3">
-            <SettingRow icon={MapPin} title="Location"
-              sub={weather?.locationName ? `${weather.locationName} — used for weather` : 'Set a location for the weather widget'}
+            <SettingRow icon={MapPin} title={t('settings.location')}
+              sub={weather?.locationName ? t('settings.locationSet', { name: weather.locationName }) : t('settings.locationUnset')}
               onClick={() => setShowLocation(true)} />
-            <SettingRow icon={Palette} title="Appearance" sub={appearanceSub(theme.preference)} onClick={() => setShowAppearance(true)} />
-            <SettingRow icon={LogIn} title="Account" sub={accountSub(session)} onClick={() => setShowAccount(true)} />
+            <SettingRow icon={Languages} title={t('language.title')} sub={currentLang.label} onClick={() => setShowLanguage(true)} />
+            <SettingRow icon={Palette} title={t('settings.appearance')} sub={appearanceSub(theme.preference, t)} onClick={() => setShowAppearance(true)} />
+            <SettingRow icon={LogIn} title={t('settings.account')} sub={accountSub(session, t)} onClick={() => setShowAccount(true)} />
             <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
               <Plus size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium">Run setup wizard</div>
-                <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Add members, chores, or a typical week</div>
+                <div className="text-sm font-medium">{t('settings.runWizard')}</div>
+                <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('settings.runWizardSub')}</div>
               </div>
               <ChevronRight size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
             </button>
@@ -351,19 +359,21 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
   )
 }
 
-function appearanceSub(p: ThemePreference): string {
-  return p === 'system' ? 'Follows your system setting' : p === 'dark' ? 'Dark theme' : 'Light theme'
+function appearanceSub(p: ThemePreference, t: TFunction): string {
+  if (p === 'system') return t('settings.appearanceSystem')
+  return p === 'dark' ? t('settings.appearanceDark') : t('settings.appearanceLight')
 }
 
-function accountSub(session: { authEnabled: boolean; authenticated: boolean } | null): string {
-  if (!session) return 'Loading…'
-  if (!session.authEnabled) return 'Local mode — sign-in not configured'
-  return session.authenticated ? 'Signed in' : 'Not signed in'
+function accountSub(session: { authEnabled: boolean; authenticated: boolean } | null, t: TFunction): string {
+  if (!session) return t('settings.accountLoading')
+  if (!session.authEnabled) return t('settings.accountLocal')
+  return session.authenticated ? t('settings.accountSignedIn') : t('settings.accountNotSignedIn')
 }
 
 // Lightweight settings sheet matching the other modals (full-screen on mobile,
 // centered card on desktop) with a single Done action.
 function SettingsSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
       <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
@@ -371,7 +381,7 @@ function SettingsSheet({ title, onClose, children }: { title: string; onClose: (
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <span className="w-12" />
           <div className="font-display text-lg" style={{ fontWeight: 500 }}>{title}</div>
-          <button onClick={onClose} className="text-sm font-semibold w-12 text-right" style={{ color: 'var(--t-brand)' }}>Done</button>
+          <button onClick={onClose} className="text-sm font-semibold w-12 text-right" style={{ color: 'var(--t-brand)' }}>{t('common.done')}</button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto">{children}</div>
       </div>
@@ -381,14 +391,15 @@ function SettingsSheet({ title, onClose, children }: { title: string; onClose: (
 
 // Theme picker — Light / Dark / System, applied live.
 function AppearanceModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
   const { preference, setPreference } = useTheme()
   const options: { key: ThemePreference; label: string; icon: typeof Sun }[] = [
-    { key: 'light', label: 'Light', icon: Sun },
-    { key: 'dark', label: 'Dark', icon: Moon },
-    { key: 'system', label: 'System', icon: Monitor },
+    { key: 'light', label: t('settings.themeLight'), icon: Sun },
+    { key: 'dark', label: t('settings.themeDark'), icon: Moon },
+    { key: 'system', label: t('settings.themeSystem'), icon: Monitor },
   ]
   return (
-    <SettingsSheet title="Appearance" onClose={onClose}>
+    <SettingsSheet title={t('settings.appearance')} onClose={onClose}>
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>
         {options.map((o, i) => {
           const active = preference === o.key
@@ -403,39 +414,67 @@ function AppearanceModal({ onClose }: { onClose: () => void }) {
           )
         })}
       </div>
-      <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Theme applies instantly and is remembered on this device.</div>
+      <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('settings.themeHint')}</div>
+    </SettingsSheet>
+  )
+}
+
+// Language picker — applied live, persisted per-device.
+function LanguageModal({ onClose }: { onClose: () => void }) {
+  const { t, i18n } = useTranslation()
+  const change = (code: string) => {
+    i18n.changeLanguage(code)
+    document.documentElement.lang = code
+  }
+  return (
+    <SettingsSheet title={t('language.title')} onClose={onClose}>
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>
+        {LANGUAGES.map((l, i) => {
+          const active = i18n.language === l.code || i18n.language.startsWith(l.code.slice(0, 2))
+          return (
+            <button key={l.code} onClick={() => change(l.code)}
+              className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm"
+              style={{ borderBottom: i === LANGUAGES.length - 1 ? 'none' : '1px solid var(--t-line)', background: active ? 'var(--t-shell)' : 'transparent' }}>
+              <span className="flex-1 font-medium">{l.label}</span>
+              {active && <Check size={16} style={{ color: 'var(--t-brand)' }} />}
+            </button>
+          )
+        })}
+      </div>
+      <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('language.hint')}</div>
     </SettingsSheet>
   )
 }
 
 // Account / session info + sign-out (when OIDC auth is enabled).
 function AccountModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
   const { session, activeMember, logout } = useSession()
   const [busy, setBusy] = useState(false)
   const signOut = async () => { setBusy(true); try { await logout() } finally { onClose() } }
   return (
-    <SettingsSheet title="Account" onClose={onClose}>
+    <SettingsSheet title={t('settings.account')} onClose={onClose}>
       {activeMember && (
         <div className="flex items-center gap-3">
           <PersonAvatar name={activeMember.name} color={activeMember.color} size={40} />
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">{activeMember.name}</div>
-            <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>Active profile</div>
+            <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('settings.accountActiveProfile')}</div>
           </div>
         </div>
       )}
       {!session?.authEnabled ? (
         <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}>
-          Running in <strong style={{ color: 'var(--t-text)' }}>local mode</strong> — no sign-in required. To enable per-person login, configure
-          {' '}<code>OIDC_ISSUER_URL</code>, <code>OIDC_CLIENT_ID</code> and <code>OIDC_CLIENT_SECRET</code> on the server.
+          {t('settings.accountLocalBody')}
+          <div className="mt-1.5 font-mono text-xs" style={{ color: 'var(--t-text)' }}>OIDC_ISSUER_URL · OIDC_CLIENT_ID · OIDC_CLIENT_SECRET</div>
         </div>
       ) : session.authenticated ? (
         <>
-          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Signed in via your identity provider. Switch profiles from the avatar in the nav.</div>
-          <Button variant="danger" onClick={signOut} disabled={busy} style={{ width: '100%' }}><LogOut size={16} /> Sign out</Button>
+          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('settings.accountSignedInBody')}</div>
+          <Button variant="danger" onClick={signOut} disabled={busy} style={{ width: '100%' }}><LogOut size={16} /> {t('settings.signOut')}</Button>
         </>
       ) : (
-        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Not signed in.</div>
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('settings.accountNotSignedInBody')}</div>
       )}
     </SettingsSheet>
   )

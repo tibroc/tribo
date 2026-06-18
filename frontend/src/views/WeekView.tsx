@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 import { SHARED_COLOR } from '../lib/tokens'
 import {
-  addDays, mondayOf, sameDay, fmtTime, groupByDay, WEEKDAY_LABELS, type ViewProps,
+  addDays, mondayOf, sameDay, groupByDay, type ViewProps,
 } from '../lib/calendar'
+import { fmtTime, weekdayLabels } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
 import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
@@ -14,7 +16,7 @@ import { ChoresPanel, TodosPanel } from '../components/panels'
 
 interface Placed { ev: TriboEvent; time?: string }
 
-function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date) {
+function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date, locale: string) {
   return useMemo(() => {
     const byDay = groupByDay(events)
     const perMember = new Map<string, Placed[][]>()
@@ -25,18 +27,20 @@ function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date
       const day = addDays(monday, di)
       const dayEvents = byDay.get(`${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`) ?? []
       for (const ev of dayEvents) {
-        const placed: Placed = { ev, time: ev.allDay ? undefined : fmtTime(new Date(ev.startAt)) }
+        const placed: Placed = { ev, time: ev.allDay ? undefined : fmtTime(new Date(ev.startAt), locale) }
         if (ev.isShared || ev.attendeeIds.length === 0) shared[di].push(placed)
         else ev.attendeeIds.forEach((mid) => perMember.get(mid)?.[di].push(placed))
       }
     }
     return { perMember, shared }
-  }, [events, members, monday])
+  }, [events, members, monday, locale])
 }
 
 export default function WeekView({ members, events, cursor, today, header, workSchedules, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
+  const locale = useLocale()
+  const weekdays = useMemo(() => weekdayLabels(locale, 'short'), [locale])
   const monday = useMemo(() => mondayOf(cursor), [cursor])
-  const { perMember, shared } = useWeekData(events, members, monday)
+  const { perMember, shared } = useWeekData(events, members, monday, locale)
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
   // (memberId, weekdayIndex) → true if a visible work schedule is active.
   const busyAt = (memberID: string, di: number) =>
@@ -47,21 +51,22 @@ export default function WeekView({ members, events, cursor, today, header, workS
     <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={<ThisWeekPanel members={members} />}>
       {/* Tablet/desktop grid — fills the main island */}
       <div className="hidden lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
-        <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} busyAt={busyAt} sharedCount={sharedCount} onEditEvent={onEditEvent} />
+        <WeekGrid days={days} weekdays={weekdays} members={members} perMember={perMember} shared={shared} today={today} busyAt={busyAt} sharedCount={sharedCount} onEditEvent={onEditEvent} />
       </div>
 
       {/* Phone agenda */}
       <div className="lg:hidden space-y-2">
         {days.map((d, di) => (
-          <AgendaDay key={di} day={d} di={di} members={members} perMember={perMember} shared={shared} today={today} onEditEvent={onEditEvent} />
+          <AgendaDay key={di} day={d} di={di} weekday={weekdays[di]} members={members} perMember={perMember} shared={shared} today={today} onEditEvent={onEditEvent} />
         ))}
       </div>
     </AppShell>
   )
 }
 
-function WeekGrid({ days, members, perMember, shared, today, busyAt, sharedCount, onEditEvent }: {
+function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, sharedCount, onEditEvent }: {
   days: Date[]
+  weekdays: string[]
   members: FamilyMember[]
   perMember: Map<string, Placed[][]>
   shared: Placed[][]
@@ -90,7 +95,7 @@ function WeekGrid({ days, members, perMember, shared, today, busyAt, sharedCount
         const isToday = sameDay(d, today)
         return (
           <div key={i} className="text-center" style={{ padding: '16px 6px 12px', borderBottom: headLine, borderLeft: line, backgroundColor: cellBg(d, i) }}>
-            <div className="text-xs font-bold uppercase tracking-wider" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{WEEKDAY_LABELS[i]}</div>
+            <div className="text-xs font-bold uppercase tracking-wider" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{weekdays[i]}</div>
             <div className="font-display mt-1.5 mx-auto inline-flex items-center justify-center"
               style={{ fontSize: 24, width: 42, height: 42, borderRadius: '50%', ...(isToday ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{d.getDate()}</div>
           </div>
@@ -132,9 +137,10 @@ function WeekGrid({ days, members, perMember, shared, today, busyAt, sharedCount
   )
 }
 
-function AgendaDay({ day, di, members, perMember, shared, today, onEditEvent }: {
+function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEditEvent }: {
   day: Date
   di: number
+  weekday: string
   members: FamilyMember[]
   perMember: Map<string, Placed[][]>
   shared: Placed[][]
@@ -151,7 +157,7 @@ function AgendaDay({ day, di, members, perMember, shared, today, onEditEvent }: 
     <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
         <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{day.getDate()}</div>
-        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{WEEKDAY_LABELS[di]}{isToday ? ' · Today' : ''}</div>
+        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{weekday}{isToday ? ' · Today' : ''}</div>
       </div>
       {items.length === 0 ? (
         <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>Nothing scheduled</div>

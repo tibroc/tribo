@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "home": "Home",
+    "calendar": "Calendar",
+    "chores": "Chores",
+    "todos": "To-dos",
+    "family": "Family",
+    "review": "Review"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "done": "Done",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "connect": "Connect",
+    "loading": "Loading…",
+    "today": "Today",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "language": {
+    "title": "Language",
+    "subtitle": "App language for this device",
+    "hint": "The language applies on this device and is remembered."
+  },
+  "settings": {
+    "appSettings": "App settings",
+    "appearance": "Appearance",
+    "appearanceLight": "Light theme",
+    "appearanceDark": "Dark theme",
+    "appearanceSystem": "Follows your system setting",
+    "themeHint": "Theme applies instantly and is remembered on this device.",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "account": "Account",
+    "accountLoading": "Loading…",
+    "accountLocal": "Local mode — sign-in not configured",
+    "accountSignedIn": "Signed in",
+    "accountNotSignedIn": "Not signed in",
+    "accountActiveProfile": "Active profile",
+    "accountLocalBody": "Running in local mode — no sign-in required. To enable per-person login, configure these on the server:",
+    "accountSignedInBody": "Signed in via your identity provider. Switch profiles from the avatar in the nav.",
+    "accountNotSignedInBody": "Not signed in.",
+    "signOut": "Sign out",
+    "location": "Location",
+    "locationSet": "{{name}} — used for weather",
+    "locationUnset": "Set a location for the weather widget",
+    "runWizard": "Run setup wizard",
+    "runWizardSub": "Add members, chores, or a typical week"
+  }
+}

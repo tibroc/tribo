@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { SHARED_COLOR } from '../lib/tokens'
-import { fmtTime, sameDay, startOfDay, type ViewProps } from '../lib/calendar'
+import { sameDay, startOfDay, type ViewProps } from '../lib/calendar'
+import { fmtTime, fmtHour } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
 import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
@@ -26,7 +28,6 @@ interface BusyBlock { start: number; end: number; label: string }
 const clamp = (t: number) => Math.max(HOUR_START, Math.min(HOUR_END, t))
 // Vertical position as a percentage of the (fluid) timeline height.
 const pct = (t: number) => ((clamp(t) - HOUR_START) / SPAN) * 100
-const formatHour = (h: number) => (h === 12 ? 'Noon' : `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`)
 
 // Tinted marker-pen fill matching EventChip's color-mix recipe.
 const tint = (color: string) => `color-mix(in oklab, ${color} var(--t-tint, 12%), var(--t-surface))`
@@ -34,6 +35,7 @@ const tint = (color: string) => `color-mix(in oklab, ${color} var(--t-tint, 12%)
 interface Block { ev: TriboEvent; start: number; end: number; color: string; who?: string }
 
 export default function DayView({ members, events, cursor, today, header, workSchedules, onNavigate, onAddEvent, onEditEvent }: ViewProps) {
+  const locale = useLocale()
   const day = useMemo(() => startOfDay(cursor), [cursor])
   const weekday = (day.getDay() + 6) % 7 // Mon=0
   const busyFor = (memberID: string): BusyBlock[] =>
@@ -79,16 +81,16 @@ export default function DayView({ members, events, cursor, today, header, workSc
         <div style={{ borderBottom: '1px solid var(--t-line)' }} />
         {columns.map((c, i) => <ColumnHeader key={c.key} person={c} isLast={i === columns.length - 1} />)}
 
-        <TimeAxis showNow={showNow} nowFrac={nowFrac} />
+        <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} />
         {columns.map((c, i) => (
-          <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} />
+          <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} locale={locale} />
         ))}
       </div>
 
       {/* Phone: single combined column */}
       <div className="lg:hidden grid" style={{ gridTemplateColumns: '64px 1fr', height: TOTAL_HEIGHT }}>
-        <TimeAxis showNow={showNow} nowFrac={nowFrac} />
-        <TimelineColumn blocks={combined} busy={[]} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} />
+        <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} />
+        <TimelineColumn blocks={combined} busy={[]} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} locale={locale} />
       </div>
     </AppShell>
   )
@@ -103,18 +105,18 @@ function ColumnHeader({ person }: { person: { name: string; color: string; isFam
   )
 }
 
-function TimeAxis({ showNow, nowFrac }: { showNow: boolean; nowFrac: number }) {
+function TimeAxis({ showNow, nowFrac, locale }: { showNow: boolean; nowFrac: number; locale: string }) {
   return (
     <div className="relative h-full">
       {HOURS.map((h) => (
-        <div key={h} className="absolute right-2.5 text-xs font-semibold" style={{ top: `${pct(h)}%`, transform: 'translateY(-2px)', color: 'var(--t-text-soft)' }}>{formatHour(h)}</div>
+        <div key={h} className="absolute right-2.5 text-xs font-semibold" style={{ top: `${pct(h)}%`, transform: 'translateY(-2px)', color: 'var(--t-text-soft)' }}>{fmtHour(h, locale)}</div>
       ))}
       {showNow && <div className="absolute right-0 rounded-full" style={{ top: `${pct(nowFrac)}%`, marginTop: -4, width: 8, height: 8, backgroundColor: 'var(--t-danger)' }} />}
     </div>
   )
 }
 
-function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent }: {
+function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent, locale }: {
   blocks: Block[]
   busy: BusyBlock[]
   isLast?: boolean
@@ -122,6 +124,7 @@ function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent }
   nowFrac: number
   withWho: boolean
   onEditEvent: (e: TriboEvent) => void
+  locale: string
 }) {
   return (
     <div
@@ -154,7 +157,7 @@ function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent }
           }}
         >
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t-text-soft)' }}>
-            {fmtTime(new Date(b.ev.startAt))} – {fmtTime(new Date(b.ev.endAt))}{withWho && b.who ? ` · ${b.who}` : ''}
+            {fmtTime(new Date(b.ev.startAt), locale)} – {fmtTime(new Date(b.ev.endAt), locale)}{withWho && b.who ? ` · ${b.who}` : ''}
           </div>
           <div className="truncate" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 1 }}>{b.ev.title}</div>
         </div>

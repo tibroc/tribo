@@ -4,8 +4,8 @@ import { markerColor } from '../lib/tokens'
 import { onboard, type OnboardRequest } from '../lib/api'
 import Icon from '../components/Icon'
 import Button from '../components/Button'
-
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+import { weekdayLabels } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 
 interface MemberDraft { name: string; role: 'guardian' | 'child'; defaultGuardianIndex: number | null }
 interface ChoreTemplate { title: string; recurrence: 'daily' | 'weekly' | 'monthly'; enabled: boolean; assignee: number | null }
@@ -38,6 +38,7 @@ const TAGLINES: Record<number, { h: React.ReactNode; s: string }> = {
 }
 
 export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) {
+  const weekdays = weekdayLabels(useLocale(), 'short')
   const [step, setStep] = useState(0)
   const [familyName, setFamilyName] = useState('')
   const [timezone, setTimezone] = useState(() => {
@@ -242,7 +243,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
               {patterns.map((p, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <input type="checkbox" checked={p.enabled} onChange={(e) => updatePattern(setPatterns, i, { enabled: e.target.checked })} className="w-4 h-4 rounded" />
-                  <span className="text-sm flex-1">{p.title} <span style={{ color: 'var(--t-text-soft)' }}>· {p.weekdays.map((d) => WEEKDAYS[d]).join('/')} {p.startTime}</span></span>
+                  <span className="text-sm flex-1">{p.title} <span style={{ color: 'var(--t-text-soft)' }}>· {p.weekdays.map((d) => weekdays[d]).join('/')} {p.startTime}</span></span>
                   {p.enabled && (
                     <select className="text-sm rounded-lg px-2 py-1 outline-none" style={field} value={p.member ?? ''}
                       onChange={(e) => updatePattern(setPatterns, i, { member: e.target.value === '' ? null : Number(e.target.value) })}>

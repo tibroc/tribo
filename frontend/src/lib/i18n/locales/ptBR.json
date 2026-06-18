@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "home": "Início",
+    "calendar": "Calendário",
+    "chores": "Tarefas",
+    "todos": "A fazer",
+    "family": "Família",
+    "review": "Resumo"
+  },
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "done": "Concluído",
+    "add": "Adicionar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "close": "Fechar",
+    "connect": "Conectar",
+    "loading": "Carregando…",
+    "today": "Hoje",
+    "previous": "Anterior",
+    "next": "Próximo"
+  },
+  "language": {
+    "title": "Idioma",
+    "subtitle": "Idioma do app neste dispositivo",
+    "hint": "O idioma vale para este dispositivo e fica salvo."
+  },
+  "settings": {
+    "appSettings": "Configurações do app",
+    "appearance": "Aparência",
+    "appearanceLight": "Tema claro",
+    "appearanceDark": "Tema escuro",
+    "appearanceSystem": "Segue a configuração do sistema",
+    "themeHint": "O tema é aplicado na hora e fica salvo neste dispositivo.",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "themeSystem": "Sistema",
+    "account": "Conta",
+    "accountLoading": "Carregando…",
+    "accountLocal": "Modo local — login não configurado",
+    "accountSignedIn": "Conectado",
+    "accountNotSignedIn": "Não conectado",
+    "accountActiveProfile": "Perfil ativo",
+    "accountLocalBody": "Rodando em modo local — sem login. Para habilitar o login por pessoa, configure estes valores no servidor:",
+    "accountSignedInBody": "Conectado pelo seu provedor de identidade. Troque de perfil pelo avatar na navegação.",
+    "accountNotSignedInBody": "Não conectado.",
+    "signOut": "Sair",
+    "location": "Localização",
+    "locationSet": "{{name}} — usado para o clima",
+    "locationUnset": "Defina uma localização para o widget de clima",
+    "runWizard": "Abrir assistente de configuração",
+    "runWizardSub": "Adicionar membros, tarefas ou uma semana típica"
+  }
+}

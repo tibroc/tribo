@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { Cake } from 'lucide-react'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey,
-  MONTHS_SHORT, type ViewProps,
+  type ViewProps,
 } from '../lib/calendar'
+import { fmtMonthDay, monthLabels } from '../lib/datetime'
+import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
 import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
@@ -13,6 +15,8 @@ export default function YearView({ members, events, cursor, today, header, onNav
   const year = cursor.getFullYear()
   const byId = useMemo(() => membersById(members), [members])
   const byDay = useMemo(() => groupByDay(events), [events])
+  const locale = useLocale()
+  const monthsShort = useMemo(() => monthLabels(locale, 'short'), [locale])
 
   // Year progress (only meaningful when viewing the current year).
   const startOfYear = new Date(year, 0, 1)
@@ -40,7 +44,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
-        {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
+        {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsShort[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
       </div>
 
       <div className="mt-6">
@@ -57,7 +61,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
                     ? <Cake size={14} style={{ color, flexShrink: 0 }} />
                     : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />}
                   <span className="flex-1 truncate">{e.title}</span>
-                  <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{MONTHS_SHORT[d.getMonth()]} {d.getDate()}</span>
+                  <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
                 </div>
               )
             })}
@@ -69,9 +73,10 @@ export default function YearView({ members, events, cursor, today, header, onNav
   )
 }
 
-function YearMonth({ year, month, byDay, byId, today }: {
+function YearMonth({ year, month, monthName, byDay, byId, today }: {
   year: number
   month: number
+  monthName: string
   byDay: Map<string, TriboEvent[]>
   byId: Map<string, FamilyMember>
   today: Date
@@ -80,7 +85,7 @@ function YearMonth({ year, month, byDay, byId, today }: {
   const line = '1px solid var(--t-line)'
   return (
     <Card padded={false} className="overflow-hidden">
-      <div className="font-display text-sm font-bold px-2 py-1.5" style={{ borderBottom: line }}>{MONTHS_SHORT[month]}</div>
+      <div className="font-display text-sm font-bold px-2 py-1.5" style={{ borderBottom: line }}>{monthName}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {cells.map((cell, i) => {
           // Year view: dots ONLY for milestones.
