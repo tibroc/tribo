@@ -319,6 +319,15 @@ export function setTodoStatus(id: string, status: 'open' | 'done'): Promise<Todo
   }).then((r) => json<Todo>(r))
 }
 
+// Assign a todo to a member; pass null to clear the assignment.
+export function setTodoAssignee(id: string, memberId: string | null): Promise<Todo> {
+  return fetch(`/api/todos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assignedMemberId: memberId ?? '' }),
+  }).then((r) => json<Todo>(r))
+}
+
 // ===== Work schedules =====
 export interface WorkSchedule {
   id: string

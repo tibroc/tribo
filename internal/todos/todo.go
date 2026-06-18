@@ -85,6 +85,22 @@ func (s *Service) SetStatus(id, status string) (*Todo, error) {
 	return s.get(id)
 }
 
+// SetAssignee assigns a todo to a member (empty memberID clears the assignment).
+func (s *Service) SetAssignee(id, memberID string) (*Todo, error) {
+	var v any
+	if strings.TrimSpace(memberID) != "" {
+		v = memberID
+	}
+	res, err := s.db.Exec(`UPDATE todo SET assigned_member_id = ? WHERE id = ?`, v, id)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, errors.New("todo not found")
+	}
+	return s.get(id)
+}
+
 func (s *Service) get(id string) (*Todo, error) {
 	var t Todo
 	err := s.db.QueryRow(

@@ -160,7 +160,9 @@
     "nothingCompleted": "Nada concluído ainda.",
     "nothingToDo": "Nada a fazer",
     "addPlaceholder": "Adicionar tarefa…",
-    "addAria": "Adicionar tarefa"
+    "addAria": "Adicionar tarefa",
+    "assign": "Atribuir",
+    "unassigned": "Não atribuído"
   },
   "family": {
     "membersTitle": "Membros da família",

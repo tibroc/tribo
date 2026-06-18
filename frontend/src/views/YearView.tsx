@@ -34,23 +34,18 @@ export default function YearView({ members, events, cursor, today, header, onNav
   // Overview widget (right column): this year's milestones.
   const aside = (
     <Card>
-      <div className="font-display text-base font-bold mb-2">{t('calendar.thisYear')}</div>
+      <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 20, marginBottom: 10 }} className="flex items-center gap-2"><Cake size={16} /> {t('calendar.thisYear')}</div>
       {highlights.length === 0 ? (
         <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingNotable')}</div>
       ) : (
-        <div className="space-y-1.5">
-          {highlights.map(({ e, d }) => {
-            const color = colorForEvent(e, byId)
-            return (
-              <div key={e.id} className="flex items-center gap-2 text-sm">
-                {e.icon === 'cake'
-                  ? <Cake size={14} style={{ color, flexShrink: 0 }} />
-                  : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />}
-                <span className="flex-1 truncate">{e.title}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
-              </div>
-            )
-          })}
+        <div className="space-y-2">
+          {highlights.map(({ e, d }) => (
+            <div key={e.id} className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForEvent(e, byId) }} />
+              <span className="flex-1 truncate">{e.title}</span>
+              <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
+            </div>
+          ))}
         </div>
       )}
     </Card>

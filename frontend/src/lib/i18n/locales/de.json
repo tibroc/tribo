@@ -160,7 +160,9 @@
     "nothingCompleted": "Noch nichts erledigt.",
     "nothingToDo": "Nichts zu tun",
     "addPlaceholder": "To-do hinzufügen…",
-    "addAria": "To-do hinzufügen"
+    "addAria": "To-do hinzufügen",
+    "assign": "Zuweisen",
+    "unassigned": "Nicht zugewiesen"
   },
   "family": {
     "membersTitle": "Familienmitglieder",

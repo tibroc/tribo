@@ -11,7 +11,7 @@ import { TodosPanel } from '../components/panels'
 export default function TodosPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
   const { t } = useTranslation()
   const [members, setMembers] = useState<FamilyMember[]>([])
-  const { todos, toggleTodo, addTodo } = useChoresTodos()
+  const { todos, toggleTodo, addTodo, assignTodo } = useChoresTodos()
   const addRef = useRef<HTMLInputElement>(null)
   const focusAdd = () => addRef.current?.focus()
   useEffect(() => { getFamilyMembers().then(setMembers).catch(() => {}) }, [])
@@ -43,7 +43,7 @@ export default function TodosPage({ go, openNew }: { go: (s: Section) => void; o
             action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{t('todos.openCount', { count: openItems.length })}</span>}
             padded={false}
           >
-            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} inputRef={addRef} flush />
+            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} onAssign={assignTodo} inputRef={addRef} flush />
           </Card>
 
           <Card

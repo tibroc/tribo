@@ -160,7 +160,9 @@
     "nothingCompleted": "Nothing completed yet.",
     "nothingToDo": "Nothing to do",
     "addPlaceholder": "Add a to-do…",
-    "addAria": "Add to-do"
+    "addAria": "Add to-do",
+    "assign": "Assign",
+    "unassigned": "Unassigned"
   },
   "family": {
     "membersTitle": "Family members",

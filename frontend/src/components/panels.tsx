@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Check } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
 import Icon from './Icon'
 import PersonAvatar from './PersonAvatar'
@@ -188,11 +189,12 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
   )
 }
 
-export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush, inputRef }: {
+export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, title, flush, inputRef }: {
   todos: Todo[]
   members?: FamilyMember[]
   onToggle: (t: Todo) => void
   onAdd?: (title: string) => void
+  onAssign?: (t: Todo, memberId: string | null) => void
   title?: string
   flush?: boolean
   inputRef?: React.Ref<HTMLInputElement>
@@ -243,9 +245,9 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush,
             >
               {t.title}
             </span>
-            {member && (
-              <PersonAvatar name={member.name} color={member.color} index={indexOf(t.assignedMemberId)} size={20} />
-            )}
+            {onAssign && members.length > 0
+              ? <TodoAssign todo={t} members={members} onAssign={onAssign} />
+              : member && <PersonAvatar name={member.name} color={member.color} index={indexOf(t.assignedMemberId)} size={20} />}
           </div>
         )
       })}
@@ -287,6 +289,52 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, title, flush,
             <Icon name="plus" size={16} strokeWidth={2.6} />
           </button>
         </form>
+      )}
+    </div>
+  )
+}
+
+// Per-todo assignee control: avatar (or a dashed "+" when unassigned) that opens
+// a small member picker. Lives in its own component to keep its open-state and
+// the `t` translation fn out of the TodosPanel row map (which shadows `t`).
+function TodoAssign({ todo, members, onAssign }: {
+  todo: Todo
+  members: FamilyMember[]
+  onAssign: (t: Todo, memberId: string | null) => void
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const idx = members.findIndex((m) => m.id === todo.assignedMemberId)
+  const member = idx >= 0 ? members[idx] : undefined
+  const item = 'flex items-center gap-2 w-full text-left rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-[var(--t-shell)]'
+  return (
+    <div className="relative flex-shrink-0">
+      <button onClick={() => setOpen((o) => !o)} aria-label={t('todos.assign')} className="flex items-center justify-center">
+        {member
+          ? <PersonAvatar name={member.name} color={member.color} index={idx} size={20} />
+          : <span className="flex items-center justify-center rounded-full" style={{ width: 20, height: 20, border: '1.5px dashed var(--t-line)', color: 'var(--t-text-soft)' }}><Icon name="plus" size={11} strokeWidth={2.4} /></span>}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0" style={{ zIndex: 40 }} onClick={() => setOpen(false)} aria-hidden />
+          <div
+            className="absolute right-0 flex flex-col"
+            style={{ top: 26, minWidth: 156, background: 'var(--t-surface)', border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)', boxShadow: 'var(--t-shadow-pop)', padding: 4, gap: 1, zIndex: 41 }}
+            role="menu"
+          >
+            {members.map((m, i) => (
+              <button key={m.id} role="menuitem" onClick={() => { onAssign(todo, m.id); setOpen(false) }} className={item} style={{ color: 'var(--t-text)' }}>
+                <PersonAvatar name={m.name} color={m.color} index={i} size={18} />
+                <span className="flex-1 truncate">{m.name}</span>
+                {m.id === todo.assignedMemberId && <Check size={14} style={{ color: 'var(--t-brand)' }} />}
+              </button>
+            ))}
+            <button role="menuitem" onClick={() => { onAssign(todo, null); setOpen(false) }} className={item} style={{ color: 'var(--t-text-soft)' }}>
+              <span className="flex-1">{t('todos.unassigned')}</span>
+              {!todo.assignedMemberId && <Check size={14} style={{ color: 'var(--t-brand)' }} />}
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

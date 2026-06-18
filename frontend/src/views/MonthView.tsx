@@ -81,7 +81,7 @@ export default function MonthView({ members, events, cursor, today, header, onNa
       </div>
 
       {/* Phone: simple month grid */}
-      <div className="lg:hidden" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+      <div className="lg:hidden grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {cells.map((cell, i) => {
           const isLastCol = i % 7 === 6
           const isLastRow = i >= cells.length - 7

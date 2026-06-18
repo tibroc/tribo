@@ -31,19 +31,37 @@ func (s *Server) createTodo(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, t)
 }
 
-// PATCH /api/todos/{id} — body {"status":"open"|"done"}.
+// PATCH /api/todos/{id} — body may set {"status":"open"|"done"} and/or
+// {"assignedMemberId": "<id>"|""} (empty string clears the assignment).
+// A nil pointer means "leave unchanged", so status-only and assignee-only
+// patches both work.
 func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Status string `json:"status"`
+		Status           *string `json:"status"`
+		AssignedMemberID *string `json:"assignedMemberId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	t, err := s.todos.SetStatus(r.PathValue("id"), body.Status)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if body.Status == nil && body.AssignedMemberID == nil {
+		writeError(w, http.StatusBadRequest, "nothing to update")
 		return
+	}
+	id := r.PathValue("id")
+	var t *todos.Todo
+	var err error
+	if body.AssignedMemberID != nil {
+		if t, err = s.todos.SetAssignee(id, *body.AssignedMemberID); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+	if body.Status != nil {
+		if t, err = s.todos.SetStatus(id, *body.Status); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 	writeJSON(w, http.StatusOK, t)
 }
