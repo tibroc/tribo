@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
-import { Users } from 'lucide-react'
-import { palette, SHARED_COLOR } from '../lib/tokens'
+import { SHARED_COLOR } from '../lib/tokens'
 import {
   addDays, mondayOf, sameDay, fmtTime, groupByDay, WEEKDAY_LABELS, type ViewProps,
 } from '../lib/calendar'
@@ -42,13 +41,14 @@ export default function WeekView({ members, events, cursor, today, header, workS
   // (memberId, weekdayIndex) → true if a visible work schedule is active.
   const busyAt = (memberID: string, di: number) =>
     workSchedules.some((ws) => ws.memberId === memberID && ws.showOnCalendar && ws.daysOfWeek[di] === '1')
+  const sharedCount = shared.reduce((n, day) => n + day.length, 0)
 
   return (
     <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={<ThisWeekPanel members={members} />}>
-      {/* Tablet/desktop grid */}
-      <Card className="hidden lg:block overflow-hidden">
-        <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} busyAt={busyAt} onEditEvent={onEditEvent} />
-      </Card>
+      {/* Tablet/desktop grid — fills the main island */}
+      <div className="hidden lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
+        <WeekGrid days={days} members={members} perMember={perMember} shared={shared} today={today} busyAt={busyAt} sharedCount={sharedCount} onEditEvent={onEditEvent} />
+      </div>
 
       {/* Phone agenda */}
       <div className="lg:hidden space-y-2">
@@ -60,27 +60,39 @@ export default function WeekView({ members, events, cursor, today, header, workS
   )
 }
 
-function WeekGrid({ days, members, perMember, shared, today, busyAt, onEditEvent }: {
+function WeekGrid({ days, members, perMember, shared, today, busyAt, sharedCount, onEditEvent }: {
   days: Date[]
   members: FamilyMember[]
   perMember: Map<string, Placed[][]>
   shared: Placed[][]
   today: Date
   busyAt: (memberID: string, di: number) => boolean
+  sharedCount: number
   onEditEvent: (e: TriboEvent) => void
 }) {
-  const cellBase = { padding: '8px' }
-  const line = `1px solid ${palette.line}`
+  const line = '1px solid var(--t-line)'
+  // Subtle table polish: a stronger divider under the header row, a faint wash
+  // on the label column, and a faint wash on weekend columns.
+  const headLine = '2px solid color-mix(in oklab, var(--t-text-soft) 22%, var(--t-line))'
+  const labelWash = 'color-mix(in oklab, var(--t-text-soft) 4%, transparent)'
+  const weekendWash = 'color-mix(in oklab, var(--t-text-soft) 4%, transparent)'
+  const cellBg = (d: Date, di: number) =>
+    sameDay(d, today) ? 'var(--t-today-wash)' : (di >= 5 ? weekendWash : 'transparent')
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '140px repeat(7, 1fr)' }}>
-      <div style={{ ...cellBase, borderBottom: line, borderRight: line }} />
+    <div style={{ display: 'grid', gridTemplateColumns: '158px repeat(7, 1fr)', gridTemplateRows: 'auto', gridAutoRows: 'minmax(104px, 1fr)', height: '100%' }}>
+      {/* corner */}
+      <div style={{ padding: '18px 18px 14px', borderBottom: headLine, backgroundColor: labelWash }}>
+        <div className="t-eyebrow">This week</div>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 21, marginTop: 3 }}>{sharedCount} shared plan{sharedCount === 1 ? '' : 's'}</div>
+      </div>
       {days.map((d, i) => {
         const isToday = sameDay(d, today)
         return (
-          <div key={i} className="text-center" style={{ ...cellBase, borderBottom: line, borderRight: i < 6 ? line : 'none', backgroundColor: isToday ? palette.brandSoft : 'transparent' }}>
-            <div className="text-xs font-semibold uppercase" style={{ color: palette.inkSoft }}>{WEEKDAY_LABELS[i]}</div>
-            <div className="font-display text-lg font-bold mt-1 inline-flex items-center justify-center" style={isToday ? { backgroundColor: palette.brand, color: '#fff', width: 28, height: 28, borderRadius: '50%' } : { width: 28, height: 28 }}>{d.getDate()}</div>
+          <div key={i} className="text-center" style={{ padding: '16px 6px 12px', borderBottom: headLine, borderLeft: line, backgroundColor: cellBg(d, i) }}>
+            <div className="text-xs font-bold uppercase tracking-wider" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{WEEKDAY_LABELS[i]}</div>
+            <div className="font-display mt-1.5 mx-auto inline-flex items-center justify-center"
+              style={{ fontSize: 24, width: 42, height: 42, borderRadius: '50%', ...(isToday ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{d.getDate()}</div>
           </div>
         )
       })}
@@ -89,17 +101,17 @@ function WeekGrid({ days, members, perMember, shared, today, busyAt, onEditEvent
         const grid = perMember.get(person.id) ?? []
         return (
           <div key={person.id} style={{ display: 'contents' }}>
-            <div className="flex items-center gap-2" style={{ ...cellBase, borderBottom: line, borderRight: line }}>
-              <PersonAvatar name={person.name} color={person.color} />
+            <div className="flex items-center gap-3" style={{ padding: '16px 18px', borderBottom: line, backgroundColor: labelWash }}>
+              <PersonAvatar name={person.name} color={person.color} size={38} />
               <div className="min-w-0">
                 <div className="text-sm font-semibold truncate">{person.name}</div>
-                <div className="text-xs truncate capitalize" style={{ color: palette.inkSoft }}>{person.role}</div>
+                <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{person.role}</div>
               </div>
             </div>
             {days.map((d, di) => (
-              <div key={di} style={{ ...cellBase, borderBottom: line, borderRight: di < 6 ? line : 'none', backgroundColor: sameDay(d, today) ? palette.brandSoft : 'transparent', minHeight: 64 }}>
+              <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderBottom: line, borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
                 {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
-                {busyAt(person.id, di) && <div style={{ fontSize: '9px', color: palette.inkSoft, opacity: 0.7 }}>· busy</div>}
+                {busyAt(person.id, di) && <div style={{ fontSize: '10.5px', fontWeight: 600, fontStyle: 'italic', color: 'var(--t-text-soft)', opacity: 0.55 }}>busy</div>}
               </div>
             ))}
           </div>
@@ -107,13 +119,13 @@ function WeekGrid({ days, members, perMember, shared, today, busyAt, onEditEvent
       })}
 
       {/* shared row */}
-      <div className="flex items-center gap-2" style={{ ...cellBase, borderTop: line, borderRight: line }}>
-        <PersonAvatar color={SHARED_COLOR} icon={Users} />
+      <div className="flex items-center gap-3" style={{ padding: '16px 18px', backgroundColor: labelWash }}>
+        <PersonAvatar color={SHARED_COLOR} family size={38} />
         <div className="text-sm font-semibold">Family</div>
       </div>
       {days.map((d, di) => (
-        <div key={di} style={{ ...cellBase, borderTop: line, borderRight: di < 6 ? line : 'none', backgroundColor: sameDay(d, today) ? palette.brandSoft : 'transparent', minHeight: 56 }}>
-          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={SHARED_COLOR} time={p.time} icon={p.ev.icon} onClick={() => onEditEvent(p.ev)} />)}
+        <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
+          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={SHARED_COLOR} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} onClick={() => onEditEvent(p.ev)} />)}
         </div>
       ))}
     </div>
@@ -136,21 +148,21 @@ function AgendaDay({ day, di, members, perMember, shared, today, onEditEvent }: 
   items.sort((a, b) => +new Date(a.ev.startAt) - +new Date(b.ev.startAt))
 
   return (
-    <Card className="p-3" tint={isToday ? palette.brandSoft : undefined}>
+    <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
-        <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={isToday ? { backgroundColor: palette.brand, color: '#fff', width: 26, height: 26, borderRadius: '50%' } : { width: 26, height: 26 }}>{day.getDate()}</div>
-        <div className="text-sm font-semibold uppercase" style={{ color: palette.inkSoft }}>{WEEKDAY_LABELS[di]}{isToday ? ' · Today' : ''}</div>
+        <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{day.getDate()}</div>
+        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{WEEKDAY_LABELS[di]}{isToday ? ' · Today' : ''}</div>
       </div>
       {items.length === 0 ? (
-        <div className="text-sm pl-1" style={{ color: palette.inkSoft }}>Nothing scheduled</div>
+        <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>Nothing scheduled</div>
       ) : (
         <div className="space-y-1.5">
           {items.map(({ ev, time, color, who }) => (
             <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-              {time && <span className="text-xs w-16 flex-shrink-0" style={{ color: palette.inkSoft }}>{time}</span>}
+              {time && <span className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{time}</span>}
               <span className="text-sm truncate flex-1">{ev.title}</span>
-              <span className="text-xs flex-shrink-0" style={{ color: palette.inkSoft }}>{who}</span>
+              <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
             </div>
           ))}
         </div>
@@ -159,22 +171,25 @@ function AgendaDay({ day, di, members, perMember, shared, today, onEditEvent }: 
   )
 }
 
-// This-week panel: live chores + to-dos with a completion progress bar.
+// This-week aside: live chores + to-dos as two free-floating Salvia cards.
 function ThisWeekPanel({ members }: { members: FamilyMember[] }) {
   const { instances, todos, toggleChore, toggleTodo, addTodo } = useChoresTodos()
   const done = instances.filter((i) => i.status === 'done').length
   const pct = instances.length ? Math.round((done / instances.length) * 100) : 0
   return (
-    <div className="space-y-5">
-      <div>
-        <div className="font-display text-lg font-bold mb-1">This week</div>
-        <div className="text-sm" style={{ color: palette.inkSoft }}>{done}/{instances.length} chores done</div>
-        <div className="h-1.5 rounded-full mt-2" style={{ backgroundColor: palette.line }}>
-          <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: palette.brand }} />
+    <>
+      <Card>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 2 }}>This week</div>
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{done}/{instances.length} chores done</div>
+        <div className="h-2 rounded-full mt-3 mb-4" style={{ backgroundColor: 'var(--t-track)' }}>
+          <div className="h-2 rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--t-brand)' }} />
         </div>
-      </div>
-      <ChoresPanel instances={instances} members={members} onToggle={toggleChore} />
-      <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
-    </div>
+        <ChoresPanel instances={instances} members={members} onToggle={toggleChore} />
+      </Card>
+      <Card>
+        <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 23, marginBottom: 12 }}>To-dos</div>
+        <TodosPanel todos={todos} onToggle={toggleTodo} onAdd={addTodo} />
+      </Card>
+    </>
   )
 }

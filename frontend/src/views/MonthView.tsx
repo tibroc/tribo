@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Cake } from 'lucide-react'
-import { palette } from '../lib/tokens'
 import {
   buildMonthCells, colorForEvent, fmtTime, groupByDay, membersById, sameDay,
   dayKey, MONTHS_SHORT, WEEKDAY_LABELS, FULL_WEEKDAY, type ViewProps, type MonthCell,
@@ -42,29 +41,31 @@ export default function MonthView({ members, events, cursor, today, header, onNa
       onFabClick={onAddEvent}
       header={<CalendarHeader controls={header} />}
       aside={
-        <div className="space-y-5">
+        <>
           <SelectedDayPanel date={selected} byDay={byDay} byId={byId} today={today} onEditEvent={onEditEvent} />
           <MonthHighlights events={events} byId={byId} />
-        </div>
+        </>
       }
     >
-      <Card className="overflow-hidden">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-          {WEEKDAY_LABELS.map((d) => (
-            <div key={d} className="text-center text-xs font-semibold uppercase py-2" style={{ color: palette.inkSoft, borderBottom: `1px solid ${palette.line}` }}>{d}</div>
+      <div className="hidden lg:flex flex-col h-full">
+        <div className="shrink-0" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+          {WEEKDAY_LABELS.map((d, i) => (
+            <div key={d} className="text-xs font-bold uppercase tracking-wider px-3.5 py-3"
+              style={{ color: 'var(--t-text-soft)', borderBottom: '2px solid color-mix(in oklab, var(--t-text-soft) 22%, var(--t-line))', borderLeft: i === 0 ? 'none' : '1px solid var(--t-line)', backgroundColor: i >= 5 ? 'color-mix(in oklab, var(--t-text-soft) 4%, transparent)' : 'transparent' }}>{d}</div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+        <div className="flex-1 min-h-0" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(0, 1fr)' }}>
           {cells.map((cell, i) => {
             const isLastCol = i % 7 === 6
             const isLastRow = i >= cells.length - 7
             return (
-              <div key={i} style={{ borderRight: isLastCol ? 'none' : `1px solid ${palette.line}`, borderBottom: isLastRow ? 'none' : `1px solid ${palette.line}` }}>
+              <div key={i} className="flex" style={{ borderRight: isLastCol ? 'none' : '1px solid var(--t-line)', borderBottom: isLastRow ? 'none' : '1px solid var(--t-line)' }}>
                 <DayCell
                   cell={cell}
                   events={cell.inMonth ? ordered(byDay.get(dayKey(cell.dateObj)) ?? []) : []}
                   isToday={sameDay(cell.dateObj, today)}
                   isSelected={cell.inMonth && sameDay(cell.dateObj, selected)}
+                  isWeekend={i % 7 >= 5}
                   byId={byId}
                   onClick={() => cell.inMonth && setSelected(cell.dateObj)}
                 />
@@ -72,16 +73,38 @@ export default function MonthView({ members, events, cursor, today, header, onNa
             )
           })}
         </div>
-      </Card>
+      </div>
+
+      {/* Phone: simple month grid */}
+      <div className="lg:hidden" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+        {cells.map((cell, i) => {
+          const isLastCol = i % 7 === 6
+          const isLastRow = i >= cells.length - 7
+          return (
+            <div key={i} style={{ borderRight: isLastCol ? 'none' : '1px solid var(--t-line)', borderBottom: isLastRow ? 'none' : '1px solid var(--t-line)' }}>
+              <DayCell
+                cell={cell}
+                events={cell.inMonth ? ordered(byDay.get(dayKey(cell.dateObj)) ?? []) : []}
+                isToday={sameDay(cell.dateObj, today)}
+                isSelected={cell.inMonth && sameDay(cell.dateObj, selected)}
+                isWeekend={i % 7 >= 5}
+                byId={byId}
+                onClick={() => cell.inMonth && setSelected(cell.dateObj)}
+              />
+            </div>
+          )
+        })}
+      </div>
     </AppShell>
   )
 }
 
-function DayCell({ cell, events, isToday, isSelected, byId, onClick }: {
+function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }: {
   cell: MonthCell
   events: TriboEvent[]
   isToday: boolean
   isSelected: boolean
+  isWeekend?: boolean
   byId: Map<string, FamilyMember>
   onClick: () => void
 }) {
@@ -95,20 +118,20 @@ function DayCell({ cell, events, isToday, isSelected, byId, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="w-full h-full text-left p-1.5 flex flex-col border-0 outline-none min-h-[56px] lg:min-h-[96px]"
+      className="w-full h-full text-left p-2 flex flex-col gap-1 border-0 outline-none min-h-[56px] lg:min-h-[96px]"
       style={{
-        backgroundColor: isToday ? palette.brandSoft : 'transparent',
-        boxShadow: isSelected ? `inset 0 0 0 2px ${palette.amber}` : 'none',
-        opacity: cell.inMonth ? 1 : 0.4,
+        backgroundColor: isToday ? 'var(--t-today-wash)' : (isWeekend ? 'color-mix(in oklab, var(--t-text-soft) 4%, transparent)' : 'transparent'),
+        boxShadow: isSelected ? 'inset 0 0 0 2px var(--t-accent)' : 'none',
+        opacity: cell.inMonth ? 1 : 0.35,
         cursor: cell.inMonth ? 'pointer' : 'default',
       }}
     >
-      <div className="font-display text-sm font-semibold inline-flex items-center justify-center" style={isToday ? { backgroundColor: palette.brand, color: '#fff', width: 22, height: 22, borderRadius: '50%' } : { width: 22, height: 22, color: palette.ink }}>{cell.date}</div>
+      <div className="font-display inline-flex items-center justify-center" style={{ fontSize: 16, width: 28, height: 28, borderRadius: '50%', ...(isToday ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text)' }) }}>{cell.date}</div>
 
       {/* Tablet: up to 2 chips + "+N more" */}
-      <div className="hidden lg:block mt-1 space-y-1">
+      <div className="hidden lg:block space-y-1">
         {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={ev.title} color={colorForEvent(ev, byId)} icon={ev.icon} />)}
-        {extra > 0 && <div style={{ fontSize: '10px', color: palette.inkSoft }}>+{extra} more</div>}
+        {extra > 0 && <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--t-text-soft)', paddingLeft: 3 }}>+{extra} more</div>}
       </div>
 
       {/* Phone: color dots */}
@@ -131,13 +154,13 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent }: {
   const weekday = FULL_WEEKDAY[(date.getDay() + 6) % 7]
 
   return (
-    <Card className="p-3" tint={isToday ? palette.brandSoft : undefined}>
+    <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
-        <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={isToday ? { backgroundColor: palette.brand, color: '#fff', width: 26, height: 26, borderRadius: '50%' } : { width: 26, height: 26 }}>{date.getDate()}</div>
-        <div className="text-sm font-semibold uppercase" style={{ color: palette.inkSoft }}>{weekday}, {MONTHS_SHORT[date.getMonth()]} {date.getDate()}{isToday ? ' · Today' : ''}</div>
+        <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{date.getDate()}</div>
+        <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{weekday}, {MONTHS_SHORT[date.getMonth()]} {date.getDate()}{isToday ? ' · Today' : ''}</div>
       </div>
       {events.length === 0 ? (
-        <div className="text-sm pl-1" style={{ color: palette.inkSoft }}>Nothing scheduled</div>
+        <div className="text-sm pl-1" style={{ color: 'var(--t-text-soft)' }}>Nothing scheduled</div>
       ) : (
         <div className="space-y-1.5">
           {events.map((ev) => {
@@ -146,9 +169,9 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent }: {
             return (
               <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                {!ev.allDay && <span className="text-xs w-20 flex-shrink-0" style={{ color: palette.inkSoft }}>{fmtTime(new Date(ev.startAt))}</span>}
+                {!ev.allDay && <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt))}</span>}
                 <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.icon === 'cake' && <Cake size={12} />}{ev.title}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: palette.inkSoft }}>{who}</span>
+                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
               </div>
             )
           })}
@@ -163,10 +186,10 @@ function MonthHighlights({ events, byId }: { events: TriboEvent[]; byId: Map<str
     .filter((e) => e.visibilityTag === 'milestone')
     .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt))
   return (
-    <div>
-      <div className="font-display text-base font-bold mb-2 flex items-center gap-2"><Cake size={16} /> This month</div>
+    <Card>
+      <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 20, marginBottom: 10 }} className="flex items-center gap-2"><Cake size={16} /> This month</div>
       {highlights.length === 0 ? (
-        <div className="text-sm" style={{ color: palette.inkSoft }}>Nothing notable</div>
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>Nothing notable</div>
       ) : (
         <div className="space-y-2">
           {highlights.map((h) => {
@@ -175,12 +198,12 @@ function MonthHighlights({ events, byId }: { events: TriboEvent[]; byId: Map<str
               <div key={h.id} className="flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForEvent(h, byId) }} />
                 <span className="flex-1 truncate">{h.title}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: palette.inkSoft }}>{MONTHS_SHORT[d.getMonth()]} {d.getDate()}</span>
+                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{MONTHS_SHORT[d.getMonth()]} {d.getDate()}</span>
               </div>
             )
           })}
         </div>
       )}
-    </div>
+    </Card>
   )
 }

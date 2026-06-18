@@ -102,7 +102,7 @@ export default function CalendarPage({ onNavigate }: { onNavigate: (k: NavKey) =
   return (
     <>
       {error && (
-        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 rounded-xl px-3 py-2 text-sm shadow" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>
+        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 rounded-xl px-3 py-2 text-sm shadow" style={{ background: 'color-mix(in oklab, var(--t-danger) 16%, var(--t-shell))', color: 'var(--t-danger)' }}>{error}</div>
       )}
       <ActiveView
         members={members} events={events} cursor={cursor} today={today} header={header}

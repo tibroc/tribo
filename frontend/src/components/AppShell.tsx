@@ -1,23 +1,74 @@
 import type { ReactNode } from 'react'
-import { Home, CalendarDays, CheckSquare, ListTodo, Users, Plus } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import { palette } from '../lib/tokens'
 import type { NavKey } from '../lib/calendar'
-import NavIcon from './NavIcon'
+import { useTheme } from '../lib/theme'
+import Icon from './Icon'
+import { Wordmark, Weather } from './chrome'
 import ProfileSwitcher from './ProfileSwitcher'
 
-const NAV: { key: NavKey; icon: LucideIcon; label: string }[] = [
-  { key: 'home', icon: Home, label: 'Home' },
-  { key: 'calendar', icon: CalendarDays, label: 'Calendar' },
-  { key: 'chores', icon: CheckSquare, label: 'Chores' },
-  { key: 'todos', icon: ListTodo, label: 'To-dos' },
-  { key: 'family', icon: Users, label: 'Family' },
+const NAV: { key: NavKey; icon: string; label: string }[] = [
+  { key: 'home',     icon: 'home',     label: 'Home' },
+  { key: 'calendar', icon: 'calendar', label: 'Calendar' },
+  { key: 'chores',   icon: 'chores',   label: 'Chores' },
+  { key: 'todos',    icon: 'todos',    label: 'To-dos' },
+  { key: 'family',   icon: 'family',   label: 'Family' },
 ]
 
-// The chrome every screen shares: a header slot, the nav rail (≥lg) / bottom bar
-// (<lg), and the FAB. `header` is page-specific content rendered inside the
-// <header> bar. `aside` renders in the right column on ≥lg and stacks beneath
-// main on phone. `active` highlights a nav destination; `onNavigate` switches.
+// Two faint organic blobs behind everything — the Salvia "warm sand" backdrop.
+const BLOB_PATH =
+  'M99 6c34-6 71 8 88 38 16 28 9 64-8 92-18 30-52 44-86 38C56 168 22 150 9 118-4 86 4 46 30 24 49 8 76 10 99 6Z'
+
+function Blobs() {
+  return (
+    <>
+      <svg viewBox="0 0 200 180" aria-hidden className="pointer-events-none absolute"
+        style={{ width: 360, height: 320, top: -120, right: 220, opacity: 'var(--t-blob-op, .05)', zIndex: 1 }}>
+        <path fill="var(--t-brand)" d={BLOB_PATH} />
+      </svg>
+      <svg viewBox="0 0 200 180" aria-hidden className="pointer-events-none absolute"
+        style={{ width: 300, height: 270, bottom: -110, left: -60, opacity: 'var(--t-blob-op, .05)', zIndex: 1 }}>
+        <path fill="var(--t-danger)" d={BLOB_PATH} />
+      </svg>
+    </>
+  )
+}
+
+// A single floating-rail nav destination — salvia squircle when active.
+function RailNav({ name, label, active, onClick }: { name: string; label: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="flex items-center justify-center transition-all"
+      style={{
+        width: 50, height: 50,
+        borderRadius: active ? '18px 18px 18px 6px' : 18,
+        background: active ? 'var(--t-brand)' : 'transparent',
+        color: active ? 'var(--t-on-brand)' : 'var(--t-text-soft)',
+        transform: active ? 'rotate(-3deg)' : undefined,
+        boxShadow: active ? '0 6px 16px rgba(62,98,89,.32)' : undefined,
+      }}
+    >
+      <Icon name={name} size={21} strokeWidth={2} />
+    </button>
+  )
+}
+
+// A single mobile bottom-bar destination.
+function TabNav({ name, label, active, onClick }: { name: string; label: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className="flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1"
+      style={active ? { color: 'var(--t-brand)' } : { color: 'var(--t-text-soft)' }}
+    >
+      <Icon name={name} size={20} style={active ? { transform: 'rotate(-3deg)' } : undefined} />
+      <span className="text-xs font-medium">{label}</span>
+    </button>
+  )
+}
+
 export default function AppShell({ active, onNavigate, header, aside, showFab = true, onFabClick, children }: {
   active: NavKey
   onNavigate: (k: NavKey) => void
@@ -27,41 +78,136 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
   onFabClick?: () => void
   children: ReactNode
 }) {
-  return (
-    <div className="min-h-screen w-full font-body" style={{ backgroundColor: palette.mist, color: palette.ink }}>
-      <header style={{ borderBottom: `1px solid ${palette.line}`, backgroundColor: palette.surface }}>{header}</header>
+  const { theme, toggle } = useTheme()
 
-      <div className="flex">
-        <nav className="hidden lg:flex flex-col items-center gap-1 py-4 px-2" style={{ borderRight: `1px solid ${palette.line}`, backgroundColor: palette.surface }}>
-          {NAV.map((n) => <NavIcon key={n.key} icon={n.icon} label={n.label} active={active === n.key} onClick={() => onNavigate(n.key)} />)}
-          <div className="mt-auto pt-2"><ProfileSwitcher /></div>
+  const themeBtn = (
+    <button
+      onClick={toggle}
+      className="flex items-center justify-center rounded-full"
+      style={{ width: 38, height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
+    </button>
+  )
+
+  const bellBtn = (
+    <button
+      className="hidden sm:flex items-center justify-center rounded-full"
+      style={{ width: 38, height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
+      aria-label="Notifications"
+    >
+      <Icon name="bell" size={17} />
+    </button>
+  )
+
+  return (
+    <div className="relative min-h-screen lg:h-screen lg:overflow-hidden lg:flex lg:flex-col w-full font-body" style={{ background: 'var(--t-bg)', color: 'var(--t-text)', overflowX: 'hidden' }}>
+      <Blobs />
+
+      {/* ── Desktop header (transparent, floating) ── */}
+      <header className="relative hidden lg:flex items-center gap-5 shrink-0" style={{ height: 80, padding: '0 28px', zIndex: 3 }}>
+        <Wordmark />
+        <div className="flex-1 flex items-center justify-center min-w-0">{header}</div>
+        <div className="flex items-center gap-2">
+          <Weather />
+          {bellBtn}
+          <ProfileSwitcher header />
+        </div>
+      </header>
+
+      {/* ── Mobile header ── */}
+      <header className="lg:hidden relative" style={{ zIndex: 3 }}>
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <Wordmark size="sm" />
+          <div className="flex items-center gap-2">
+            <Weather size={15} />
+            {bellBtn}
+          </div>
+        </div>
+        {header && <div className="px-4 py-2">{header}</div>}
+      </header>
+
+      {/* ── Desktop body: rail · main · aside (fixed-height, fills viewport) ── */}
+      <div className="relative hidden lg:flex flex-1 min-h-0" style={{ gap: 22, padding: '4px 28px 24px', zIndex: 2 }}>
+        <nav
+          className="flex flex-col items-center shrink-0"
+          style={{
+            width: 78, padding: '18px 0', gap: 6,
+            background: 'var(--t-shell)', border: '1px solid var(--t-line)',
+            borderRadius: 38, boxShadow: 'var(--t-shadow)',
+          }}
+        >
+          {NAV.map((n) => (
+            <RailNav key={n.key} name={n.icon} label={n.label} active={active === n.key} onClick={() => onNavigate(n.key)} />
+          ))}
+          <div className="flex-1" style={{ minHeight: 24 }} />
+          {themeBtn}
         </nav>
 
-        <main className="flex-1 p-3 pb-24 lg:p-6 lg:pb-6">
-          {children}
-          {aside && <div className="lg:hidden mt-6">{aside}</div>}
+        <main
+          className="flex-1 min-w-0 flex flex-col"
+          style={{
+            background: 'var(--t-surface)', border: '1px solid var(--t-line)',
+            borderRadius: 30, boxShadow: 'var(--t-shadow)', overflow: 'hidden',
+          }}
+        >
+          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">{children}</div>
         </main>
 
         {aside && (
-          <aside className="hidden lg:block w-80 p-5" style={{ borderLeft: `1px solid ${palette.line}`, backgroundColor: palette.surface }}>
+          <aside className="hidden lg:flex flex-col shrink-0 overflow-y-auto no-scrollbar" style={{ width: 300, gap: 18 }}>
             {aside}
           </aside>
         )}
       </div>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around py-2" style={{ borderTop: `1px solid ${palette.line}`, backgroundColor: palette.surface }}>
-        {NAV.map((n) => <NavIcon key={n.key} icon={n.icon} label={n.label} active={active === n.key} mobile onClick={() => onNavigate(n.key)} />)}
+      {/* ── Mobile body ── */}
+      <div className="lg:hidden relative px-3 pb-24" style={{ zIndex: 2 }}>
+        <main
+          style={{
+            background: 'var(--t-surface)', border: '1px solid var(--t-line)',
+            borderRadius: 24, boxShadow: 'var(--t-shadow)', overflow: 'hidden',
+          }}
+        >
+          {children}
+        </main>
+        {aside && <div className="mt-4 flex flex-col gap-4">{aside}</div>}
+      </div>
+
+      {/* ── Mobile bottom bar ── */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around py-2"
+        style={{ borderTop: '1px solid var(--t-line)', background: 'var(--t-surface)', zIndex: 20 }}
+      >
+        {NAV.map((n) => (
+          <TabNav key={n.key} name={n.icon} label={n.label} active={active === n.key} onClick={() => onNavigate(n.key)} />
+        ))}
+        <button
+          onClick={toggle}
+          className="flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1"
+          style={{ color: 'var(--t-text-soft)' }}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
+          <span className="text-xs font-medium">Theme</span>
+        </button>
         <ProfileSwitcher mobile />
       </nav>
 
       {showFab && (
         <button
           onClick={onFabClick}
-          className="fixed right-4 bottom-20 w-14 h-14 rounded-full flex items-center justify-center shadow-lg lg:right-6 lg:bottom-6"
-          style={{ backgroundColor: palette.amber, color: palette.ink }}
+          className="fixed flex items-center justify-center transition-transform hover:-translate-y-1 hover:-rotate-6 right-5 bottom-[88px] lg:right-8 lg:bottom-8"
+          style={{
+            width: 60, height: 60,
+            borderRadius: '50% 50% 50% 18px',
+            background: 'var(--t-accent)', color: 'var(--t-on-accent)',
+            boxShadow: '0 10px 26px rgba(210,152,46,.4)', zIndex: 30,
+          }}
           aria-label="Add"
         >
-          <Plus size={26} />
+          <Icon name="plus" size={26} strokeWidth={2.4} />
         </button>
       )}
     </div>
