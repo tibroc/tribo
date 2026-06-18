@@ -3,8 +3,8 @@
 import { SHARED_COLOR } from './tokens'
 import type { FamilyMember, TriboEvent, WorkSchedule } from './api'
 
-export type ViewName = 'Day' | 'Week' | 'Month' | 'Quarter' | 'Year'
-export const VIEWS: ViewName[] = ['Day', 'Week', 'Month', 'Quarter', 'Year']
+export type ViewName = 'Day' | 'Week' | 'Month' | 'Year'
+export const VIEWS: ViewName[] = ['Day', 'Week', 'Month', 'Year']
 
 // Top-level navigation destinations. 'review' is reached from Home (not the rail);
 // it highlights the Home nav item, matching the prototype.
@@ -30,7 +30,6 @@ export interface HeaderControls {
   periodLabel: string
   onPrev: () => void
   onNext: () => void
-  onToday: () => void
 }
 
 // Shared shape every calendar view receives from CalendarPage.

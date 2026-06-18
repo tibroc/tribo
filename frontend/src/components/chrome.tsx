@@ -130,8 +130,7 @@ function NavArrow({ dir, onClick }: { dir: 'left' | 'right'; onClick?: () => voi
 // The calendar header's CENTERED content: period navigation + view switcher.
 // Renders a horizontal row on desktop and a stacked block on mobile.
 export function CalendarHeader({ controls }: { controls: HeaderControls }) {
-  const { t } = useTranslation()
-  const { view, onViewChange, periodLabel, onPrev, onNext, onToday } = controls
+  const { view, onViewChange, periodLabel, onPrev, onNext } = controls
   return (
     <>
       {/* Desktop / tablet — single centered row */}
@@ -141,25 +140,15 @@ export function CalendarHeader({ controls }: { controls: HeaderControls }) {
           <div className="sv-period-label" style={disp(27, { whiteSpace: 'nowrap' })}>{emphasize(periodLabel)}</div>
           <NavArrow dir="right" onClick={onNext} />
         </div>
-        <button
-          className="text-sm font-semibold px-3 py-1.5 rounded-full transition-transform hover:-translate-y-px"
-          style={{ border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-brand)' }}
-          onClick={onToday}
-        >
-          {t('common.today')}
-        </button>
         <ViewSwitcher active={view} onChange={onViewChange} />
       </div>
 
       {/* Mobile — stacked */}
       <div className="lg:hidden w-full space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <NavArrow dir="left" onClick={onPrev} />
-            <div className="sv-period-label" style={disp(19, { whiteSpace: 'nowrap' })}>{emphasize(periodLabel)}</div>
-            <NavArrow dir="right" onClick={onNext} />
-          </div>
-          <button className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' }} onClick={onToday}>{t('common.today')}</button>
+        <div className="flex items-center gap-2">
+          <NavArrow dir="left" onClick={onPrev} />
+          <div className="sv-period-label" style={disp(19, { whiteSpace: 'nowrap' })}>{emphasize(periodLabel)}</div>
+          <NavArrow dir="right" onClick={onNext} />
         </div>
         <ViewSwitcher active={view} onChange={onViewChange} />
       </div>

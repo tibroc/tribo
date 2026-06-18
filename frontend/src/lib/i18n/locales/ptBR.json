@@ -116,7 +116,6 @@
     "day": "Dia",
     "week": "Semana",
     "month": "Mês",
-    "quarter": "Trimestre",
     "year": "Ano"
   },
   "appshell": {
@@ -214,7 +213,7 @@
     "addLocation": "Adicionar local",
     "notes": "Notas",
     "important": "Importante",
-    "importantHint": "Sempre mostrar, mesmo nas visões Trimestre e Ano",
+    "importantHint": "Sempre mostrar, mesmo na visão Ano",
     "personalCalendar": "Calendário pessoal",
     "familyCalendar": "Calendário da família",
     "deleteEvent": "Excluir evento",
@@ -270,7 +269,6 @@
   "calendar": {
     "thisWeek": "Esta semana",
     "thisMonth": "Este mês",
-    "thisQuarter": "Este trimestre",
     "thisYear": "Este ano",
     "sharedPlans_one": "{{count}} plano compartilhado",
     "sharedPlans_other": "{{count}} planos compartilhados",

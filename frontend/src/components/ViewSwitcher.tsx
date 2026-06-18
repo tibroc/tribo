@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { VIEWS, type ViewName } from '../lib/calendar'
 
-// The Day/Week/Month/Quarter/Year segmented control. Controlled.
+// The Day/Week/Month/Year segmented control. Controlled.
 export default function ViewSwitcher({ active, onChange }: {
   active: ViewName
   onChange: (v: ViewName) => void

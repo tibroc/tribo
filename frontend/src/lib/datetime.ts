@@ -1,7 +1,7 @@
 // Locale-aware date/time formatting. Every helper takes an Intl `locale`
 // (from useLocale()), so the same Date renders as "4:00 PM" (en-US, 12h) or
 // "16:00" (de-DE / pt-BR, 24h) and month/weekday names localize automatically.
-import { addDays, addMonths } from './calendar'
+import { addDays } from './calendar'
 
 // 2024-01-01 was a Monday — anchor for building Monday-first label arrays.
 const REF_MONDAY = new Date(2024, 0, 1)
@@ -36,12 +36,6 @@ export function fmtMonthYear(d: Date, locale: string): string {
 export function fmtWeekRange(monday: Date, locale: string): string {
   const sunday = addDays(monday, 6)
   return formatRange({ month: 'short', day: 'numeric' }, locale, monday, sunday)
-}
-
-// Quarter span across three months, e.g. "Jan – Mar 2026".
-export function fmtQuarterRange(start: Date, locale: string): string {
-  const end = addMonths(start, 2)
-  return formatRange({ month: 'short', year: 'numeric' }, locale, start, end)
 }
 
 // "Mon, Jun 18" — compact day used in lists (notification bell, etc.).

@@ -116,7 +116,6 @@
     "day": "Tag",
     "week": "Woche",
     "month": "Monat",
-    "quarter": "Quartal",
     "year": "Jahr"
   },
   "appshell": {
@@ -214,7 +213,7 @@
     "addLocation": "Ort hinzufügen",
     "notes": "Notizen",
     "important": "Wichtig",
-    "importantHint": "Immer anzeigen, auch in Quartals- und Jahresansicht",
+    "importantHint": "Immer anzeigen, auch in der Jahresansicht",
     "personalCalendar": "Persönlicher Kalender",
     "familyCalendar": "Familienkalender",
     "deleteEvent": "Termin löschen",
@@ -270,7 +269,6 @@
   "calendar": {
     "thisWeek": "Diese Woche",
     "thisMonth": "Dieser Monat",
-    "thisQuarter": "Dieses Quartal",
     "thisYear": "Dieses Jahr",
     "sharedPlans_one": "{{count}} gemeinsamer Termin",
     "sharedPlans_other": "{{count}} gemeinsame Termine",

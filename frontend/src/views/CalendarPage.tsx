@@ -3,13 +3,12 @@ import {
   addDays, addMonths, mondayOf, startOfDay, startOfMonth,
   type ViewName, type HeaderControls, type ViewProps, type NavKey, type EventFocus,
 } from '../lib/calendar'
-import { fmtDayLong, fmtMonthYear, fmtWeekRange, fmtQuarterRange } from '../lib/datetime'
+import { fmtDayLong, fmtMonthYear, fmtWeekRange } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
 import { getCalendarSources, getEvents, getFamilyMembers, getWorkSchedules, type CalendarSource, type FamilyMember, type TriboEvent, type WorkSchedule } from '../lib/api'
 import DayView from './DayView'
 import WeekView from './WeekView'
 import MonthView from './MonthView'
-import QuarterView from './QuarterView'
 import YearView from './YearView'
 import EventForm from '../components/EventForm'
 import { NOTIFICATIONS_CHANGED_EVENT } from '../components/NotificationBell'
@@ -18,7 +17,6 @@ const VIEW_COMPONENTS: Record<ViewName, (p: ViewProps) => JSX.Element> = {
   Day: DayView,
   Week: WeekView,
   Month: MonthView,
-  Quarter: QuarterView,
   Year: YearView,
 }
 
@@ -42,12 +40,6 @@ function periodFor(view: ViewName, cursor: Date, locale: string): { start: Date;
     case 'Month': {
       const start = startOfMonth(cursor)
       return { start, end: addMonths(start, 1), label: fmtMonthYear(start, locale), step: (dir) => addMonths(cursor, dir) }
-    }
-    case 'Quarter': {
-      const qStart = Math.floor(cursor.getMonth() / 3) * 3
-      const start = new Date(year, qStart, 1)
-      const end = new Date(year, qStart + 3, 1)
-      return { start, end, label: fmtQuarterRange(start, locale), step: (dir) => addMonths(cursor, 3 * dir) }
     }
     case 'Year': {
       const start = new Date(year, 0, 1)
@@ -112,7 +104,6 @@ export default function CalendarPage({ onNavigate, openNew, focus }: { onNavigat
     periodLabel: period.label,
     onPrev: () => setCursor((c) => periodFor(view, c, locale).step(-1)),
     onNext: () => setCursor((c) => periodFor(view, c, locale).step(1)),
-    onToday: () => setCursor(new Date()),
   }
 
   const ActiveView = VIEW_COMPONENTS[view]

@@ -116,7 +116,6 @@
     "day": "Day",
     "week": "Week",
     "month": "Month",
-    "quarter": "Quarter",
     "year": "Year"
   },
   "appshell": {
@@ -214,7 +213,7 @@
     "addLocation": "Add location",
     "notes": "Notes",
     "important": "Important",
-    "importantHint": "Always show, even in Quarter and Year views",
+    "importantHint": "Always show, even in the Year view",
     "personalCalendar": "Personal calendar",
     "familyCalendar": "Family calendar",
     "deleteEvent": "Delete event",
@@ -270,7 +269,6 @@
   "calendar": {
     "thisWeek": "This week",
     "thisMonth": "This month",
-    "thisQuarter": "This quarter",
     "thisYear": "This year",
     "sharedPlans_one": "{{count}} shared plan",
     "sharedPlans_other": "{{count}} shared plans",
