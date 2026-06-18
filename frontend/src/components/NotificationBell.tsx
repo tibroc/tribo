@@ -38,7 +38,7 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
     <div className="relative">
       <button
         onClick={toggle}
-        className="hidden sm:flex items-center justify-center rounded-full"
+        className="flex items-center justify-center rounded-full"
         style={{ width: 38, height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
         aria-label={count > 0 ? t('notifications.titleCount', { count }) : t('notifications.title')}
         aria-expanded={open}

@@ -88,7 +88,7 @@ export function Weather({ size = 17 }: { size?: number }) {
   const unit = w.units === 'fahrenheit' ? '°F' : '°C'
   return (
     <div
-      className="hidden sm:flex items-center gap-1.5 text-sm rounded-full px-3"
+      className="flex items-center gap-1.5 text-sm rounded-full px-3"
       style={{ height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)', fontWeight: 600 }}
       title={`${t(weatherKey(w.code))} · ${w.locationName}`}
     >

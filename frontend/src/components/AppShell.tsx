@@ -123,6 +123,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
           <Wordmark size="sm" />
           <div className="flex items-center gap-2">
             <Weather size={15} />
+            {themeBtn}
             {bellBtn}
           </div>
         </div>
@@ -186,15 +187,6 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
         {NAV.map((n) => (
           <TabNav key={n.key} name={n.icon} label={t(`nav.${n.key}`)} active={active === n.key} onClick={() => onNavigate(n.key)} />
         ))}
-        <button
-          onClick={toggle}
-          className="flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1"
-          style={{ color: 'var(--t-text-soft)' }}
-          aria-label={theme === 'dark' ? t('appshell.switchToLight') : t('appshell.switchToDark')}
-        >
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
-          <span className="text-xs font-medium">{t('appshell.theme')}</span>
-        </button>
         <ProfileSwitcher mobile />
       </nav>
 
