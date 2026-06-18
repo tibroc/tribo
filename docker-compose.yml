@@ -1,9 +1,14 @@
-# Local-dev stack: Caddy (reverse proxy) + Tribo (Go binary with embedded SPA).
+# Stack: Caddy (reverse proxy) + Tribo (Go binary with embedded SPA).
+# Tribo runs from the prebuilt image published to GHCR by the `docker` workflow.
+# Update with `docker compose pull && docker compose up -d`.
+# Pin a version by setting TRIBO_TAG (e.g. TRIBO_TAG=v1.2.0); defaults to latest.
+# To build locally instead, swap `image:` for `build: .` on the tribo service.
 # Radicale is wired but profile-gated off by default (Milestone 6).
 
 services:
   caddy:
     image: caddy:2
+    restart: unless-stopped
     ports:
       - "8080:80"
     volumes:
@@ -14,7 +19,8 @@ services:
       - tribo
 
   tribo:
-    build: .
+    image: ghcr.io/tibroc/tribo:${TRIBO_TAG:-latest}
+    restart: unless-stopped
     environment:
       - DATABASE_PATH=/data/tribo.db
       - LISTEN_ADDR=:8080
