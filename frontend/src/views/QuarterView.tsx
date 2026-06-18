@@ -29,22 +29,25 @@ export default function QuarterView({ members, events, cursor, today, header, on
   const byId = useMemo(() => membersById(members), [members])
   const byDay = useMemo(() => groupByDay(events), [events])
   const locale = useLocale()
-  const { t } = useTranslation()
   const monthsFull = useMemo(() => monthLabels(locale, 'long'), [locale])
   const initials = useMemo(() => weekdayLabels(locale, 'narrow'), [locale])
 
+  // Overview widget (right column): this quarter's milestones, one card per month.
+  const aside = (
+    <>
+      {months.map((m) => (
+        <Card key={m}>
+          <MonthHighlightList monthName={monthsFull[m]} locale={locale} year={year} month={m} events={events} byId={byId} />
+        </Card>
+      ))}
+    </>
+  )
+
   return (
-    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
+    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={aside}>
       <div className="p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {months.map((m) => <MiniMonth key={m} monthName={monthsFull[m]} initials={initials} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
-        </div>
-
-        <div className="mt-4 lg:mt-6">
-          <div className="font-display text-lg font-bold mb-3">{t('calendar.thisQuarter')}</div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-            {months.map((m) => <MonthHighlightList key={m} monthName={monthsFull[m]} locale={locale} year={year} month={m} events={events} byId={byId} />)}
-          </div>
         </div>
       </div>
     </AppShell>

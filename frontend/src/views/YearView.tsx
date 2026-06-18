@@ -31,45 +31,49 @@ export default function YearView({ members, events, cursor, today, header, onNav
     .map((e) => ({ e, d: new Date(e.startAt) }))
     .sort((a, b) => +a.d - +b.d), [events, year])
 
+  // Overview widget (right column): this year's milestones.
+  const aside = (
+    <Card>
+      <div className="font-display text-base font-bold mb-2">{t('calendar.thisYear')}</div>
+      {highlights.length === 0 ? (
+        <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingNotable')}</div>
+      ) : (
+        <div className="space-y-1.5">
+          {highlights.map(({ e, d }) => {
+            const color = colorForEvent(e, byId)
+            return (
+              <div key={e.id} className="flex items-center gap-2 text-sm">
+                {e.icon === 'cake'
+                  ? <Cake size={14} style={{ color, flexShrink: 0 }} />
+                  : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />}
+                <span className="flex-1 truncate">{e.title}</span>
+                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Card>
+  )
+
   return (
-    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />}>
-      <div className="p-4 lg:p-6">
-      {/* Year progress */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="font-display text-lg font-bold">{year}</div>
-          {inThisYear && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.dayOfYear', { day: dayOfYear, pct: progress })}</div>}
-        </div>
-        <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--t-track)' }}>
-          <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: 'var(--t-brand)' }} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
-        {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsShort[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
-      </div>
-
-      <div className="mt-6">
-        <div className="font-display text-lg font-bold mb-3">{t('calendar.thisYear')}</div>
-        {highlights.length === 0 ? (
-          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.nothingNotable')}</div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1.5">
-            {highlights.map(({ e, d }) => {
-              const color = colorForEvent(e, byId)
-              return (
-                <div key={e.id} className="flex items-center gap-2 text-sm">
-                  {e.icon === 'cake'
-                    ? <Cake size={14} style={{ color, flexShrink: 0 }} />
-                    : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />}
-                  <span className="flex-1 truncate">{e.title}</span>
-                  <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
-                </div>
-              )
-            })}
+    <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={aside}>
+      <div className="p-4 lg:p-6 flex flex-col lg:h-full">
+        {/* Year progress (stays on top) */}
+        <div className="mb-4 shrink-0">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="font-display text-lg font-bold">{year}</div>
+            {inThisYear && <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('calendar.dayOfYear', { day: dayOfYear, pct: progress })}</div>}
           </div>
-        )}
-      </div>
+          <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--t-track)' }}>
+            <div className="h-1.5 rounded-full" style={{ width: `${progress}%`, backgroundColor: 'var(--t-brand)' }} />
+          </div>
+        </div>
+
+        {/* 12 month panels — stretched to fill the island (3×4) on desktop. */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 lg:flex-1 lg:min-h-0 lg:[grid-template-rows:repeat(4,minmax(0,1fr))]">
+          {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsShort[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
+        </div>
       </div>
     </AppShell>
   )
@@ -86,9 +90,9 @@ function YearMonth({ year, month, monthName, byDay, byId, today }: {
   const cells = buildMonthCells(year, month, 42)
   const line = '1px solid var(--t-line)'
   return (
-    <Card padded={false} className="overflow-hidden">
-      <div className="font-display text-sm font-bold px-2 py-1.5" style={{ borderBottom: line }}>{monthName}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+    <Card padded={false} className="overflow-hidden flex flex-col lg:h-full">
+      <div className="font-display text-sm font-bold px-2 py-1.5 shrink-0" style={{ borderBottom: line }}>{monthName}</div>
+      <div className="lg:flex-1 lg:min-h-0 lg:[grid-auto-rows:minmax(0,1fr)]" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {cells.map((cell, i) => {
           // Year view: dots ONLY for milestones.
           const milestone = cell.inMonth ? (byDay.get(dayKey(cell.dateObj)) ?? []).find((e) => e.visibilityTag === 'milestone') : undefined
