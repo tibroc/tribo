@@ -146,11 +146,15 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	}
 
 	now := time.Now()
+	// Pull a year back through a year ahead so the current calendar year is fully
+	// covered (e.g. a birthday earlier this year still appears). Wider arbitrary-
+	// year navigation would need on-demand range generation (future work).
+	windowStart, windowEnd := now.AddDate(-1, 0, 0), now.AddDate(1, 0, 0)
 	query := &caldav.CalendarQuery{
 		CompRequest: caldav.CalendarCompRequest{Name: "VCALENDAR", AllProps: true, AllComps: true},
 		CompFilter: caldav.CompFilter{
 			Name:  "VCALENDAR",
-			Comps: []caldav.CompFilter{{Name: "VEVENT", Start: now.AddDate(0, -3, 0), End: now.AddDate(1, 0, 0)}},
+			Comps: []caldav.CompFilter{{Name: "VEVENT", Start: windowStart, End: windowEnd}},
 		},
 	}
 	objects, err := client.QueryCalendar(ctx, u.Path, query)
@@ -216,7 +220,7 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	}
 	// Recompute guardian assignment/conflict over the synced window now that
 	// attendees are in the cache (computed fields live only in the cache).
-	if err := calendar.NewService(e.db, nil).RecomputeWindow(now.AddDate(0, -3, 0), now.AddDate(1, 0, 0)); err != nil {
+	if err := calendar.NewService(e.db, nil).RecomputeWindow(windowStart, windowEnd); err != nil {
 		log.Printf("calsync: recompute after sync %s: %v", src.id, err)
 	}
 	log.Printf("calsync: pulled %d events from %s", count, src.id)

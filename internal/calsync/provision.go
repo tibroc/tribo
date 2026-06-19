@@ -53,6 +53,15 @@ func (e *Engine) EnsureManagedCalendars(ctx context.Context) error {
 	return nil
 }
 
+// managedSource returns the id and collection URL of a managed source by kind
+// (+ member id for person calendars). ok is false if it doesn't exist yet.
+func (e *Engine) managedSource(kind, memberID string) (id, collURL string, ok bool) {
+	err := e.db.QueryRow(
+		`SELECT id, COALESCE(url, '') FROM calendar_source WHERE managed = 1 AND kind = ? AND COALESCE(member_id, '') = ?`,
+		kind, memberID).Scan(&id, &collURL)
+	return id, collURL, err == nil && collURL != ""
+}
+
 // managedMembers reads the member list fully (closing the rows) before any
 // follow-up queries, since the store pins a single SQLite connection.
 func (e *Engine) managedMembers() ([]memberRow, error) {
