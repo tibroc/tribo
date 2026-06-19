@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
 import {
   addDays, addMonths, mondayOf, startOfDay, startOfMonth,
   type ViewName, type HeaderControls, type ViewProps, type NavKey, type EventFocus,
