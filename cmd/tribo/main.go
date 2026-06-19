@@ -32,7 +32,17 @@ func main() {
 
 	authSvc := auth.New(db)
 	syncEngine := calsync.NewEngine(db)
-	syncEngine.Start(context.Background())
+	// Calendars hard-require a Radicale backend. When configured, provision the
+	// managed collections and run sync; otherwise calendar features stay disabled
+	// (the rest of the app still works).
+	if syncEngine.RadicaleEnabled() {
+		if err := syncEngine.EnsureManagedCalendars(context.Background()); err != nil {
+			log.Printf("calendar provisioning: %v", err)
+		}
+		syncEngine.Start(context.Background())
+	} else {
+		log.Printf("calendars: RADICALE_URL unset — calendar backend disabled")
+	}
 
 	handler := api.NewHandler(db, web.FS(), authSvc, syncEngine)
 

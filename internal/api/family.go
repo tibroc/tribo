@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"tribo/internal/family"
@@ -27,6 +28,13 @@ func (s *Server) createFamilyMember(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
+	}
+	// Provision the new member's Radicale calendar (idempotent; no-op if the
+	// backend is unconfigured). Best-effort — don't fail member creation on it.
+	if s.sync.RadicaleEnabled() {
+		if err := s.sync.EnsureManagedCalendars(r.Context()); err != nil {
+			log.Printf("calendar provisioning after member add: %v", err)
+		}
 	}
 	writeJSON(w, http.StatusCreated, m)
 }

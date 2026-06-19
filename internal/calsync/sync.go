@@ -19,12 +19,13 @@ import (
 )
 
 type Engine struct {
-	db  *sql.DB
-	key []byte
+	db       *sql.DB
+	key      []byte
+	radicale RadicaleConfig
 }
 
 func NewEngine(db *sql.DB) *Engine {
-	return &Engine{db: db, key: deriveKey()}
+	return &Engine{db: db, key: deriveKey(), radicale: radicaleConfig()}
 }
 
 // NewSource is the payload to connect an external calendar.

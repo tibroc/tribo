@@ -105,6 +105,16 @@ func (s *Server) pushIfExternal(eventID string) {
 	}()
 }
 
+// GET /api/calendar-status — whether the Radicale backend is configured and
+// currently reachable, so the UI can surface a "calendars unavailable" banner.
+func (s *Server) calendarStatus(w http.ResponseWriter, r *http.Request) {
+	enabled := s.sync.RadicaleEnabled()
+	writeJSON(w, http.StatusOK, map[string]bool{
+		"enabled":   enabled,
+		"reachable": enabled && s.sync.RadicaleReachable(r.Context()),
+	})
+}
+
 func (s *Server) listCalendarSources(w http.ResponseWriter, _ *http.Request) {
 	srcs, err := s.events.ListSources()
 	if err != nil {
