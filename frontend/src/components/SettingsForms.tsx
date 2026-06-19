@@ -79,13 +79,19 @@ export function MemberForm({ member, members, onClose, onSaved }: {
   const [color, setColor] = useState(member?.color ?? COLORS[0])
   const [role, setRole] = useState<'guardian' | 'child'>(member?.role ?? 'guardian')
   const [defaultGuardianId, setDefaultGuardianId] = useState(member?.defaultGuardianId ?? '')
+  const [dateOfBirth, setDateOfBirth] = useState(member?.dateOfBirth ?? '')
   const [pin, setPin] = useState('')
   const { t } = useTranslation()
   const { busy, error, run } = useSaver(onSaved)
   const guardians = members.filter((m) => m.role === 'guardian' && m.id !== member?.id)
 
   const save = () => run(() => {
-    const payload = { name, color, role, defaultGuardianId: role === 'child' && defaultGuardianId ? defaultGuardianId : null, pin: pin ? pin : undefined }
+    const payload = {
+      name, color, role,
+      defaultGuardianId: role === 'child' && defaultGuardianId ? defaultGuardianId : null,
+      dateOfBirth: dateOfBirth || null,
+      pin: pin ? pin : undefined,
+    }
     return member ? updateMember(member.id, payload) : createMember(payload)
   })
 
@@ -115,6 +121,9 @@ export function MemberForm({ member, members, onClose, onSaved }: {
           </select>
         </Labeled>
       )}
+      <Labeled label={t('forms.dateOfBirth')}>
+        <input type="date" className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+      </Labeled>
       <Labeled label={member ? t('forms.pinEdit') : t('forms.pinNew')}>
         <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={pin} onChange={(e) => setPin(e.target.value)} placeholder={t('forms.pinPlaceholder')} />
       </Labeled>

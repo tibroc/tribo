@@ -51,11 +51,14 @@ type NewEvent struct {
 }
 
 type Source struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"`
-	DisplayName string `json:"displayName"`
-	IsShared    bool   `json:"isShared"`
-	ReadOnly    bool   `json:"readOnly"`
+	ID          string  `json:"id"`
+	Type        string  `json:"type"`
+	DisplayName string  `json:"displayName"`
+	IsShared    bool    `json:"isShared"`
+	ReadOnly    bool    `json:"readOnly"`
+	Kind        string  `json:"kind"`               // person|family|birthdays|chores|external
+	MemberID    *string `json:"memberId,omitempty"` // person + Google overlays
+	Managed     bool    `json:"managed"`            // auto-provisioned; not user-editable
 }
 
 type Service struct {
@@ -71,7 +74,7 @@ func NewService(db *sql.DB, backend EventBackend) *Service {
 
 // ListSources returns the configured calendar sources.
 func (s *Service) ListSources() ([]Source, error) {
-	rows, err := s.db.Query(`SELECT id, type, display_name, is_shared, read_only FROM calendar_source ORDER BY is_shared, display_name`)
+	rows, err := s.db.Query(`SELECT id, type, display_name, is_shared, read_only, kind, member_id, managed FROM calendar_source ORDER BY is_shared, display_name`)
 	if err != nil {
 		return nil, err
 	}
@@ -79,12 +82,13 @@ func (s *Service) ListSources() ([]Source, error) {
 	out := []Source{}
 	for rows.Next() {
 		var src Source
-		var shared, ro int
-		if err := rows.Scan(&src.ID, &src.Type, &src.DisplayName, &shared, &ro); err != nil {
+		var shared, ro, managed int
+		if err := rows.Scan(&src.ID, &src.Type, &src.DisplayName, &shared, &ro, &src.Kind, &src.MemberID, &managed); err != nil {
 			return nil, err
 		}
 		src.IsShared = shared != 0
 		src.ReadOnly = ro != 0
+		src.Managed = managed != 0
 		out = append(out, src)
 	}
 	return out, rows.Err()

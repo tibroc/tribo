@@ -209,7 +209,11 @@
       "usernamePlaceholder": "Usuário (opcional)",
       "passwordPlaceholder": "Senha (opcional)",
       "readOnlyOption": "Somente leitura (não enviar eventos do Tribo para este calendário)",
-      "urlRequired": "A URL CalDAV é obrigatória"
+      "urlRequired": "A URL CalDAV é obrigatória",
+      "managed": "Gerenciado pelo Tribo",
+      "disabled": "Os calendários precisam de um backend Radicale — defina RADICALE_URL no servidor.",
+      "unreachable": "Backend de calendário indisponível — as alterações podem não salvar até voltar.",
+      "googleForWhom": "Adicionar Google Agenda para…"
     },
     "location": {
       "title": "Local do clima",
@@ -233,6 +237,8 @@
     "importantHint": "Sempre mostrar, mesmo na visão Ano",
     "personalCalendar": "Calendário pessoal",
     "familyCalendar": "Calendário da família",
+    "calendar": "Calendário",
+    "noCalendar": "Nenhum calendário disponível",
     "deleteEvent": "Excluir evento",
     "requiresGuardian": "Requer responsável",
     "guardianAutoAssign": "Um responsável será atribuído automaticamente ao salvar.",
@@ -281,7 +287,8 @@
     "assignmentMode": {
       "fixed": "Fixo — uma pessoa",
       "rotation": "Rodízio — reveza"
-    }
+    },
+    "dateOfBirth": "Data de nascimento"
   },
   "calendar": {
     "thisWeek": "Esta semana",

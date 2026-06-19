@@ -209,7 +209,11 @@
       "usernamePlaceholder": "Username (optional)",
       "passwordPlaceholder": "Password (optional)",
       "readOnlyOption": "Read-only (don't push Tribo events to this calendar)",
-      "urlRequired": "CalDAV URL is required"
+      "urlRequired": "CalDAV URL is required",
+      "managed": "Managed by Tribo",
+      "disabled": "Calendars need a Radicale backend — set RADICALE_URL on the server.",
+      "unreachable": "Calendar backend unavailable — changes may not save until it's back.",
+      "googleForWhom": "Add Google calendar for…"
     },
     "location": {
       "title": "Weather location",
@@ -233,6 +237,8 @@
     "importantHint": "Always show, even in the Year view",
     "personalCalendar": "Personal calendar",
     "familyCalendar": "Family calendar",
+    "calendar": "Calendar",
+    "noCalendar": "No calendar available",
     "deleteEvent": "Delete event",
     "requiresGuardian": "Requires guardian",
     "guardianAutoAssign": "A guardian will be assigned automatically when you save.",
@@ -281,7 +287,8 @@
     "assignmentMode": {
       "fixed": "Fixed — one person",
       "rotation": "Rotation — takes turns"
-    }
+    },
+    "dateOfBirth": "Date of birth"
   },
   "calendar": {
     "thisWeek": "This week",

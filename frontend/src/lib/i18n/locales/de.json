@@ -209,7 +209,11 @@
       "usernamePlaceholder": "Benutzername (optional)",
       "passwordPlaceholder": "Passwort (optional)",
       "readOnlyOption": "Schreibgeschützt (Tribo-Termine nicht in diesen Kalender übertragen)",
-      "urlRequired": "CalDAV-URL ist erforderlich"
+      "urlRequired": "CalDAV-URL ist erforderlich",
+      "managed": "Von Tribo verwaltet",
+      "disabled": "Kalender brauchen ein Radicale-Backend — RADICALE_URL am Server setzen.",
+      "unreachable": "Kalender-Backend nicht erreichbar — Änderungen werden evtl. erst später gespeichert.",
+      "googleForWhom": "Google-Kalender hinzufügen für…"
     },
     "location": {
       "title": "Wetterort",
@@ -233,6 +237,8 @@
     "importantHint": "Immer anzeigen, auch in der Jahresansicht",
     "personalCalendar": "Persönlicher Kalender",
     "familyCalendar": "Familienkalender",
+    "calendar": "Kalender",
+    "noCalendar": "Kein Kalender verfügbar",
     "deleteEvent": "Termin löschen",
     "requiresGuardian": "Aufsicht erforderlich",
     "guardianAutoAssign": "Beim Speichern wird automatisch eine Aufsichtsperson zugewiesen.",
@@ -281,7 +287,8 @@
     "assignmentMode": {
       "fixed": "Fest — eine Person",
       "rotation": "Rotation — im Wechsel"
-    }
+    },
+    "dateOfBirth": "Geburtsdatum"
   },
   "calendar": {
     "thisWeek": "Diese Woche",

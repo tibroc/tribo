@@ -7,8 +7,9 @@ import type { Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
   addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility, googleConnectUrl,
+  getCalendarStatus,
   getWeatherSettings, updateWeatherSettings, geocodeLocation,
-  type FamilyMember, type WorkSchedule, type Chore, type CalendarSource,
+  type FamilyMember, type WorkSchedule, type Chore, type CalendarSource, type CalendarStatus,
   type WeatherSettings, type WeatherUnits, type GeoResult,
 } from '../lib/api'
 import AppShell from '../components/AppShell'
@@ -58,6 +59,9 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
 
   const [showConnect, setShowConnect] = useState(false)
   const [calError, setCalError] = useState<string | null>(null)
+  const [calStatus, setCalStatus] = useState<CalendarStatus | null>(null)
+  const [googleMember, setGoogleMember] = useState('') // member picked for a new Google overlay
+  useEffect(() => { getCalendarStatus().then(setCalStatus).catch(() => {}) }, [])
   const [showWizard, setShowWizard] = useState(false)
   const { session, refresh: refreshSession } = useSession()
   const theme = useTheme()
@@ -159,37 +163,59 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             ))}
           </Section>
 
-          {/* Calendars — internal + connected external (CalDAV) sources. */}
+          {/* Calendars — managed Radicale calendars (read-only here) + Google overlays. */}
           <Section title={t('family.calendars.title')} icon={Globe}
             action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setShowConnect(true)}><Plus size={14} /> {t('common.connect')}</Button>}>
+            {calStatus && !calStatus.enabled && (
+              <div className="text-xs rounded-lg p-2 mb-2" style={{ background: 'color-mix(in srgb, var(--t-accent) 14%, transparent)', color: 'var(--t-accent)' }}>
+                {t('family.calendars.disabled')}
+              </div>
+            )}
+            {calStatus && calStatus.enabled && !calStatus.reachable && (
+              <div className="text-xs rounded-lg p-2 mb-2" style={{ background: 'color-mix(in srgb, var(--t-accent) 14%, transparent)', color: 'var(--t-accent)' }}>
+                {t('family.calendars.unreachable')}
+              </div>
+            )}
             <div className="space-y-2">
-              {sources.map((c) => (
-                <div key={c.id} className="flex items-center gap-2 py-1">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.isShared ? 'var(--t-accent)' : 'var(--t-brand)' }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{c.displayName}</div>
-                    <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>
-                      {c.type === 'internal' ? t('family.calendars.builtin') : `${c.type}${c.readOnly ? ' · ' + t('family.calendars.readOnly') : ''}`}
+              {sources.map((c) => {
+                const member = c.memberId ? members.find((m) => m.id === c.memberId) : undefined
+                const dot = member?.color ?? (c.isShared ? 'var(--t-accent)' : 'var(--t-brand)')
+                const sub = c.managed
+                  ? t('family.calendars.managed')
+                  : `${c.type === 'internal' ? t('family.calendars.builtin') : c.type}${member ? ' · ' + member.name : ''}${c.readOnly ? ' · ' + t('family.calendars.readOnly') : ''}`
+                return (
+                  <div key={c.id} className="flex items-center gap-2 py-1">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{c.displayName}</div>
+                      <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
                     </div>
+                    {/* Managed calendars are auto-provisioned — no manual sync/remove. */}
+                    {!c.managed && c.type !== 'internal' && (
+                      <>
+                        <button aria-label={t('family.calendars.syncNow')} onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
+                          <RefreshCw size={14} style={{ color: 'var(--t-text-soft)' }} />
+                        </button>
+                        <button aria-label={t('family.calendars.remove')} onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
+                          <Trash2 size={14} style={{ color: 'var(--t-text-soft)' }} />
+                        </button>
+                      </>
+                    )}
                   </div>
-                  {c.type !== 'internal' && (
-                    <>
-                      <button aria-label={t('family.calendars.syncNow')} onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
-                        <RefreshCw size={14} style={{ color: 'var(--t-text-soft)' }} />
-                      </button>
-                      <button aria-label={t('family.calendars.remove')} onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
-                        <Trash2 size={14} style={{ color: 'var(--t-text-soft)' }} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
-            <AddRow label={t('family.calendars.connectGoogle')} onClick={() => {
-              googleConnectUrl()
-                .then((r) => { window.location.href = r.authUrl })
-                .catch((e) => setCalError(String(e)))
-            }} />
+            {/* Google overlay: pick the person it belongs to, then connect (read-only). */}
+            <div className="flex items-center gap-2 mt-3">
+              <select className="text-sm rounded-lg px-2 py-1.5 outline-hidden flex-1" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)' }}
+                value={googleMember} onChange={(e) => setGoogleMember(e.target.value)}>
+                <option value="">{t('family.calendars.googleForWhom')}</option>
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              <Button variant="outline" size="sm" disabled={!googleMember} onClick={() => {
+                googleConnectUrl(googleMember).then((r) => { window.location.href = r.authUrl }).catch((e) => setCalError(String(e)))
+              }}>{t('family.calendars.connectGoogle')}</Button>
+            </div>
             {calError && <div className="text-xs mt-2" style={{ color: '#9b1c1c' }}>{calError}</div>}
           </Section>
         </div>
@@ -310,15 +336,6 @@ function SettingRow({ icon: Icon, title, sub, onClick }: { icon: typeof MapPin; 
   return <div className="flex items-center gap-3">{inner}</div>
 }
 
-
-function AddRow({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="w-full flex items-center justify-center gap-2 py-2.5 mt-2 text-sm font-semibold"
-      style={{ border: '1px dashed var(--t-line)', borderRadius: 'var(--t-radius-md)', color: 'var(--t-text-soft)' }}>
-      <Plus size={16} /> {label}
-    </button>
-  )
-}
 
 // CalDAV connect flow (designed just-in-time per the build brief).
 function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {

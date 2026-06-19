@@ -59,6 +59,30 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
   const hasChild = attendees.some((id) => byId.get(id)?.role === 'child')
 
+  // Calendars an event can be saved to: the per-person and family calendars
+  // (not the managed birthdays/chores calendars, nor read-only Google overlays).
+  const targetable = useMemo(
+    () => sources.filter((s) => (s.kind === 'person' || s.kind === 'family') && !s.readOnly),
+    [sources],
+  )
+  const familySource = sources.find((s) => s.kind === 'family')
+  const personSourceFor = (mid?: string) => sources.find((s) => s.kind === 'person' && s.memberId === mid)
+  const defaultSourceId = () => {
+    if (attendees.length === 1) {
+      const ps = personSourceFor(attendees[0])
+      if (ps) return ps.id
+    }
+    return familySource?.id ?? targetable[0]?.id ?? ''
+  }
+  const [sourceId, setSourceId] = useState(event?.calendarSourceId ?? '')
+  const [pickedSource, setPickedSource] = useState(false)
+  // For a new event, follow the attendee-based default until the user overrides
+  // it. Depends on sources too, since they load asynchronously after mount.
+  useEffect(() => {
+    if (!editing && !pickedSource) setSourceId(defaultSourceId())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attendees, editing, pickedSource, sources])
+
   const toggleAttendee = (id: string) =>
     setAttendees((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
 
@@ -76,13 +100,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
       endAt = localRFC3339(new Date(y, m - 1, d, eh, em))
     }
 
-    // Personal calendar when someone's involved; shared/family calendar otherwise.
-    const personal = sources.find((s) => !s.isShared)
-    const shared = sources.find((s) => s.isShared)
-    const sourceId = event?.calendarSourceId ?? (attendees.length > 0 ? personal?.id : shared?.id) ?? personal?.id ?? sources[0]?.id
-
+    if (!sourceId) { setError(t('event.noCalendar')); return }
     const payload: NewEvent = {
-      calendarSourceId: sourceId ?? '',
+      calendarSourceId: sourceId,
       title: title.trim(),
       description: description || null,
       location: location || null,
@@ -211,7 +231,19 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Layers size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <span className="text-sm">{attendees.length > 0 ? t('event.personalCalendar') : t('event.familyCalendar')}</span>
+              {editing ? (
+                <span className="text-sm">{sources.find((s) => s.id === sourceId)?.displayName ?? '—'}</span>
+              ) : (
+                <select
+                  aria-label={t('event.calendar')}
+                  className="flex-1 bg-transparent outline-hidden text-sm font-medium"
+                  value={sourceId}
+                  onChange={(e) => { setSourceId(e.target.value); setPickedSource(true) }}
+                >
+                  {targetable.length === 0 && <option value="">{t('event.noCalendar')}</option>}
+                  {targetable.map((s) => <option key={s.id} value={s.id}>{s.displayName}</option>)}
+                </select>
+              )}
             </div>
           </div>
 

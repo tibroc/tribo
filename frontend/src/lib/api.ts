@@ -7,6 +7,7 @@ export interface FamilyMember {
   color: string
   role: 'guardian' | 'child'
   defaultGuardianId?: string
+  dateOfBirth?: string // 'YYYY-MM-DD'
 }
 
 export interface TriboEvent {
@@ -50,10 +51,24 @@ export interface CalendarSource {
   displayName: string
   isShared: boolean
   readOnly: boolean
+  kind: 'person' | 'family' | 'birthdays' | 'chores' | 'external'
+  memberId?: string
+  managed: boolean
 }
 
 export function getCalendarSources(): Promise<CalendarSource[]> {
   return fetch('/api/calendar-sources').then((r) => json<CalendarSource[]>(r))
+}
+
+export interface CalendarStatus {
+  enabled: boolean
+  reachable: boolean
+}
+
+// Whether the Radicale calendar backend is configured + reachable (for the
+// "calendars unavailable" banner).
+export function getCalendarStatus(): Promise<CalendarStatus> {
+  return fetch('/api/calendar-status').then((r) => json<CalendarStatus>(r))
 }
 
 export interface NewCalendarSource {
@@ -81,9 +96,11 @@ export function deleteCalendarSource(id: string): Promise<void> {
   return fetch(`/api/calendar-sources/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
 }
 
-// Returns the Google consent URL to redirect the browser to.
-export function googleConnectUrl(): Promise<{ authUrl: string }> {
-  return fetch('/api/calendar-sources/google/connect').then((r) => json<{ authUrl: string }>(r))
+// Returns the Google consent URL to redirect the browser to. A Google calendar
+// is a read-only overlay for one family member, so memberId is required.
+export function googleConnectUrl(memberId: string): Promise<{ authUrl: string }> {
+  const qs = new URLSearchParams({ memberId })
+  return fetch(`/api/calendar-sources/google/connect?${qs}`).then((r) => json<{ authUrl: string }>(r))
 }
 
 // ── Weather ──
@@ -165,6 +182,7 @@ export interface MemberInput {
   color: string
   role: 'guardian' | 'child'
   defaultGuardianId?: string | null
+  dateOfBirth?: string | null // 'YYYY-MM-DD'
   pin?: string | null
 }
 
