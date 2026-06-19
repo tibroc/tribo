@@ -24,6 +24,9 @@ services:
     environment:
       - DATABASE_PATH=/data/tribo.db
       - LISTEN_ADDR=:8080
+      # A fresh instance starts empty and runs the onboarding wizard. Set
+      # TRIBO_SEED=true to load the Silva family example data instead.
+      # - TRIBO_SEED=true
       # Auth (OIDC against Authentik). Leave OIDC_ISSUER_URL unset to run with
       # auth disabled (dev mode). When set, also provide a stable SESSION_SECRET.
       # - OIDC_ISSUER_URL=https://authentik.example.com/application/o/tribo/

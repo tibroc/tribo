@@ -117,8 +117,8 @@ weather pill.
   one-shot `POST /api/onboarding` creating family, members (+ default guardians),
   internal calendar sources, starter chores (+ instances), and a typical week of
   recurring events. Shown automatically when no members exist (gated in `App`);
-  re-runnable from Family → Settings. `TRIBO_SEED=false` leaves a fresh instance
-  empty so the wizard runs.
+  re-runnable from Family → Settings. A fresh instance starts empty so the
+  wizard runs; set `TRIBO_SEED=true` to load the Silva family example data.
 
 **Post-roadmap follow-ups (done):** unclaimed-event claim action
 (`/api/events/{id}/claim` + free-guardian buttons); work-schedule busy stripes

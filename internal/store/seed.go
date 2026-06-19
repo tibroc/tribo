@@ -22,15 +22,17 @@ const (
 )
 
 // seed populates the Silva family, two internal calendar sources, and a week of
-// sample events matching docs/design/roost-week-view.jsx. It runs only when the
-// database is empty, so it is safe to call on every startup.
+// sample events matching docs/design/roost-week-view.jsx. It runs only when
+// TRIBO_SEED=true and the database is empty, so a fresh instance starts clean
+// and the onboarding wizard runs by default.
 //
 // Events are anchored to the Monday of the current week, so the Week view's
 // default (current) week always shows data with correct "today" highlighting.
 // Recurring-event generation arrives in a later milestone.
 func seed(db *sql.DB) error {
-	// TRIBO_SEED=false leaves a fresh instance empty so the onboarding wizard runs.
-	if os.Getenv("TRIBO_SEED") == "false" {
+	// A fresh instance starts empty so the onboarding wizard runs. Set
+	// TRIBO_SEED=true to load the Silva family example data instead.
+	if os.Getenv("TRIBO_SEED") != "true" {
 		return nil
 	}
 	var count int
