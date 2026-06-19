@@ -92,12 +92,12 @@ export default function ReviewPage({ go }: { go: (s: Section) => void }) {
             <div className="space-y-2.5">
               {r.consistency.map((c) => (
                 <div key={c.choreId} className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
                   <span className="text-sm flex-1 truncate">{c.title}</span>
-                  <span className="hidden lg:block text-xs flex-shrink-0 w-20 truncate" style={{ color: 'var(--t-text-soft)' }}>{c.rotation ? t('review.rotation') : c.who}</span>
-                  <div className="flex flex-shrink-0 gap-[3px] lg:gap-1">
+                  <span className="hidden lg:block text-xs shrink-0 w-20 truncate" style={{ color: 'var(--t-text-soft)' }}>{c.rotation ? t('review.rotation') : c.who}</span>
+                  <div className="flex shrink-0 gap-[3px] lg:gap-1">
                     {c.history.map((done, j) => (
-                      <span key={j} className="rounded-sm flex-shrink-0 w-2 h-2 lg:w-2.5 lg:h-2.5" style={{ backgroundColor: done ? c.color : 'var(--t-track)' }} />
+                      <span key={j} className="rounded-xs shrink-0 w-2 h-2 lg:w-2.5 lg:h-2.5" style={{ backgroundColor: done ? c.color : 'var(--t-track)' }} />
                     ))}
                   </div>
                 </div>

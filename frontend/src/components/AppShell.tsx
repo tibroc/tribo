@@ -209,7 +209,7 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
                     key={item.label}
                     role="menuitem"
                     onClick={() => { setMenuOpen(false); item.onClick() }}
-                    className="flex items-center gap-3 text-left rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--t-shell)]"
+                    className="flex items-center gap-3 text-left rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-(--t-shell)"
                     style={{ color: 'var(--t-text)' }}
                   >
                     <Icon name={item.icon} size={17} style={{ color: 'var(--t-brand)' }} />

@@ -18,7 +18,7 @@ export function CheckBox({ done, onToggle, size = 23, label }: {
       onClick={onToggle}
       aria-label={label}
       aria-pressed={done}
-      className="flex items-center justify-center flex-shrink-0"
+      className="flex items-center justify-center shrink-0"
       style={{
         width: size,
         height: size,
@@ -262,7 +262,7 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, tit
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={t('todos.addPlaceholder')}
-            className="flex-1 outline-none"
+            className="flex-1 outline-hidden"
             style={{
               fontFamily: 'var(--t-font-body)',
               fontSize: 13.5,
@@ -306,9 +306,9 @@ function TodoAssign({ todo, members, onAssign }: {
   const [open, setOpen] = useState(false)
   const idx = members.findIndex((m) => m.id === todo.assignedMemberId)
   const member = idx >= 0 ? members[idx] : undefined
-  const item = 'flex items-center gap-2 w-full text-left rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-[var(--t-shell)]'
+  const item = 'flex items-center gap-2 w-full text-left rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-(--t-shell)'
   return (
-    <div className="relative flex-shrink-0">
+    <div className="relative shrink-0">
       <button onClick={() => setOpen((o) => !o)} aria-label={t('todos.assign')} className="flex items-center justify-center">
         {member
           ? <PersonAvatar name={member.name} color={member.color} index={idx} size={20} />

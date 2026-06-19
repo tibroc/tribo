@@ -42,9 +42,9 @@ export default function YearView({ members, events, cursor, today, header, onNav
         <div className="space-y-2">
           {highlights.map(({ e, d }) => (
             <div key={e.id} className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForEvent(e, byId) }} />
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorForEvent(e, byId) }} />
               <span className="flex-1 truncate">{e.title}</span>
-              <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
+              <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
             </div>
           ))}
         </div>
@@ -67,7 +67,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
         </div>
 
         {/* 12 month panels — stretched to fill the island (3×4) on desktop. */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 lg:flex-1 lg:min-h-0 lg:[grid-template-rows:repeat(4,minmax(0,1fr))]">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 lg:flex-1 lg:min-h-0 lg:grid-rows-4">
           {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsLong[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
         </div>
       </div>

@@ -118,7 +118,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
   return (
     <div className="min-h-screen w-full font-body flex" style={{ background: 'var(--t-surface)', color: 'var(--t-text)' }}>
       {/* Brand panel */}
-      <div className="relative overflow-hidden hidden lg:flex flex-col flex-shrink-0 p-10"
+      <div className="relative overflow-hidden hidden lg:flex flex-col shrink-0 p-10"
         style={{ width: 420, background: 'var(--tribo-pine)', color: '#F3EFE6' }}>
         <Blob fill="var(--t-brand)" style={{ width: 420, height: 420, top: -120, right: -160, opacity: 0.42 }} />
         <Blob fill="var(--t-danger)" style={{ width: 320, height: 320, bottom: -120, left: -120, opacity: 0.32 }} />
@@ -164,12 +164,12 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
               <Labeled label={t('onboarding.familyStep.nameLabel')}>
                 <div className="flex items-center gap-3" style={inputBox(true)}>
                   <Icon name="family" size={20} style={{ color: 'var(--t-brand)', flexShrink: 0 }} />
-                  <input className="w-full bg-transparent outline-none" style={{ fontSize: 16 }} value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder={t('onboarding.familyStep.namePlaceholder')} />
+                  <input className="w-full bg-transparent outline-hidden" style={{ fontSize: 16 }} value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder={t('onboarding.familyStep.namePlaceholder')} />
                 </div>
               </Labeled>
               <Labeled label={t('onboarding.familyStep.timezoneLabel')}>
                 <div style={inputBox(false)}>
-                  <input className="w-full bg-transparent outline-none" style={{ fontSize: 16 }} value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Europe/Lisbon" />
+                  <input className="w-full bg-transparent outline-hidden" style={{ fontSize: 16 }} value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Europe/Lisbon" />
                 </div>
               </Labeled>
             </div>
@@ -180,16 +180,16 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
               {members.map((m, i) => (
                 <div key={i} className="flex items-center gap-3 p-2.5"
                   style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)', background: 'var(--t-surface)' }}>
-                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: 42, height: 42, borderRadius: '50% 50% 50% 30%', background: markerColor(i), color: '#fff', fontWeight: 700 }}>
+                  <div className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: '50% 50% 50% 30%', background: markerColor(i), color: '#fff', fontWeight: 700 }}>
                     {m.name.trim() ? m.name.trim()[0].toUpperCase() : i + 1}
                   </div>
                   <div className="flex-1 flex items-center gap-2">
-                    <input className="flex-1 bg-transparent outline-none text-sm font-semibold" value={m.name} placeholder={t('onboarding.members.namePlaceholder')}
+                    <input className="flex-1 bg-transparent outline-hidden text-sm font-semibold" value={m.name} placeholder={t('onboarding.members.namePlaceholder')}
                       onChange={(e) => updateMember(setMembers, i, { name: e.target.value })} />
                   </div>
                   <Segmented value={m.role} guardianLabel={t('onboarding.members.guardian')} childLabel={t('onboarding.members.child')} onChange={(role) => updateMember(setMembers, i, { role })} />
                   {m.role === 'child' && guardians.length > 0 && (
-                    <select className="text-sm rounded-lg px-2 py-1.5 outline-none" style={field} value={m.defaultGuardianIndex ?? ''}
+                    <select className="text-sm rounded-lg px-2 py-1.5 outline-hidden" style={field} value={m.defaultGuardianIndex ?? ''}
                       onChange={(e) => updateMember(setMembers, i, { defaultGuardianIndex: e.target.value === '' ? null : Number(e.target.value) })}>
                       <option value="">{t('onboarding.members.guardianPlaceholder')}</option>
                       {guardians.map((g) => <option key={g.i} value={g.i}>{g.m.name || t('onboarding.members.memberN', { n: g.i + 1 })}</option>)}
@@ -206,7 +206,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
                 <Plus size={16} /> {t('onboarding.members.addMember')}
               </button>
               <div className="flex items-center gap-3 mt-3 p-3" style={{ border: '1px dashed var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
-                <span className="flex-shrink-0" style={{ width: 30, height: 30, borderRadius: '50% 50% 50% 30%', background: markerColor(members.length) }} />
+                <span className="shrink-0" style={{ width: 30, height: 30, borderRadius: '50% 50% 50% 30%', background: markerColor(members.length) }} />
                 <div className="text-xs" style={{ color: 'var(--t-text-soft)', lineHeight: 1.4 }}>
                   <Trans i18nKey="onboarding.members.paletteHint"><b style={{ color: 'var(--t-text)' }}>The next member</b> is automatically given this colour — every family keeps a balanced, harmonious palette.</Trans>
                 </div>
@@ -227,10 +227,10 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
             <div className="space-y-2.5" style={{ maxWidth: 470 }}>
               {chores.map((c, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <input type="checkbox" checked={c.enabled} onChange={(e) => updateChore(setChores, i, { enabled: e.target.checked })} className="w-4 h-4 rounded" />
+                  <input type="checkbox" checked={c.enabled} onChange={(e) => updateChore(setChores, i, { enabled: e.target.checked })} className="w-4 h-4 rounded-sm" />
                   <span className="text-sm flex-1">{t(`onboarding.choreTemplates.${c.labelKey}`)} <span style={{ color: 'var(--t-text-soft)' }}>· {t(`onboarding.recurrence.${c.recurrence}`)}</span></span>
                   {c.enabled && (
-                    <select className="text-sm rounded-lg px-2 py-1 outline-none" style={field} value={c.assignee ?? ''}
+                    <select className="text-sm rounded-lg px-2 py-1 outline-hidden" style={field} value={c.assignee ?? ''}
                       onChange={(e) => updateChore(setChores, i, { assignee: e.target.value === '' ? null : Number(e.target.value) })}>
                       <option value="">{t('onboarding.chores.assignPlaceholder')}</option>
                       {validMembers.map((m) => <option key={members.indexOf(m)} value={members.indexOf(m)}>{m.name}</option>)}
@@ -245,10 +245,10 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
             <div className="space-y-2.5" style={{ maxWidth: 470 }}>
               {patterns.map((p, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <input type="checkbox" checked={p.enabled} onChange={(e) => updatePattern(setPatterns, i, { enabled: e.target.checked })} className="w-4 h-4 rounded" />
+                  <input type="checkbox" checked={p.enabled} onChange={(e) => updatePattern(setPatterns, i, { enabled: e.target.checked })} className="w-4 h-4 rounded-sm" />
                   <span className="text-sm flex-1">{t(`onboarding.patternTemplates.${p.labelKey}`)} <span style={{ color: 'var(--t-text-soft)' }}>· {p.weekdays.map((d) => weekdays[d]).join('/')} {p.startTime}</span></span>
                   {p.enabled && (
-                    <select className="text-sm rounded-lg px-2 py-1 outline-none" style={field} value={p.member ?? ''}
+                    <select className="text-sm rounded-lg px-2 py-1 outline-hidden" style={field} value={p.member ?? ''}
                       onChange={(e) => updatePattern(setPatterns, i, { member: e.target.value === '' ? null : Number(e.target.value) })}>
                       <option value="">{t('onboarding.typicalWeek.forPlaceholder')}</option>
                       {validMembers.map((m) => <option key={members.indexOf(m)} value={members.indexOf(m)}>{m.name}</option>)}

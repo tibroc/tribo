@@ -96,14 +96,14 @@ export default function NotificationBell({ onOpenEvent, size = 17 }: {
                       className="flex items-start gap-3 w-full text-left px-4 py-3"
                       style={{ borderBottom: i === items.length - 1 ? 'none' : '1px solid var(--t-line)' }}
                     >
-                      <span className="flex items-center justify-center flex-shrink-0 rounded-full" style={{ width: 28, height: 28, background: `color-mix(in oklab, ${color} 16%, var(--t-surface))` }}>
+                      <span className="flex items-center justify-center shrink-0 rounded-full" style={{ width: 28, height: 28, background: `color-mix(in oklab, ${color} 16%, var(--t-surface))` }}>
                         <NIcon size={15} style={{ color }} />
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-semibold truncate" style={{ color: 'var(--t-text)' }}>{n.title}</span>
                         <span className="block text-xs" style={{ color: 'var(--t-text-soft)' }}>{t(`notifications.${n.type}`)}</span>
                       </span>
-                      <span className="text-xs flex-shrink-0 whitespace-nowrap" style={{ color: 'var(--t-text-soft)' }}>{formatDay(n.startAt, locale)}</span>
+                      <span className="text-xs shrink-0 whitespace-nowrap" style={{ color: 'var(--t-text-soft)' }}>{formatDay(n.startAt, locale)}</span>
                     </button>
                   )
                 })}

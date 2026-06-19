@@ -23,7 +23,7 @@ function localRFC3339(d: Date): string {
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   const { t } = useTranslation()
   return (
-    <button onClick={() => onChange(!checked)} className="rounded-full flex-shrink-0" aria-label={t('event.toggle')}
+    <button onClick={() => onChange(!checked)} className="rounded-full shrink-0" aria-label={t('event.toggle')}
       style={{ width: 42, height: 24, background: checked ? 'var(--t-brand)' : 'var(--t-line)', position: 'relative' }}>
       <span className="absolute rounded-full" style={{ width: 18, height: 18, top: 3, left: checked ? 21 : 3, backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.25)', transition: 'left 0.18s ease' }} />
     </button>
@@ -113,10 +113,10 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
 
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[560px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[560px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--t-line)' }}>
+        <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <button aria-label={t('common.close')} onClick={onClose}><X size={20} style={{ color: 'var(--t-text-soft)' }} /></button>
           <div className="font-display text-lg" style={{ fontWeight: 500 }}>{editing ? t('event.editTitle') : t('event.newTitle')}</div>
           <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy}>{t('common.save')}</button>
@@ -126,7 +126,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           {error && <div className="rounded-xl p-2 mb-3 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
 
           <input
-            className="w-full font-display text-2xl bg-transparent outline-none mb-3"
+            className="w-full font-display text-2xl bg-transparent outline-hidden mb-3"
             style={{ color: 'var(--t-text)', fontWeight: 500 }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('event.titlePlaceholder')} autoFocus
           />
 
@@ -134,7 +134,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           <div className="px-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <Calendar size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-none text-sm font-medium" />
+              <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-hidden text-sm font-medium" />
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Clock size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
@@ -143,9 +143,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                   <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-none" style={{ background: 'var(--t-bg)' }} />
+                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
                     <span style={{ color: 'var(--t-text-soft)' }}>–</span>
-                    <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-none" style={{ background: 'var(--t-bg)' }} />
+                    <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -189,11 +189,11 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           <div className="px-3 mt-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <MapPin size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <input className="w-full bg-transparent outline-none text-sm" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('event.addLocation')} />
+              <input className="w-full bg-transparent outline-hidden text-sm" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('event.addLocation')} />
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <AlignLeft size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <textarea className="w-full bg-transparent outline-none text-sm resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('event.notes')} />
+              <textarea className="w-full bg-transparent outline-hidden text-sm resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('event.notes')} />
             </div>
           </div>
 

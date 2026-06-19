@@ -23,7 +23,7 @@ function ChoresHero({ instances, members, streak }: { instances: ChoreInstance[]
   return (
     <Card padded={false} className="mb-4" style={{ padding: '20px 26px' }}>
       <div className="flex items-center" style={{ gap: 26 }}>
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 40, lineHeight: 1, color: 'var(--t-text)' }}>
             {done}
             <span style={{ fontSize: 22, color: 'var(--t-text-soft)' }}>/{total}</span>
@@ -48,7 +48,7 @@ function ChoresHero({ instances, members, streak }: { instances: ChoreInstance[]
             {t('chores.barsHint')}
           </div>
         </div>
-        <div className="flex-shrink-0 text-right">
+        <div className="shrink-0 text-right">
           <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 28, lineHeight: 1, color: 'var(--t-text)' }}>{streak}</div>
           <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 13, color: 'var(--t-text-soft)', marginTop: 2 }}>{t('chores.weekStreak')}</div>
         </div>

@@ -54,10 +54,10 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
               <div className="space-y-1.5">
                 {b.today.map((ev, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: ev.color }} />
-                    <span className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
+                    <span className="text-xs w-16 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>
                     <span className="flex-1 truncate">{ev.title}</span>
-                    <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{ev.person || t('common.family')}</span>
+                    <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{ev.person || t('common.family')}</span>
                   </div>
                 ))}
               </div>
@@ -79,9 +79,9 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
                     <div key={i} className="flex items-center gap-2 text-sm">
                       {h.special
                         ? <Star size={14} style={{ color: 'var(--t-accent)', flexShrink: 0 }} />
-                        : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />}
+                        : <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />}
                       <span className="flex-1">{h.label}</span>
-                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{daysLabel(h.weekdays, h.time, locale)}</span>
+                      <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{daysLabel(h.weekdays, h.time, locale)}</span>
                     </div>
                   ))}
                 </div>
@@ -111,9 +111,9 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
                     <div key={i} className="flex items-center gap-2 text-sm">
                       {h.icon === 'cake'
                         ? <Cake size={14} style={{ color: h.color, flexShrink: 0 }} />
-                        : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: h.color }} />}
+                        : <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: h.color }} />}
                       <span className="flex-1 truncate">{h.title}</span>
-                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtWeekdayLong(new Date(h.date), locale)}</span>
+                      <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtWeekdayLong(new Date(h.date), locale)}</span>
                     </div>
                   ))}
                 </div>

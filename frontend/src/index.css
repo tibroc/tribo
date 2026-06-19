@@ -1,19 +1,29 @@
-/* Self-hosted fonts (bundled by Vite, precached by the service worker) — no
-   external CDN, so the app shell renders identically offline. Latin subset
-   covers en/de/ptBR. Display: Spectral (incl. italics); body: Figtree. */
-@import '@fontsource/spectral/latin-400.css';
-@import '@fontsource/spectral/latin-500.css';
-@import '@fontsource/spectral/latin-600.css';
-@import '@fontsource/spectral/latin-400-italic.css';
-@import '@fontsource/spectral/latin-500-italic.css';
-@import '@fontsource/figtree/latin-400.css';
-@import '@fontsource/figtree/latin-500.css';
-@import '@fontsource/figtree/latin-600.css';
-@import '@fontsource/figtree/latin-700.css';
+/* Self-hosted fonts are imported from main.tsx (not via CSS @import) so Vite
+   rewrites their url()s — Tailwind v4's @import handling does not. */
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --font-display: Spectral, Georgia, serif;
+  --font-body: Figtree, system-ui, sans-serif;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 /* ============================================================
    Tribo — design tokens (single source of truth)
