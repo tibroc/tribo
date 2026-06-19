@@ -34,6 +34,14 @@ services:
       # - OIDC_CLIENT_SECRET=...
       # - OIDC_REDIRECT_URL=https://tribo.example.com/auth/callback
       # - SESSION_SECRET=change-me-to-a-long-random-string
+      # Group-based member provisioning: on first login Tribo auto-creates a
+      # family member with a role derived from the user's OIDC groups (no
+      # onboarding wizard). Defaults shown; OIDC_GROUPS_SCOPE is only needed if
+      # your IdP requires an extra scope to emit the groups claim (Authentik).
+      # - OIDC_GROUPS_CLAIM=groups
+      # - OIDC_GUARDIAN_GROUPS=guardian
+      # - OIDC_CHILD_GROUPS=children,child
+      # - OIDC_GROUPS_SCOPE=groups
       # CalDAV/Google credentials are encrypted at rest with this key
       # (falls back to SESSION_SECRET if unset):
       # - CREDENTIALS_KEY=change-me-to-a-long-random-string

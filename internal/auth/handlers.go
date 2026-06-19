@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -77,6 +78,16 @@ func (s *Service) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Map the subject to a family member (if previously claimed).
 	member := s.memberForSubject(idToken.Subject)
+	if member == "" {
+		// First login: auto-provision a member from the user's OIDC groups.
+		// Returns "" when the user is in no configured group — the frontend then
+		// shows the manual map-profile screen.
+		if id, err := s.provisionMember(idToken); err != nil {
+			log.Printf("auth: provisioning from groups failed: %v", err)
+		} else {
+			member = id
+		}
+	}
 	s.writeSession(w, session{Sub: idToken.Subject, Member: member})
 	http.Redirect(w, r, "/", http.StatusFound)
 }

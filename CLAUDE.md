@@ -98,6 +98,14 @@ weather pill.
   only the active profile. Frontend: `SessionProvider` + gate (login →
   first-login mapping → app), `ProfileSwitcher` in the rail/bottom bar. Seed sets
   Marie's PIN to `1234` to demo the gate.
+  - **Group-based provisioning** (`internal/auth/provision.go`): when OIDC is
+    enabled, first login auto-creates a `FamilyMember` whose role is derived from
+    the user's OIDC group claims — no onboarding wizard. Config:
+    `OIDC_GROUPS_CLAIM` (default `groups`), `OIDC_GUARDIAN_GROUPS` (default
+    `guardian`), `OIDC_CHILD_GROUPS` (default `children,child`), and optional
+    `OIDC_GROUPS_SCOPE` (extra scope to request the claim). Users in no
+    configured group are not auto-created — they fall through to the manual
+    map-profile screen. The wizard still runs in dev/disabled mode (no OIDC).
 
 - **M6** — `internal/calsync`: CalDAV sync (pull via REPORT + push via PUT,
   emersion/go-webdav + go-ical), credentials AES-GCM-encrypted at rest

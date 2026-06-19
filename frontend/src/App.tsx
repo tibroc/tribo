@@ -32,8 +32,10 @@ function Gate() {
     return <div className="min-h-screen flex items-center justify-center font-body" style={{ backgroundColor: palette.mist, color: palette.inkSoft }}>Loading…</div>
   }
   if (session.authEnabled && !session.authenticated) return <LoginScreen />
-  // Fresh instance: no family members yet → run the onboarding wizard.
-  if (session.members.length === 0) return <OnboardingWizard onDone={refresh} />
+  // Fresh dev instance (no OIDC): no members yet → run the onboarding wizard.
+  // With auth enabled, members are auto-provisioned from OIDC groups on login,
+  // so logged-in users fall through to mapping/app instead of the wizard.
+  if (!session.authEnabled && session.members.length === 0) return <OnboardingWizard onDone={refresh} />
   if (session.needsMapping) return <MapProfileScreen />
   return <Router />
 }

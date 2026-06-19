@@ -14,6 +14,7 @@ import (
 // Connects an in-process MCP client to the server over an in-memory transport
 // and exercises the done-criteria tools: check_availability and complete_chore.
 func TestMCPTools(t *testing.T) {
+	t.Setenv("TRIBO_SEED", "true") // this test exercises tools against the example data
 	db, err := store.Open(filepath.Join(t.TempDir(), "mcp.db"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)

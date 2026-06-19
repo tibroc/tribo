@@ -33,6 +33,11 @@ type Service struct {
 	secure   bool
 	oauth    *oauth2.Config
 	verifier *oidc.IDTokenVerifier
+
+	// Group-based member provisioning (see provision.go).
+	groupsClaim    string   // ID-token claim holding the user's groups
+	guardianGroups []string // group names mapped to role "guardian"
+	childGroups    []string // group names mapped to role "child"
 }
 
 // session is the signed cookie payload.
@@ -62,18 +67,45 @@ func New(db *sql.DB) *Service {
 		return s
 	}
 	clientID := os.Getenv("OIDC_CLIENT_ID")
+	scopes := []string{oidc.ScopeOpenID, "profile", "email"}
+	// Some IdPs (e.g. Authentik) only emit the groups claim when an extra scope
+	// is requested.
+	if extra := os.Getenv("OIDC_GROUPS_SCOPE"); extra != "" {
+		scopes = append(scopes, extra)
+	}
 	s.oauth = &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
 		Endpoint:     provider.Endpoint(),
 		RedirectURL:  redirect,
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+		Scopes:       scopes,
 	}
+	s.groupsClaim = envOr("OIDC_GROUPS_CLAIM", "groups")
+	s.guardianGroups = splitGroups(envOr("OIDC_GUARDIAN_GROUPS", "guardian"))
+	s.childGroups = splitGroups(envOr("OIDC_CHILD_GROUPS", "children,child"))
 	s.verifier = provider.Verifier(&oidc.Config{ClientID: clientID})
 	s.enabled = true
 	s.secure = strings.HasPrefix(redirect, "https")
 	log.Printf("auth: OIDC enabled (issuer %s)", issuer)
 	return s
+}
+
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
+// splitGroups parses a comma-separated, case-insensitive group list.
+func splitGroups(v string) []string {
+	var out []string
+	for _, p := range strings.Split(v, ",") {
+		if t := strings.ToLower(strings.TrimSpace(p)); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func loadSecret() []byte {
