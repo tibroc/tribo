@@ -69,6 +69,19 @@ The design tokens (`palette`, font stacks) used across the prototypes become a s
 
 ---
 
+## Progressive Web App (PWA)
+
+The frontend ships as an installable PWA so the family can add Tribo to a phone/tablet home screen and have it open offline.
+
+- **Tooling:** `vite-plugin-pwa` (Workbox under the hood, `generateSW` mode). It emits `manifest.webmanifest`, `sw.js`, and the Workbox runtime into `web/dist`, which the Go binary serves via the same `go:embed` + SPA handler as the rest of the build — no separate static host.
+- **Manifest:** standalone display, salvia theme (`#3E6259`), sand background (`#F1EBDE`), and icons (192 / 512 / 512-maskable) generated from the app's own leaf brand mark. Source SVG kept at `frontend/icon-source.svg` for regeneration; `frontend/public/` holds the rasterized output.
+- **App-shell offline:** the hashed JS/CSS/HTML and the self-hosted fonts (Spectral + Figtree via `@fontsource`, no CDN) are precached, so the shell renders identically with no network. SPA deep links fall back to `index.html`, mirroring the server's own fallback.
+- **Read-API offline:** a `NetworkFirst` runtime route (cache `tribo-api`, 3s timeout, 64 entries / 24h) serves last-known data for read-only `GET /api/*` when offline or slow, while always preferring the network when online. `/api/session` is **excluded** — auth/profile state must never be served stale; mutations (non-GET) are never cached.
+- **Updates:** `registerType: 'prompt'` — a new build doesn't reload the page out from under the user. The `ReloadPrompt` component surfaces a "new version / reload" toast (and an offline-ready confirmation) via Workbox's `useRegisterSW`.
+- **Server support (`internal/api/spa.go`):** registers `application/manifest+json` for `.webmanifest`, and serves `sw.js` / `registerSW.js` / `manifest.webmanifest` with `Cache-Control: no-cache` so clients detect new builds promptly (hashed assets still cache long-term).
+
+---
+
 ## Auth: Roost as an OIDC client
 
 - Standard OAuth2/OIDC authorization-code flow against Authentik (e.g. via `coreos/go-oidc` + a signed session cookie).

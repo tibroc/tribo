@@ -405,5 +405,11 @@
       "settingUp": "Setting up…",
       "enter": "Enter Tribo"
     }
+  },
+  "pwa": {
+    "updateAvailable": "A new version is available.",
+    "offlineReady": "Tribo is ready to work offline.",
+    "reload": "Reload",
+    "dismiss": "Dismiss"
   }
 }

@@ -1,4 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Figtree:wght@400;500;600;700&display=swap');
+/* Self-hosted fonts (bundled by Vite, precached by the service worker) — no
+   external CDN, so the app shell renders identically offline. Latin subset
+   covers en/de/ptBR. Display: Spectral (incl. italics); body: Figtree. */
+@import '@fontsource/spectral/latin-400.css';
+@import '@fontsource/spectral/latin-500.css';
+@import '@fontsource/spectral/latin-600.css';
+@import '@fontsource/spectral/latin-400-italic.css';
+@import '@fontsource/spectral/latin-500-italic.css';
+@import '@fontsource/figtree/latin-400.css';
+@import '@fontsource/figtree/latin-500.css';
+@import '@fontsource/figtree/latin-600.css';
+@import '@fontsource/figtree/latin-700.css';
 
 @tailwind base;
 @tailwind components;

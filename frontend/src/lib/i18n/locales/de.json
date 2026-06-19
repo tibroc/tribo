@@ -405,5 +405,11 @@
       "settingUp": "Wird eingerichtet…",
       "enter": "Tribo öffnen"
     }
+  },
+  "pwa": {
+    "updateAvailable": "Eine neue Version ist verfügbar.",
+    "offlineReady": "Tribo ist bereit für die Offline-Nutzung.",
+    "reload": "Neu laden",
+    "dismiss": "Schließen"
   }
 }

@@ -4,6 +4,7 @@ import { palette } from './lib/tokens'
 import { SessionProvider, useSession } from './lib/session'
 import { ThemeProvider } from './lib/theme'
 import { LoginScreen, MapProfileScreen } from './views/AuthScreens'
+import ReloadPrompt from './components/ReloadPrompt'
 import OnboardingWizard from './views/OnboardingWizard'
 import HomePage from './views/HomePage'
 import CalendarPage from './views/CalendarPage'
@@ -18,6 +19,7 @@ export default function App() {
       <SessionProvider>
         <Gate />
       </SessionProvider>
+      <ReloadPrompt />
     </ThemeProvider>
   )
 }

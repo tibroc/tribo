@@ -405,5 +405,11 @@
       "settingUp": "Configurando…",
       "enter": "Entrar no Tribo"
     }
+  },
+  "pwa": {
+    "updateAvailable": "Uma nova versão está disponível.",
+    "offlineReady": "O Tribo está pronto para uso offline.",
+    "reload": "Recarregar",
+    "dismiss": "Dispensar"
   }
 }
