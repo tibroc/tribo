@@ -14,15 +14,16 @@ import (
 const dateFmt = "2006-01-02"
 
 type Chore struct {
-	ID                string   `json:"id"`
-	Title             string   `json:"title"`
-	Description       *string  `json:"description,omitempty"`
-	RecurrenceRule    string   `json:"recurrenceRule"` // daily | weekly | monthly
-	AssignmentMode    string   `json:"assignmentMode"` // fixed | rotation
-	AssignedMemberID  *string  `json:"assignedMemberId,omitempty"`
-	RotationMemberIDs []string `json:"rotationMemberIds,omitempty"`
-	Color             *string  `json:"color,omitempty"`
-	Icon              *string  `json:"icon,omitempty"`
+	ID                 string   `json:"id"`
+	Title              string   `json:"title"`
+	Description        *string  `json:"description,omitempty"`
+	RecurrenceRule     string   `json:"recurrenceRule"`     // daily | weekly | monthly (the unit)
+	RecurrenceInterval int      `json:"recurrenceInterval"` // multiplier: every N units (>= 1)
+	AssignmentMode     string   `json:"assignmentMode"`     // fixed | rotation
+	AssignedMemberID   *string  `json:"assignedMemberId,omitempty"`
+	RotationMemberIDs  []string `json:"rotationMemberIds,omitempty"`
+	Color              *string  `json:"color,omitempty"`
+	Icon               *string  `json:"icon,omitempty"`
 }
 
 type Instance struct {
@@ -39,13 +40,32 @@ type Instance struct {
 }
 
 type NewChore struct {
-	Title             string   `json:"title"`
-	RecurrenceRule    string   `json:"recurrenceRule"`
-	AssignmentMode    string   `json:"assignmentMode"`
-	AssignedMemberID  *string  `json:"assignedMemberId"`
-	RotationMemberIDs []string `json:"rotationMemberIds"`
-	Color             *string  `json:"color"`
-	Icon              *string  `json:"icon"`
+	Title              string   `json:"title"`
+	RecurrenceRule     string   `json:"recurrenceRule"`
+	RecurrenceInterval int      `json:"recurrenceInterval"`
+	AssignmentMode     string   `json:"assignmentMode"`
+	AssignedMemberID   *string  `json:"assignedMemberId"`
+	RotationMemberIDs  []string `json:"rotationMemberIds"`
+	Color              *string  `json:"color"`
+	Icon               *string  `json:"icon"`
+}
+
+const maxInterval = 120 // sanity cap (e.g. monthly × 120 = every 10 years)
+
+// normalizeRecurrence clamps the unit + interval to valid values.
+func normalizeRecurrence(rule string, interval int) (string, int) {
+	switch rule {
+	case "daily", "weekly", "monthly":
+	default:
+		rule = "weekly"
+	}
+	if interval < 1 {
+		interval = 1
+	}
+	if interval > maxInterval {
+		interval = maxInterval
+	}
+	return rule, interval
 }
 
 type Service struct {
@@ -55,34 +75,92 @@ type Service struct {
 func NewService(db *sql.DB) *Service { return &Service{db: db} }
 
 // ===== Period math =====
+//
+// Recurrence periods are anchored to a fixed global calendar grid (not to each
+// chore's creation date), so the same buckets are produced no matter what window
+// Generate runs over — essential for idempotency. With interval N:
+//   • daily:   N-day buckets from a fixed epoch.
+//   • weekly:  N-week buckets aligned to Mondays.
+//   • monthly: N-month buckets aligned to the 1st (interval 3 → Jan/Apr/Jul/Oct,
+//              12 → yearly on Jan 1, 60 → every 5 years).
+
+// epochYear/Month/Day is a fixed Monday used as the anchor for day/week buckets.
+const epochYear, epochMonth, epochDay = 1970, time.January, 5 // 1970-01-05 is a Monday
+
+// dayNumber is a proleptic-Gregorian day count for a calendar date, independent
+// of timezone/DST — safe for integer day/week arithmetic.
+func dayNumber(y int, m time.Month, d int) int {
+	a := (14 - int(m)) / 12
+	yy := y + 4800 - a
+	mm := int(m) + 12*a - 3
+	return d + (153*mm+2)/5 + 365*yy + yy/4 - yy/100 + yy/400 - 32045
+}
+
+// floorDiv divides rounding toward negative infinity (so buckets are stable for
+// dates before the epoch too).
+func floorDiv(a, b int) int {
+	q := a / b
+	if (a%b != 0) && ((a < 0) != (b < 0)) {
+		q--
+	}
+	return q
+}
 
 // periodOf returns the [start, end) window of the recurrence period that
 // contains day (midnight, in day's location).
-func periodOf(rule string, day time.Time) (time.Time, time.Time) {
+func periodOf(rule string, interval int, day time.Time) (time.Time, time.Time) {
+	rule, interval = normalizeRecurrence(rule, interval)
 	y, m, d := day.Date()
 	loc := day.Location()
-	start := time.Date(y, m, d, 0, 0, 0, 0, loc)
+	idx := periodIndexFor(rule, interval, y, m, d)
+	return periodBounds(rule, interval, idx, loc)
+}
+
+// periodIndex returns the absolute bucket index of a period given its start day.
+// Used to make rotation assignment deterministic across generation runs.
+func periodIndex(rule string, interval int, start time.Time) int {
+	rule, interval = normalizeRecurrence(rule, interval)
+	y, m, d := start.Date()
+	return periodIndexFor(rule, interval, y, m, d)
+}
+
+func periodIndexFor(rule string, interval int, y int, m time.Month, d int) int {
 	switch rule {
 	case "weekly":
-		start = start.AddDate(0, 0, -((int(start.Weekday()) + 6) % 7)) // back to Monday
-		return start, start.AddDate(0, 0, 7)
+		weeks := floorDiv(dayNumber(y, m, d)-dayNumber(epochYear, epochMonth, epochDay), 7)
+		return floorDiv(weeks, interval)
 	case "monthly":
-		start = time.Date(y, m, 1, 0, 0, 0, 0, loc)
-		return start, start.AddDate(0, 1, 0)
+		return floorDiv(y*12+int(m)-1, interval)
 	default: // daily
-		return start, start.AddDate(0, 0, 1)
+		return floorDiv(dayNumber(y, m, d)-dayNumber(epochYear, epochMonth, epochDay), interval)
+	}
+}
+
+func periodBounds(rule string, interval, idx int, loc *time.Location) (time.Time, time.Time) {
+	switch rule {
+	case "weekly":
+		start := time.Date(epochYear, epochMonth, epochDay, 0, 0, 0, 0, loc).AddDate(0, 0, idx*interval*7)
+		return start, start.AddDate(0, 0, interval*7)
+	case "monthly":
+		bm := idx * interval
+		start := time.Date(bm/12, time.Month(bm%12+1), 1, 0, 0, 0, 0, loc)
+		return start, start.AddDate(0, interval, 0)
+	default: // daily
+		start := time.Date(epochYear, epochMonth, epochDay, 0, 0, 0, 0, loc).AddDate(0, 0, idx*interval)
+		return start, start.AddDate(0, 0, interval)
 	}
 }
 
 // nextPeriod advances a [start,end) window to the following one.
-func nextPeriod(rule string, start time.Time) time.Time {
+func nextPeriod(rule string, interval int, start time.Time) time.Time {
+	rule, interval = normalizeRecurrence(rule, interval)
 	switch rule {
 	case "weekly":
-		return start.AddDate(0, 0, 7)
+		return start.AddDate(0, 0, interval*7)
 	case "monthly":
-		return start.AddDate(0, 1, 0)
+		return start.AddDate(0, interval, 0)
 	default:
-		return start.AddDate(0, 0, 1)
+		return start.AddDate(0, 0, interval)
 	}
 }
 
@@ -104,11 +182,12 @@ func (s *Service) Generate(from, to time.Time) (int, error) {
 
 	created := 0
 	for _, c := range chores {
-		start, _ := periodOf(c.RecurrenceRule, from)
-		periodIdx := 0
+		start, _ := periodOf(c.RecurrenceRule, c.RecurrenceInterval, from)
 		for !start.After(to) {
-			end := nextPeriod(c.RecurrenceRule, start)
-			assignee := resolveAssignee(c, periodIdx)
+			end := nextPeriod(c.RecurrenceRule, c.RecurrenceInterval, start)
+			// Use the absolute bucket index so rotation assignment is the same
+			// regardless of which window this period was first generated in.
+			assignee := resolveAssignee(c, periodIndex(c.RecurrenceRule, c.RecurrenceInterval, start))
 			res, err := tx.Exec(
 				`INSERT OR IGNORE INTO chore_instance (id, chore_id, period_start, period_end, assigned_member_id, status)
 				 VALUES (?, ?, ?, ?, ?, 'pending')`,
@@ -120,7 +199,6 @@ func (s *Service) Generate(from, to time.Time) (int, error) {
 				created++
 			}
 			start = end
-			periodIdx++
 		}
 	}
 	return created, tx.Commit()
@@ -140,7 +218,7 @@ func resolveAssignee(c Chore, periodIdx int) *string {
 
 func (s *Service) ListChores() ([]Chore, error) {
 	rows, err := s.db.Query(
-		`SELECT id, title, description, recurrence_rule, assignment_mode,
+		`SELECT id, title, description, recurrence_rule, recurrence_interval, assignment_mode,
 		        assigned_member_id, rotation_member_ids, color, icon
 		 FROM chore ORDER BY sort_order, title`)
 	if err != nil {
@@ -152,7 +230,7 @@ func (s *Service) ListChores() ([]Chore, error) {
 	for rows.Next() {
 		var c Chore
 		var rotation *string
-		if err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.RecurrenceRule, &c.AssignmentMode,
+		if err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.RecurrenceRule, &c.RecurrenceInterval, &c.AssignmentMode,
 			&c.AssignedMemberID, &rotation, &c.Color, &c.Icon); err != nil {
 			return nil, err
 		}
@@ -168,9 +246,7 @@ func (s *Service) CreateChore(in NewChore) (*Chore, error) {
 	if strings.TrimSpace(in.Title) == "" {
 		return nil, errors.New("title is required")
 	}
-	if in.RecurrenceRule == "" {
-		in.RecurrenceRule = "weekly"
-	}
+	rule, interval := normalizeRecurrence(in.RecurrenceRule, in.RecurrenceInterval)
 	if in.AssignmentMode == "" {
 		in.AssignmentMode = "fixed"
 	}
@@ -181,9 +257,9 @@ func (s *Service) CreateChore(in NewChore) (*Chore, error) {
 		rotation = &joined
 	}
 	if _, err := s.db.Exec(
-		`INSERT INTO chore (id, title, recurrence_rule, assignment_mode, assigned_member_id, rotation_member_ids, color, icon)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, in.Title, in.RecurrenceRule, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon); err != nil {
+		`INSERT INTO chore (id, title, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, icon)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, in.Title, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon); err != nil {
 		return nil, err
 	}
 	// Generate this period's instance immediately so it appears right away.
@@ -207,9 +283,7 @@ func (s *Service) UpdateChore(id string, in NewChore) (*Chore, error) {
 	if strings.TrimSpace(in.Title) == "" {
 		return nil, errors.New("title is required")
 	}
-	if in.RecurrenceRule == "" {
-		in.RecurrenceRule = "weekly"
-	}
+	rule, interval := normalizeRecurrence(in.RecurrenceRule, in.RecurrenceInterval)
 	if in.AssignmentMode == "" {
 		in.AssignmentMode = "fixed"
 	}
@@ -218,8 +292,8 @@ func (s *Service) UpdateChore(id string, in NewChore) (*Chore, error) {
 		rotation = strings.Join(in.RotationMemberIDs, ",")
 	}
 	res, err := s.db.Exec(
-		`UPDATE chore SET title=?, recurrence_rule=?, assignment_mode=?, assigned_member_id=?, rotation_member_ids=?, color=?, icon=? WHERE id=?`,
-		in.Title, in.RecurrenceRule, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, id)
+		`UPDATE chore SET title=?, recurrence_rule=?, recurrence_interval=?, assignment_mode=?, assigned_member_id=?, rotation_member_ids=?, color=?, icon=? WHERE id=?`,
+		in.Title, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, id)
 	if err != nil {
 		return nil, err
 	}
@@ -244,15 +318,18 @@ func (s *Service) DeleteChore(id string) error {
 	return err
 }
 
-// ListInstances returns instances whose period overlaps [from, to).
+// ListInstances returns instances scheduled within [from, to) — i.e. whose
+// period_start falls in the range. A chore belongs to exactly one period (the
+// one it starts in), so it surfaces only in the week/month/year view that
+// contains its scheduled date, not in every view its period happens to span.
 func (s *Service) ListInstances(from, to time.Time) ([]Instance, error) {
 	rows, err := s.db.Query(
 		`SELECT ci.id, ci.chore_id, c.title, COALESCE(c.color, ''), ci.period_start, ci.period_end,
 		        ci.assigned_member_id, ci.status, ci.completed_by, ci.completed_at
 		 FROM chore_instance ci JOIN chore c ON c.id = ci.chore_id
-		 WHERE ci.period_start < ? AND ci.period_end > ?
+		 WHERE ci.period_start >= ? AND ci.period_start < ?
 		 ORDER BY ci.period_start, c.title`,
-		to.Format(dateFmt), from.Format(dateFmt))
+		from.Format(dateFmt), to.Format(dateFmt))
 	if err != nil {
 		return nil, err
 	}

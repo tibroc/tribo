@@ -211,17 +211,21 @@ func seed(db *sql.DB) error {
 
 	// Chores.
 	type choreSeed struct {
-		id, title, rule, mode, color string
-		assigned                     string
-		rotation                     any
+		id, title, rule string
+		interval        int
+		mode, color     string
+		assigned        string
+		rotation        any
 	}
 	choreSeeds := []choreSeed{
-		{"chore-mow", "Mow the lawn", "weekly", "fixed", "#4C7EA8", memberAlberto, nil},
-		{"chore-bath", "Clean the bathroom", "weekly", "fixed", "#D1577A", memberHilda, nil},
-		{"chore-recycle", "Take out recycling", "weekly", "fixed", "#8A6BB8", memberGuilherme, nil},
-		{"chore-plants", "Water the plants", "weekly", "fixed", "#5C9460", memberMarie, nil},
-		{"chore-table", "Set the table", "daily", "rotation", "#5C9460", "", memberMarie + "," + memberGuilherme},
-		{"chore-fridge", "Defrost the fridge", "monthly", "fixed", "#D1577A", memberHilda, nil},
+		{"chore-mow", "Mow the lawn", "weekly", 1, "fixed", "#4C7EA8", memberAlberto, nil},
+		{"chore-bath", "Clean the bathroom", "weekly", 1, "fixed", "#D1577A", memberHilda, nil},
+		{"chore-recycle", "Take out recycling", "weekly", 2, "fixed", "#8A6BB8", memberGuilherme, nil},
+		{"chore-plants", "Water the plants", "weekly", 1, "fixed", "#5C9460", memberMarie, nil},
+		{"chore-table", "Set the table", "daily", 1, "rotation", "#5C9460", "", memberMarie + "," + memberGuilherme},
+		{"chore-fridge", "Defrost the fridge", "monthly", 1, "fixed", "#D1577A", memberHilda, nil},
+		{"chore-deepclean", "Deep clean the house", "monthly", 3, "fixed", "#4C7EA8", memberAlberto, nil},
+		{"chore-smoke", "Replace smoke-alarm batteries", "monthly", 12, "fixed", "#D1577A", memberHilda, nil},
 	}
 	for i, c := range choreSeeds {
 		var assigned any
@@ -229,9 +233,9 @@ func seed(db *sql.DB) error {
 			assigned = c.assigned
 		}
 		if _, err := tx.Exec(
-			`INSERT INTO chore (id, title, recurrence_rule, assignment_mode, assigned_member_id, rotation_member_ids, color, sort_order)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			c.id, c.title, c.rule, c.mode, assigned, c.rotation, c.color, i); err != nil {
+			`INSERT INTO chore (id, title, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, sort_order)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			c.id, c.title, c.rule, c.interval, c.mode, assigned, c.rotation, c.color, i); err != nil {
 			return err
 		}
 	}

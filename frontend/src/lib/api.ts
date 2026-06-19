@@ -220,6 +220,7 @@ export interface Chore {
   id: string
   title: string
   recurrenceRule: 'daily' | 'weekly' | 'monthly'
+  recurrenceInterval: number // multiplier: every N units (years = monthly × 12)
   assignmentMode: 'fixed' | 'rotation'
   assignedMemberId?: string
   rotationMemberIds?: string[]
@@ -247,6 +248,7 @@ export function getChores(): Promise<Chore[]> {
 export interface ChoreInput {
   title: string
   recurrenceRule: 'daily' | 'weekly' | 'monthly'
+  recurrenceInterval: number
   assignmentMode: 'fixed' | 'rotation'
   assignedMemberId?: string | null
   rotationMemberIds?: string[]
@@ -467,6 +469,7 @@ export interface OnboardMember {
 export interface OnboardChore {
   title: string
   recurrence: 'daily' | 'weekly' | 'monthly'
+  interval?: number
   mode: 'fixed' | 'rotation'
   color: string
   assignedMemberIndex?: number | null

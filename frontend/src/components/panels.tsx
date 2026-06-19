@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
+import { recurrenceLabel } from '../lib/chores'
 import Icon from './Icon'
 import PersonAvatar from './PersonAvatar'
 
@@ -91,7 +92,7 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
   const { t } = useTranslation()
   const done = inst.status === 'done'
   const rotation = chore?.assignmentMode === 'rotation'
-  const recur = chore ? t(`chores.recurrence.${chore.recurrenceRule}`) : null
+  const recur = chore ? recurrenceLabel(chore.recurrenceRule, chore.recurrenceInterval, t) : null
   return (
     <div
       className="flex items-center gap-3"
@@ -122,7 +123,7 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
   )
 }
 
-export function ChoresPanel({ instances, members, chores, onToggle, title, flush, grouped }: {
+export function ChoresPanel({ instances, members, chores, onToggle, title, flush, grouped, emptyLabel }: {
   instances: ChoreInstance[]
   members: FamilyMember[]
   chores?: Chore[]
@@ -130,6 +131,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
   title?: string
   flush?: boolean
   grouped?: boolean
+  emptyLabel?: string
 }) {
   const { t } = useTranslation()
   const indexOf = (id?: string) => {
@@ -176,7 +178,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
       )}
       {instances.length === 0 && (
         <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 14, color: 'var(--t-text-soft)', padding: flush ? '12px 22px' : '8px 0' }}>
-          {t('chores.noneThisWeek')}
+          {emptyLabel ?? t('chores.noneThisWeek')}
         </div>
       )}
       {groups.map((g, gi) => (

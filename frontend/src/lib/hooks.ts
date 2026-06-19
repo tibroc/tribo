@@ -5,19 +5,26 @@ import {
 } from './api'
 import { addDays, mondayOf } from './calendar'
 
-// Current-week chore instances + all todos, with optimistic toggle handlers.
-// Shared by the Week/Day panels and the dedicated Chores/To-dos screens so
-// checking off persists everywhere through the same code path.
-export function useChoresTodos() {
+// Chore instances scheduled within a date range + all todos, with optimistic
+// toggle handlers. Shared by the Week/Day panels and the dedicated Chores/To-dos
+// screens so checking off persists everywhere through the same code path. The
+// range defaults to the current week; the Chores page passes a month/year range
+// to scope chores to the period being viewed.
+export function useChoresTodos(range?: { from: Date; to: Date }) {
   const [instances, setInstances] = useState<ChoreInstance[]>([])
   const [todos, setTodos] = useState<Todo[]>([])
   const [error, setError] = useState<string | null>(null)
 
+  // Depend on the numeric timestamps so reload stays stable across renders that
+  // pass a fresh-but-equal range object.
+  const fromMs = range?.from.getTime()
+  const toMs = range?.to.getTime()
   const reload = useCallback(() => {
-    const monday = mondayOf(new Date())
-    getChoreInstances(monday, addDays(monday, 7)).then(setInstances).catch((e) => setError(String(e)))
+    const from = fromMs != null ? new Date(fromMs) : mondayOf(new Date())
+    const to = toMs != null ? new Date(toMs) : addDays(mondayOf(new Date()), 7)
+    getChoreInstances(from, to).then(setInstances).catch((e) => setError(String(e)))
     getTodos().then(setTodos).catch((e) => setError(String(e)))
-  }, [])
+  }, [fromMs, toMs])
 
   useEffect(reload, [reload])
 
