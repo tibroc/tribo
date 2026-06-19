@@ -132,7 +132,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   </div>
                   <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--t-text-soft)' }}>
                     <input
-                      type="checkbox" checked={s.showOnCalendar} className="w-3.5 h-3.5 rounded"
+                      type="checkbox" checked={s.showOnCalendar} className="w-3.5 h-3.5 rounded-sm"
                       onChange={(e) => setWorkScheduleVisibility(s.id, e.target.checked).then(reloadSchedules)}
                     />
                     {t('family.showBusy')}
@@ -148,7 +148,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Plus size={14} /> {t('family.addChore')}</Button>}>
             {chores.map((c, i) => (
               <button key={c.id} onClick={() => setChoreModal(c)} className="flex items-center gap-3 w-full text-left" style={{ padding: '12px 22px', borderBottom: i === chores.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color ?? '#3E6259' }} />
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color ?? '#3E6259' }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm truncate font-medium">{c.title}</div>
                   <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{choreWho(c)}</div>
@@ -164,7 +164,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             <div className="space-y-2">
               {sources.map((c) => (
                 <div key={c.id} className="flex items-center gap-2 py-1">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.isShared ? 'var(--t-accent)' : 'var(--t-brand)' }} />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.isShared ? 'var(--t-accent)' : 'var(--t-brand)' }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{c.displayName}</div>
                     <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>
@@ -342,7 +342,7 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
   const field = { border: '1px solid var(--t-line)', background: 'var(--t-surface)', borderRadius: 'var(--t-radius-md)' }
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] overflow-hidden lg:rounded-(--t-radius-lg)"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.cancel')}</button>
@@ -351,12 +351,12 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
         </div>
         <div className="p-5 space-y-3">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
-          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.displayName')} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.urlPlaceholder')} value={url} onChange={(e) => setUrl(e.target.value)} />
-          <input className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.usernamePlaceholder')} value={username} onChange={(e) => setUsername(e.target.value)} />
-          <input type="password" className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.calendars.passwordPlaceholder')} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.displayName')} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.urlPlaceholder')} value={url} onChange={(e) => setUrl(e.target.value)} />
+          <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.usernamePlaceholder')} value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input type="password" className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.passwordPlaceholder')} value={password} onChange={(e) => setPassword(e.target.value)} />
           <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
-            <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded" />
+            <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded-sm" />
             {t('family.calendars.readOnlyOption')}
           </label>
         </div>
@@ -382,7 +382,7 @@ function SettingsSheet({ title, onClose, children }: { title: string; onClose: (
   const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <span className="w-12" />
@@ -524,7 +524,7 @@ function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettin
   const field = { border: '1px solid var(--t-line)', background: 'var(--t-surface)', borderRadius: 'var(--t-radius-md)' }
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.cancel')}</button>
@@ -536,7 +536,7 @@ function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettin
           {settings?.locationName && !picked && (
             <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('family.location.current', { name: settings.locationName })}</div>
           )}
-          <input autoFocus className="w-full text-sm px-3 py-2 outline-none" style={field} placeholder={t('family.location.searchPlaceholder')} value={query} onChange={(e) => { setQuery(e.target.value); setPicked(null) }} />
+          <input autoFocus className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.location.searchPlaceholder')} value={query} onChange={(e) => { setQuery(e.target.value); setPicked(null) }} />
           {searching && <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('family.location.searching')}</div>}
           {results.length > 0 && (
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>

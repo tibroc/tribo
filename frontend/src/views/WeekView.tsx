@@ -159,7 +159,7 @@ function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEdit
   return (
     <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
-        <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{day.getDate()}</div>
+        <div className="font-display text-sm font-bold inline-flex items-center justify-center shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{day.getDate()}</div>
         <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{weekday}{isToday ? ` · ${t('common.today')}` : ''}</div>
       </div>
       {items.length === 0 ? (
@@ -168,10 +168,10 @@ function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEdit
         <div className="space-y-1.5">
           {items.map(({ ev, time, color, who }) => (
             <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-              {time && <span className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{time}</span>}
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+              {time && <span className="text-xs w-16 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{time}</span>}
               <span className="text-sm truncate flex-1">{ev.title}</span>
-              <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
+              <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
             </div>
           ))}
         </div>

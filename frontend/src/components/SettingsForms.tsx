@@ -29,7 +29,7 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
   const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-[var(--t-radius-lg)]"
+      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
         style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
         <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.cancel')}</button>
@@ -91,7 +91,7 @@ export function MemberForm({ member, members, onClose, onSaved }: {
   return (
     <Modal title={member ? t('forms.editMember') : t('forms.addMember')} onClose={onClose} onSave={save} busy={busy} error={error}
       onDelete={member ? () => run(() => deleteMember(member.id)) : undefined}>
-      <Labeled label={t('forms.name')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={name} onChange={(e) => setName(e.target.value)} /></Labeled>
+      <Labeled label={t('forms.name')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={name} onChange={(e) => setName(e.target.value)} /></Labeled>
       <Labeled label={t('forms.color')}>
         <div className="flex items-center gap-2 flex-wrap">
           {COLORS.map((c) => (
@@ -101,21 +101,21 @@ export function MemberForm({ member, members, onClose, onSaved }: {
         </div>
       </Labeled>
       <Labeled label={t('forms.role.label')}>
-        <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={role} onChange={(e) => setRole(e.target.value as 'guardian' | 'child')}>
+        <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={role} onChange={(e) => setRole(e.target.value as 'guardian' | 'child')}>
           <option value="guardian">{t('forms.role.guardian')}</option>
           <option value="child">{t('forms.role.child')}</option>
         </select>
       </Labeled>
       {role === 'child' && (
         <Labeled label={t('forms.defaultGuardian')}>
-          <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={defaultGuardianId} onChange={(e) => setDefaultGuardianId(e.target.value)}>
+          <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={defaultGuardianId} onChange={(e) => setDefaultGuardianId(e.target.value)}>
             <option value="">{t('forms.none')}</option>
             {guardians.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </Labeled>
       )}
       <Labeled label={member ? t('forms.pinEdit') : t('forms.pinNew')}>
-        <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={pin} onChange={(e) => setPin(e.target.value)} placeholder={t('forms.pinPlaceholder')} />
+        <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={pin} onChange={(e) => setPin(e.target.value)} placeholder={t('forms.pinPlaceholder')} />
       </Labeled>
     </Modal>
   )
@@ -150,21 +150,21 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
   return (
     <Modal title={chore ? t('forms.editChore') : t('forms.addChore')} onClose={onClose} onSave={save} busy={busy} error={error}
       onDelete={chore ? () => run(() => deleteChore(chore.id)) : undefined}>
-      <Labeled label={t('forms.title')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={title} onChange={(e) => setTitle(e.target.value)} /></Labeled>
+      <Labeled label={t('forms.title')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={title} onChange={(e) => setTitle(e.target.value)} /></Labeled>
       <Labeled label={t('forms.repeats')}>
-        <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={recurrence} onChange={(e) => setRecurrence(e.target.value as typeof recurrence)}>
+        <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={recurrence} onChange={(e) => setRecurrence(e.target.value as typeof recurrence)}>
           <option value="daily">{t('forms.recurrence.daily')}</option><option value="weekly">{t('forms.recurrence.weekly')}</option><option value="monthly">{t('forms.recurrence.monthly')}</option>
         </select>
       </Labeled>
       <Labeled label={t('forms.assignment')}>
-        <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
+        <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
           <option value="fixed">{t('forms.assignmentMode.fixed')}</option>
           <option value="rotation">{t('forms.assignmentMode.rotation')}</option>
         </select>
       </Labeled>
       {mode === 'fixed' ? (
         <Labeled label={t('forms.assignedTo')}>
-          <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+          <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={assignee} onChange={(e) => setAssignee(e.target.value)}>
             <option value="">{t('forms.choose')}</option>
             {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
@@ -174,7 +174,7 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
           <div className="space-y-1">
             {members.map((m) => (
               <label key={m.id} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={rotation.includes(m.id)} className="w-4 h-4 rounded"
+                <input type="checkbox" checked={rotation.includes(m.id)} className="w-4 h-4 rounded-sm"
                   onChange={(e) => setRotation((cur) => e.target.checked ? [...cur, m.id] : cur.filter((x) => x !== m.id))} />
                 {m.name}
               </label>
@@ -213,7 +213,7 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
     <Modal title={schedule ? t('forms.editWorkSchedule') : t('forms.addWorkSchedule')} onClose={onClose} onSave={save} busy={busy} error={error}
       onDelete={schedule ? () => run(() => deleteWorkSchedule(schedule.id)) : undefined}>
       <Labeled label={t('forms.guardian')}>
-        <select className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+        <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
           {guardians.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
       </Labeled>
@@ -226,12 +226,12 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
         </div>
       </Labeled>
       <div className="flex gap-3">
-        <Labeled label={t('forms.start')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-none" style={field} value={start} onChange={(e) => setStart(e.target.value)} /></Labeled>
-        <Labeled label={t('forms.end')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-none" style={field} value={end} onChange={(e) => setEnd(e.target.value)} /></Labeled>
+        <Labeled label={t('forms.start')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={start} onChange={(e) => setStart(e.target.value)} /></Labeled>
+        <Labeled label={t('forms.end')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={end} onChange={(e) => setEnd(e.target.value)} /></Labeled>
       </div>
-      <Labeled label={t('forms.label')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-none" style={field} value={label} onChange={(e) => setLabel(e.target.value)} /></Labeled>
+      <Labeled label={t('forms.label')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={label} onChange={(e) => setLabel(e.target.value)} /></Labeled>
       <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
-        <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="w-4 h-4 rounded" />
+        <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="w-4 h-4 rounded-sm" />
         {t('forms.showBusy')}
       </label>
     </Modal>

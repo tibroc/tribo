@@ -24,7 +24,7 @@ export default function PersonAvatar({ name, initial, color, index, size = 40, f
   const letter = initial || (name ? name.trim()[0].toUpperCase() : '')
   return (
     <div
-      className="tribo-avatar flex items-center justify-center flex-shrink-0"
+      className="tribo-avatar flex items-center justify-center shrink-0"
       title={name}
       style={{
         width: size,

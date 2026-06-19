@@ -69,7 +69,7 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
                       type="password" value={pin} autoFocus
                       onChange={(e) => setPin(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && submitPin()}
-                      className="w-full text-sm rounded-lg px-2 py-1.5 outline-none"
+                      className="w-full text-sm rounded-lg px-2 py-1.5 outline-hidden"
                       style={{ border: `1px solid ${palette.line}` }}
                     />
                     {error && <div className="text-xs mt-1" style={{ color: '#9b1c1c' }}>{error}</div>}

@@ -124,7 +124,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
   return (
     <button
       onClick={onClick}
-      className="w-full h-full text-left p-2 flex flex-col gap-1 border-0 outline-none min-h-[56px] lg:min-h-[96px]"
+      className="w-full h-full text-left p-2 flex flex-col gap-1 border-0 outline-hidden min-h-[56px] lg:min-h-[96px]"
       style={{
         backgroundColor: isToday ? 'var(--t-today-wash)' : (isWeekend ? 'color-mix(in oklab, var(--t-text-soft) 4%, transparent)' : 'transparent'),
         boxShadow: isSelected ? 'inset 0 0 0 2px var(--t-accent)' : 'none',
@@ -142,7 +142,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
 
       {/* Phone: color dots */}
       <div className="lg:hidden mt-1 flex gap-0.5 flex-wrap">
-        {uniqueColors.map((c, i) => <span key={i} className="rounded-full flex-shrink-0" style={{ width: 5, height: 5, backgroundColor: c }} />)}
+        {uniqueColors.map((c, i) => <span key={i} className="rounded-full shrink-0" style={{ width: 5, height: 5, backgroundColor: c }} />)}
       </div>
     </button>
   )
@@ -163,7 +163,7 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
   return (
     <Card padded={false} className="p-3" style={isToday ? { backgroundColor: 'var(--t-today-wash)' } : undefined}>
       <div className="flex items-center gap-2 mb-2">
-        <div className="font-display text-sm font-bold inline-flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{date.getDate()}</div>
+        <div className="font-display text-sm font-bold inline-flex items-center justify-center shrink-0" style={{ width: 26, height: 26, borderRadius: '50%', ...(isToday ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : null) }}>{date.getDate()}</div>
         <div className="text-sm font-semibold uppercase" style={{ color: isToday ? 'var(--t-brand)' : 'var(--t-text-soft)' }}>{fmtWeekdayLongDay(date, locale)}{isToday ? ` · ${t('common.today')}` : ''}</div>
       </div>
       {events.length === 0 ? (
@@ -175,10 +175,10 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
             const who = ev.isShared || ev.attendeeIds.length === 0 ? t('common.family') : (byId.get(ev.attendeeIds[0])?.name ?? '')
             return (
               <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                {!ev.allDay && <span className="text-xs w-20 flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>}
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                {!ev.allDay && <span className="text-xs w-20 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>}
                 <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.icon === 'cake' && <Cake size={12} />}{ev.title}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
+                <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
               </div>
             )
           })}
@@ -204,9 +204,9 @@ function MonthHighlights({ events, byId, locale }: { events: TriboEvent[]; byId:
             const d = new Date(h.startAt)
             return (
               <div key={h.id} className="flex items-center gap-2 text-sm">
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colorForEvent(h, byId) }} />
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorForEvent(h, byId) }} />
                 <span className="flex-1 truncate">{h.title}</span>
-                <span className="text-xs flex-shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
+                <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
               </div>
             )
           })}
