@@ -34,7 +34,7 @@ type Server struct {
 func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *calsync.Engine) http.Handler {
 	s := &Server{
 		db:      db,
-		events:  calendar.NewService(db),
+		events:  calendar.NewService(db, syncEngine),
 		chores:  chores.NewService(db),
 		todos:   todos.NewService(db),
 		family:  family.NewService(db),

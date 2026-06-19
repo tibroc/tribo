@@ -10,12 +10,15 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/emersion/go-ical"
 	"github.com/emersion/go-webdav"
 	"github.com/emersion/go-webdav/caldav"
 	"github.com/google/uuid"
+
+	"tribo/internal/calendar"
 )
 
 type Engine struct {
@@ -155,13 +158,20 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 		return fmt.Errorf("query: %w", err)
 	}
 
+	members, err := e.memberIDs()
+	if err != nil {
+		return err
+	}
+
 	tx, err := e.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	// Full refresh of remote-origin events for this source.
+	// Full refresh: rebuild the cache for this source from the system of record.
+	// The cache row id is the CalDAV UID, so our own events keep a stable id
+	// across re-pulls (we generate UIDs); attendees/metadata come from X-TRIBO-*.
 	if _, err := tx.Exec(`DELETE FROM event WHERE calendar_source_id = ? AND external_id IS NOT NULL`, src.id); err != nil {
 		return err
 	}
@@ -175,12 +185,25 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 			if !ok {
 				continue
 			}
+			vis := pe.visibility
+			if vis != "routine" && vis != "standard" && vis != "milestone" {
+				vis = "standard"
+			}
 			if _, err := tx.Exec(
-				`INSERT INTO event (id, calendar_source_id, title, description, location, start_at, end_at, all_day, recurrence_rule, external_id, visibility_tag)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'standard')`,
-				uuid.NewString(), src.id, pe.title, nullable(pe.description), nullable(pe.location),
-				pe.start, pe.end, b2i(pe.allDay), nullable(pe.rrule), pe.uid); err != nil {
+				`INSERT INTO event (id, calendar_source_id, title, description, location, start_at, end_at, all_day,
+				   recurrence_rule, external_id, visibility_tag, requires_guardian, icon, color_override)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				pe.uid, src.id, pe.title, nullable(pe.description), nullable(pe.location),
+				pe.start, pe.end, b2i(pe.allDay), nullable(pe.rrule), pe.uid, vis,
+				b2i(pe.requiresGuardian), nullable(pe.icon), nullable(pe.color)); err != nil {
 				return err
+			}
+			for _, mid := range pe.attendees {
+				if members[mid] {
+					if _, err := tx.Exec(`INSERT OR IGNORE INTO event_attendee (event_id, member_id) VALUES (?, ?)`, pe.uid, mid); err != nil {
+						return err
+					}
+				}
 			}
 			count++
 		}
@@ -191,82 +214,32 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	if err := tx.Commit(); err != nil {
 		return err
 	}
+	// Recompute guardian assignment/conflict over the synced window now that
+	// attendees are in the cache (computed fields live only in the cache).
+	if err := calendar.NewService(e.db, nil).RecomputeWindow(now.AddDate(0, -3, 0), now.AddDate(1, 0, 0)); err != nil {
+		log.Printf("calsync: recompute after sync %s: %v", src.id, err)
+	}
 	log.Printf("calsync: pulled %d events from %s", count, src.id)
 	return nil
 }
 
-// PushEvent writes a locally-created/edited event to a writable external source
-// (CalDAV or Google). Best-effort: returns nil for internal/read-only sources.
-func (e *Engine) PushEvent(ctx context.Context, eventID string) error {
-	var sourceID, title, startStr, endStr string
-	var desc, loc, externalID *string
-	var allDay int
-	err := e.db.QueryRow(
-		`SELECT calendar_source_id, title, description, location, start_at, end_at, all_day, external_id
-		 FROM event WHERE id = ?`, eventID).
-		Scan(&sourceID, &title, &desc, &loc, &startStr, &endStr, &allDay, &externalID)
+// memberIDs returns the set of valid family-member ids, for filtering attendees
+// parsed from X-TRIBO-ATTENDEES before inserting (avoids FK violations on stale ids).
+func (e *Engine) memberIDs() (map[string]bool, error) {
+	rows, err := e.db.Query(`SELECT id FROM family_member`)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	src, err := e.loadSource(sourceID)
-	if err != nil || src.readOnly {
-		return nil
-	}
-	if src.typ == "google" {
-		if externalID != nil && *externalID != "" {
-			return nil // update-on-edit for Google isn't handled in v1
+	defer rows.Close()
+	out := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
 		}
-		newID, err := e.pushGoogle(ctx, src, title, startStr, endStr, allDay != 0)
-		if err != nil {
-			return err
-		}
-		_, _ = e.db.Exec(`UPDATE event SET external_id = ? WHERE id = ?`, newID, eventID)
-		return nil
+		out[id] = true
 	}
-	if src.typ != "caldav" {
-		return nil
-	}
-
-	uid := eventID
-	if externalID != nil && *externalID != "" {
-		uid = *externalID
-	}
-	cal := ical.NewCalendar()
-	cal.Props.SetText(ical.PropProductID, "-//Tribo//EN")
-	cal.Props.SetText(ical.PropVersion, "2.0")
-	ev := ical.NewEvent()
-	ev.Props.SetText(ical.PropUID, uid)
-	ev.Props.SetDateTime(ical.PropDateTimeStamp, time.Now().UTC())
-	ev.Props.SetText(ical.PropSummary, title)
-	start, _ := time.Parse(time.RFC3339, startStr)
-	end, _ := time.Parse(time.RFC3339, endStr)
-	ev.Props.SetDateTime(ical.PropDateTimeStart, start)
-	ev.Props.SetDateTime(ical.PropDateTimeEnd, end)
-	if desc != nil {
-		ev.Props.SetText(ical.PropDescription, *desc)
-	}
-	if loc != nil {
-		ev.Props.SetText(ical.PropLocation, *loc)
-	}
-	cal.Children = append(cal.Children, ev.Component)
-
-	u, _ := url.Parse(src.url)
-	httpc := webdav.HTTPClientWithBasicAuth(http.DefaultClient, src.creds.Username, src.creds.Password)
-	client, err := caldav.NewClient(httpc, u.Scheme+"://"+u.Host)
-	if err != nil {
-		return err
-	}
-	path := u.Path
-	if path != "" && path[len(path)-1] != '/' {
-		path += "/"
-	}
-	if _, err := client.PutCalendarObject(ctx, path+uid+".ics", cal); err != nil {
-		return err
-	}
-	if externalID == nil || *externalID == "" {
-		_, _ = e.db.Exec(`UPDATE event SET external_id = ? WHERE id = ?`, uid, eventID)
-	}
-	return nil
+	return out, rows.Err()
 }
 
 // ===== ICS mapping =====
@@ -274,6 +247,11 @@ func (e *Engine) PushEvent(ctx context.Context, eventID string) error {
 type parsedEvent struct {
 	uid, title, description, location, start, end, rrule string
 	allDay                                               bool
+	// Tribo metadata carried as X-TRIBO-* props (empty/false for foreign events).
+	visibility       string
+	icon, color      string
+	requiresGuardian bool
+	attendees        []string // family-member ids
 }
 
 func icalToEvent(ev ical.Event) (parsedEvent, bool) {
@@ -295,15 +273,28 @@ func icalToEvent(ev ical.Event) (parsedEvent, bool) {
 			allDay = true
 		}
 	}
+	var attendees []string
+	if a := text(ev, propAttendees); a != "" {
+		for _, id := range strings.Split(a, ",") {
+			if id = strings.TrimSpace(id); id != "" {
+				attendees = append(attendees, id)
+			}
+		}
+	}
 	return parsedEvent{
-		uid:         uid,
-		title:       textOr(ev, ical.PropSummary, "(untitled)"),
-		description: text(ev, ical.PropDescription),
-		location:    text(ev, ical.PropLocation),
-		start:       start.Format(time.RFC3339),
-		end:         end.Format(time.RFC3339),
-		rrule:       text(ev, ical.PropRecurrenceRule),
-		allDay:      allDay,
+		uid:              uid,
+		title:            textOr(ev, ical.PropSummary, "(untitled)"),
+		description:      text(ev, ical.PropDescription),
+		location:         text(ev, ical.PropLocation),
+		start:            start.Format(time.RFC3339),
+		end:              end.Format(time.RFC3339),
+		rrule:            text(ev, ical.PropRecurrenceRule),
+		allDay:           allDay,
+		visibility:       text(ev, propVisibility),
+		icon:             text(ev, propIcon),
+		color:            text(ev, propColor),
+		requiresGuardian: text(ev, propRequiresGuardian) == "1",
+		attendees:        attendees,
 	}, true
 }
 

@@ -30,7 +30,9 @@ type deps struct {
 func NewServer(db *sql.DB) *mcp.Server {
 	d := &deps{
 		db:     db,
-		events: calendar.NewService(db),
+		// nil backend: MCP-created events are cache-only for now (Radicale push
+		// for the MCP surface is a follow-up).
+		events: calendar.NewService(db, nil),
 		chores: chores.NewService(db),
 		todos:  todos.NewService(db),
 		family: family.NewService(db),
@@ -138,7 +140,7 @@ func (d *deps) register(s *mcp.Server) {
 			if src == "" {
 				return nil, addEventOut{}, errors.New("no calendar source configured")
 			}
-			ev, err := d.events.CreateEvent(calendar.NewEvent{
+			ev, err := d.events.CreateEvent(ctx, calendar.NewEvent{
 				CalendarSourceID: src, Title: in.Title, StartAt: in.Start, EndAt: in.End,
 				AllDay: in.AllDay, AttendeeIDs: in.AttendeeIDs, RequiresGuardian: in.RequiresGuardian,
 			})

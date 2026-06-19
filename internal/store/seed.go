@@ -290,7 +290,7 @@ func seed(db *sql.DB) error {
 	if _, err := db.Exec(`UPDATE event SET requires_guardian = 1 WHERE title IN ('Soccer', 'Piano')`); err != nil {
 		return err
 	}
-	return calendar.NewService(db).RecomputeWindow(monday, monday.AddDate(0, 0, 7))
+	return calendar.NewService(db, nil).RecomputeWindow(monday, monday.AddDate(0, 0, 7))
 }
 
 // seedChoreHistory generates instances for the past 8 weeks (+ current/next) and

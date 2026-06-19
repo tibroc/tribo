@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -86,23 +85,12 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	ev, err := s.events.CreateEvent(in)
+	ev, err := s.events.CreateEvent(r.Context(), in)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusBadGateway, err.Error())
 		return
 	}
-	s.pushIfExternal(ev.ID)
 	writeJSON(w, http.StatusCreated, ev)
-}
-
-// pushIfExternal writes an event to its CalDAV source in the background.
-// PushEvent itself no-ops for internal/read-only sources.
-func (s *Server) pushIfExternal(eventID string) {
-	go func() {
-		if err := s.sync.PushEvent(context.Background(), eventID); err != nil {
-			log.Printf("calsync push %s: %v", eventID, err)
-		}
-	}()
 }
 
 // GET /api/calendar-status — whether the Radicale backend is configured and
@@ -166,12 +154,11 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	ev, err := s.events.UpdateEvent(r.PathValue("id"), in)
+	ev, err := s.events.UpdateEvent(r.Context(), r.PathValue("id"), in)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusBadGateway, err.Error())
 		return
 	}
-	s.pushIfExternal(ev.ID)
 	writeJSON(w, http.StatusOK, ev)
 }
 
@@ -204,8 +191,8 @@ func (s *Server) claimEvent(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/events/{id}
 func (s *Server) deleteEvent(w http.ResponseWriter, r *http.Request) {
-	if err := s.events.DeleteEvent(r.PathValue("id")); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if err := s.events.DeleteEvent(r.Context(), r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
