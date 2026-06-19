@@ -13,17 +13,26 @@ import (
 )
 
 const gcalStateCookie = "tribo_gcal_state"
+const gcalMemberCookie = "tribo_gcal_member"
 
-// GET /api/calendar-sources/google/connect — returns the Google consent URL.
+// GET /api/calendar-sources/google/connect?memberId=… — returns the Google
+// consent URL. A Google calendar is a read-only overlay for one member, so the
+// chosen member is stashed in a cookie to survive the OAuth round-trip.
 func (s *Server) googleConnect(w http.ResponseWriter, r *http.Request) {
 	if !s.sync.GoogleEnabled() {
 		writeError(w, http.StatusBadRequest, "Google sync is not configured on this server")
+		return
+	}
+	memberID := r.URL.Query().Get("memberId")
+	if memberID == "" {
+		writeError(w, http.StatusBadRequest, "memberId is required (a Google calendar belongs to one person)")
 		return
 	}
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	state := base64.RawURLEncoding.EncodeToString(b)
 	http.SetCookie(w, &http.Cookie{Name: gcalStateCookie, Value: state, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 600})
+	http.SetCookie(w, &http.Cookie{Name: gcalMemberCookie, Value: memberID, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 600})
 	url, err := s.sync.GoogleAuthURL(state)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -40,7 +49,12 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: gcalStateCookie, Value: "", Path: "/", MaxAge: -1})
-	id, err := s.sync.ConnectGoogle(r.Context(), r.URL.Query().Get("code"), "Google Calendar")
+	memberID := ""
+	if mc, err := r.Cookie(gcalMemberCookie); err == nil {
+		memberID = mc.Value
+	}
+	http.SetCookie(w, &http.Cookie{Name: gcalMemberCookie, Value: "", Path: "/", MaxAge: -1})
+	id, err := s.sync.ConnectGoogle(r.Context(), r.URL.Query().Get("code"), "Google Calendar", memberID)
 	if err != nil {
 		http.Error(w, "google connect failed: "+err.Error(), http.StatusBadGateway)
 		return
