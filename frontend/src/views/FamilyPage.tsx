@@ -19,6 +19,7 @@ import PersonAvatar from '../components/PersonAvatar'
 import OnboardingWizard from './OnboardingWizard'
 import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
 import { RecurrencePill } from '../components/panels'
+import { recurrenceLabel } from '../lib/chores'
 import { useSession } from '../lib/session'
 import { useTheme, type ThemePreference } from '../lib/theme'
 import { weekdayLabels } from '../lib/datetime'
@@ -153,7 +154,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <div className="text-sm truncate font-medium">{c.title}</div>
                   <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{choreWho(c)}</div>
                 </div>
-                <RecurrencePill label={c.assignmentMode === 'rotation' ? t('chores.rotation') : t(`chores.recurrence.${c.recurrenceRule}`)} rotation={c.assignmentMode === 'rotation'} />
+                <RecurrencePill label={c.assignmentMode === 'rotation' ? t('chores.rotation') : recurrenceLabel(c.recurrenceRule, c.recurrenceInterval, t)} rotation={c.assignmentMode === 'rotation'} />
               </button>
             ))}
           </Section>

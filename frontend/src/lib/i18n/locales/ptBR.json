@@ -144,10 +144,25 @@
     "groupToday": "Hoje",
     "groupLater": "Mais tarde esta semana",
     "noneThisWeek": "Nenhuma tarefa esta semana",
+    "donePeriod": "concluídas {{period}}",
+    "nonePeriod": "Nenhuma tarefa {{period}}",
+    "period": { "week": "esta semana", "month": "este mês", "year": "este ano" },
+    "periodCap": { "week": "Esta semana", "month": "Este mês", "year": "Este ano" },
     "recurrence": {
       "daily": "Diária",
       "weekly": "Semanal",
       "monthly": "Mensal"
+    }
+  },
+  "recurrence": {
+    "everyPrefix": "A cada",
+    "every": "A cada {{count}} {{unit}}",
+    "adjective": { "day": "Diária", "week": "Semanal", "month": "Mensal", "year": "Anual" },
+    "unit": {
+      "day_one": "dia", "day_other": "dias",
+      "week_one": "semana", "week_other": "semanas",
+      "month_one": "mês", "month_other": "meses",
+      "year_one": "ano", "year_other": "anos"
     }
   },
   "todos": {

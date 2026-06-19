@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Section } from '../lib/calendar'
+import { type Section, mondayOf, addDays, startOfMonth, addMonths } from '../lib/calendar'
 import { getFamilyMembers, getChores, getReview, type FamilyMember, type Chore, type ChoreInstance, type Review } from '../lib/api'
 import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
@@ -14,7 +14,7 @@ import { ChoreForm } from '../components/SettingsForms'
 
 // Hero stats: done/total this week, a per-chore progress bar colored by owner,
 // and the household's best week-streak.
-function ChoresHero({ instances, members, streak }: { instances: ChoreInstance[]; members: FamilyMember[]; streak: number }) {
+function ChoresHero({ instances, members, streak, doneLabel }: { instances: ChoreInstance[]; members: FamilyMember[]; streak: number; doneLabel: string }) {
   const { t } = useTranslation()
   const total = instances.length
   const done = instances.filter((i) => i.status === 'done').length
@@ -29,7 +29,7 @@ function ChoresHero({ instances, members, streak }: { instances: ChoreInstance[]
             <span style={{ fontSize: 22, color: 'var(--t-text-soft)' }}>/{total}</span>
           </div>
           <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 13, color: 'var(--t-text-soft)', marginTop: 2 }}>
-            {t('chores.doneThisWeek')}
+            {doneLabel}
           </div>
         </div>
         <div className="flex-1">
@@ -58,14 +58,14 @@ function ChoresHero({ instances, members, streak }: { instances: ChoreInstance[]
 }
 
 // Per-person done/total balance bars.
-function ByPerson({ instances, members }: { instances: ChoreInstance[]; members: FamilyMember[] }) {
+function ByPerson({ instances, members, periodLabel }: { instances: ChoreInstance[]; members: FamilyMember[]; periodLabel: string }) {
   const { t } = useTranslation()
   const rows = members.map((p, idx) => {
     const mine = instances.filter((x) => x.assignedMemberId === p.id)
     return { p, idx, done: mine.filter((x) => x.status === 'done').length, total: mine.length }
   })
   return (
-    <Card title={t('chores.byPerson')} action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{t('chores.thisWeek')}</span>} padded={false}>
+    <Card title={t('chores.byPerson')} action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{periodLabel}</span>} padded={false}>
       {rows.map(({ p, idx, done, total }, i) => (
         <div key={p.id} className="flex items-center gap-3" style={{ padding: '11px 22px', borderBottom: i === rows.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
           <PersonAvatar name={p.name} color={p.color} index={idx} size={26} />
@@ -81,7 +81,7 @@ function ByPerson({ instances, members }: { instances: ChoreInstance[]; members:
 }
 
 // Rotation card: which rotating chores exist + who currently holds them.
-function RotationCard({ chores, instances, members }: { chores: Chore[]; instances: ChoreInstance[]; members: FamilyMember[] }) {
+function RotationCard({ chores, instances, members, periodLabelCap }: { chores: Chore[]; instances: ChoreInstance[]; members: FamilyMember[]; periodLabelCap: string }) {
   const { t } = useTranslation()
   const memberOf = (id?: string) => members.find((m) => m.id === id)
   const rotations = chores.filter((c) => c.assignmentMode === 'rotation')
@@ -96,7 +96,7 @@ function RotationCard({ chores, instances, members }: { chores: Chore[]; instanc
             <RecurrencePill label={t('chores.rotation')} rotation />
             <div className="flex-1 min-w-0">
               <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 14, fontWeight: 600, color: 'var(--t-text)' }} className="truncate">{c.title}</div>
-              <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }} className="truncate">{t('chores.thisWeekCap')}{holder ? ` · ${holder.name}` : ''}</div>
+              <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }} className="truncate">{periodLabelCap}{holder ? ` · ${holder.name}` : ''}</div>
             </div>
             {holder && <PersonAvatar name={holder.name} color={holder.color} index={members.findIndex((m) => m.id === holder.id)} size={26} />}
           </div>
@@ -106,38 +106,69 @@ function RotationCard({ chores, instances, members }: { chores: Chore[]; instanc
   )
 }
 
+type Period = 'week' | 'month' | 'year'
+
 export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
   const { t } = useTranslation()
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [chores, setChores] = useState<Chore[]>([])
   const [review, setReview] = useState<Review | null>(null)
-  const { instances, toggleChore, reload } = useChoresTodos()
+  const [period, setPeriod] = useState<Period>('week')
+
+  // Chores are scoped to the period being viewed (filtered by scheduled date), so
+  // a chore due in 3 weeks shows in Month/Year but not in Week.
+  const range = useMemo(() => {
+    const today = new Date()
+    if (period === 'month') { const from = startOfMonth(today); return { from, to: addMonths(from, 1) } }
+    if (period === 'year') { const from = new Date(today.getFullYear(), 0, 1); return { from, to: new Date(today.getFullYear() + 1, 0, 1) } }
+    const from = mondayOf(today); return { from, to: addDays(from, 7) }
+  }, [period])
+
+  const { instances, toggleChore, reload } = useChoresTodos(range)
   // Add-chore modal: undefined = closed; null = add. (Editing happens in Family.)
   const [choreModal, setChoreModal] = useState<null | undefined>(openNew ? null : undefined)
   const reloadChores = () => getChores().then(setChores).catch(() => {})
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch(() => {})
     reloadChores()
-    getReview('week').then(setReview).catch(() => {})
   }, [])
+  useEffect(() => { getReview(period).then(setReview).catch(() => {}) }, [period])
 
   const streak = review ? Math.max(0, ...review.perPerson.map((p) => p.streak)) : 0
+  const periodWord = t(`chores.period.${period}`)
+  const periodWordCap = t(`chores.periodCap.${period}`)
+
+  const periods: { key: Period; label: string }[] = [
+    { key: 'week', label: t('review.periodWeek') },
+    { key: 'month', label: t('review.periodMonth') },
+    { key: 'year', label: t('review.periodYear') },
+  ]
 
   return (
     <AppShell active="chores" onNavigate={go} header={<SimpleHeader title={t('nav.chores')} />} onFabClick={() => setChoreModal(null)}>
       <div style={{ padding: '22px 26px' }}>
-        <ChoresHero instances={instances} members={members} streak={streak} />
+        <div className="flex justify-end mb-3">
+          <div className="flex gap-1 rounded-full p-1" style={{ background: 'var(--t-shell)', border: '1px solid var(--t-line)' }}>
+            {periods.map((p) => (
+              <button key={p.key} onClick={() => setPeriod(p.key)} className="text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap"
+                style={p.key === period ? { backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text-soft)' }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <ChoresHero instances={instances} members={members} streak={streak} doneLabel={t('chores.donePeriod', { period: periodWord })} />
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 items-start">
           <Card
             title={t('nav.chores')}
             action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Icon name="plus" size={14} strokeWidth={2.6} /> {t('chores.addChore')}</Button>}
             padded={false}
           >
-            <ChoresPanel instances={instances} members={members} chores={chores} onToggle={toggleChore} flush grouped />
+            <ChoresPanel instances={instances} members={members} chores={chores} onToggle={toggleChore} flush grouped={period === 'week'} emptyLabel={t('chores.nonePeriod', { period: periodWord })} />
           </Card>
           <div className="flex flex-col gap-4">
-            <ByPerson instances={instances} members={members} />
-            <RotationCard chores={chores} instances={instances} members={members} />
+            <ByPerson instances={instances} members={members} periodLabel={periodWordCap} />
+            <RotationCard chores={chores} instances={instances} members={members} periodLabelCap={periodWordCap} />
           </div>
         </div>
       </div>

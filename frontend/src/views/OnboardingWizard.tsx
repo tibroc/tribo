@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 import Button from '../components/Button'
 import { weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
+import { recurrenceLabel } from '../lib/chores'
 import { useTranslation, Trans } from 'react-i18next'
 
 interface MemberDraft { name: string; role: 'guardian' | 'child'; defaultGuardianIndex: number | null }
@@ -228,7 +229,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
               {chores.map((c, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <input type="checkbox" checked={c.enabled} onChange={(e) => updateChore(setChores, i, { enabled: e.target.checked })} className="w-4 h-4 rounded-sm" />
-                  <span className="text-sm flex-1">{t(`onboarding.choreTemplates.${c.labelKey}`)} <span style={{ color: 'var(--t-text-soft)' }}>· {t(`onboarding.recurrence.${c.recurrence}`)}</span></span>
+                  <span className="text-sm flex-1">{t(`onboarding.choreTemplates.${c.labelKey}`)} <span style={{ color: 'var(--t-text-soft)' }}>· {recurrenceLabel(c.recurrence, 1, t)}</span></span>
                   {c.enabled && (
                     <select className="text-sm rounded-lg px-2 py-1 outline-hidden" style={field} value={c.assignee ?? ''}
                       onChange={(e) => updateChore(setChores, i, { assignee: e.target.value === '' ? null : Number(e.target.value) })}>

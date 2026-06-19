@@ -60,6 +60,10 @@ func (s *Server) listChoreInstances(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	// Materialize any not-yet-generated periods in the requested window so
+	// month/year views show future occurrences beyond the nightly scheduler's
+	// rolling range. Idempotent (INSERT OR IGNORE); best-effort.
+	_, _ = s.chores.Generate(from, to)
 	is, err := s.chores.ListInstances(from, to)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())

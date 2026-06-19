@@ -11,6 +11,7 @@ import {
 import Button from './Button'
 import { weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
+import { toUnitInterval, fromUnitInterval, type RecurrenceUnit } from '../lib/chores'
 
 // Harmonious generated marker palette (slots 0–7) for the member color picker.
 const COLORS = Array.from({ length: 8 }, (_, i) => markerColor(i))
@@ -128,8 +129,10 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const initialRecur = toUnitInterval(chore?.recurrenceRule ?? 'weekly', chore?.recurrenceInterval ?? 1)
   const [title, setTitle] = useState(chore?.title ?? '')
-  const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | 'monthly'>(chore?.recurrenceRule ?? 'weekly')
+  const [unit, setUnit] = useState<RecurrenceUnit>(initialRecur.unit)
+  const [count, setCount] = useState(initialRecur.count)
   const [mode, setMode] = useState<'fixed' | 'rotation'>(chore?.assignmentMode ?? 'fixed')
   const [assignee, setAssignee] = useState(chore?.assignedMemberId ?? '')
   const [rotation, setRotation] = useState<string[]>(chore?.rotationMemberIds ?? [])
@@ -138,8 +141,9 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
 
   const colorFor = () => members.find((m) => m.id === (mode === 'fixed' ? assignee : rotation[0]))?.color ?? '#3E6259'
   const save = () => run(() => {
+    const { rule, interval } = fromUnitInterval(unit, count)
     const payload = {
-      title, recurrenceRule: recurrence, assignmentMode: mode,
+      title, recurrenceRule: rule, recurrenceInterval: interval, assignmentMode: mode,
       assignedMemberId: mode === 'fixed' && assignee ? assignee : null,
       rotationMemberIds: mode === 'rotation' ? rotation : [],
       color: colorFor(),
@@ -152,9 +156,16 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
       onDelete={chore ? () => run(() => deleteChore(chore.id)) : undefined}>
       <Labeled label={t('forms.title')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={title} onChange={(e) => setTitle(e.target.value)} /></Labeled>
       <Labeled label={t('forms.repeats')}>
-        <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={recurrence} onChange={(e) => setRecurrence(e.target.value as typeof recurrence)}>
-          <option value="daily">{t('forms.recurrence.daily')}</option><option value="weekly">{t('forms.recurrence.weekly')}</option><option value="monthly">{t('forms.recurrence.monthly')}</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('recurrence.everyPrefix')}</span>
+          <input type="number" min={1} max={120} className="text-sm rounded-xl px-3 py-2 outline-hidden" style={{ ...field, width: 72 }}
+            value={count} onChange={(e) => setCount(Math.max(1, Math.min(120, parseInt(e.target.value, 10) || 1)))} />
+          <select className="flex-1 text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={unit} onChange={(e) => setUnit(e.target.value as RecurrenceUnit)}>
+            {(['day', 'week', 'month', 'year'] as RecurrenceUnit[]).map((u) => (
+              <option key={u} value={u}>{t(`recurrence.unit.${u}`, { count })}</option>
+            ))}
+          </select>
+        </div>
       </Labeled>
       <Labeled label={t('forms.assignment')}>
         <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>

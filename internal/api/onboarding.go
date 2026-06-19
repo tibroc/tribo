@@ -20,6 +20,7 @@ type onboardMember struct {
 type onboardChore struct {
 	Title                 string `json:"title"`
 	Recurrence            string `json:"recurrence"`
+	Interval              int    `json:"interval"`
 	Mode                  string `json:"mode"`
 	Color                 string `json:"color"`
 	AssignedMemberIndex   *int   `json:"assignedMemberIndex"`
@@ -149,10 +150,14 @@ func (s *Server) handleOnboarding(w http.ResponseWriter, r *http.Request) {
 			}
 			rotation = strings.Join(ids, ",")
 		}
+		interval := c.Interval
+		if interval < 1 {
+			interval = 1
+		}
 		if _, err := tx.Exec(
-			`INSERT INTO chore (id, title, recurrence_rule, assignment_mode, assigned_member_id, rotation_member_ids, color, sort_order)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			uuid.NewString(), c.Title, orDefault(c.Recurrence, "weekly"), mode, assigned, rotation, orDefault(c.Color, "#3E6259"), i); err != nil {
+			`INSERT INTO chore (id, title, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, sort_order)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			uuid.NewString(), c.Title, orDefault(c.Recurrence, "weekly"), interval, mode, assigned, rotation, orDefault(c.Color, "#3E6259"), i); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
