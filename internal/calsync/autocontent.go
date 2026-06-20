@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/emersion/go-ical"
@@ -18,12 +20,10 @@ import (
 // of chore instances. Both are written one-way (Tribo → Radicale) as discrete
 // dated all-day events — no RRULE — so display needs no recurrence expansion.
 
-// birthdayWindow is how many years on each side of "now" to materialize.
-const birthdayWindow = 1
-
 // RefreshBirthdays writes each member's birthday as dated all-day events on the
-// Birthdays collection for a rolling window, then refreshes the cache. No-op when
-// Radicale is unconfigured.
+// Birthdays collection for every year in the synced window, prunes orphans (e.g.
+// a cleared DOB or removed member), then refreshes the cache. No-op when Radicale
+// is unconfigured.
 func (e *Engine) RefreshBirthdays(ctx context.Context) error {
 	if !e.radicale.Enabled() {
 		return nil
@@ -56,6 +56,7 @@ func (e *Engine) RefreshBirthdays(ctx context.Context) error {
 	// Cover every year in the synced window so birthdays show wherever the user
 	// has navigated (the window grows on demand — see EnsureWindow).
 	winFrom, winTo := e.window()
+	desired := map[string]bool{}
 	for _, m := range members {
 		mo, day, ok := parseMonthDay(m.dob)
 		if !ok {
@@ -74,27 +75,16 @@ func (e *Engine) RefreshBirthdays(ctx context.Context) error {
 				Color:         m.color,
 				AttendeeIDs:   []string{m.id},
 			}
+			desired[ev.ID] = true
 			if err := e.putToCollection(ctx, coll, ev.ID, buildICS(ev, ev.ID)); err != nil {
 				return fmt.Errorf("birthday %s: %w", ev.ID, err)
 			}
 		}
 	}
-	return e.SyncSourceByID(ctx, srcID)
-}
-
-// DeleteMemberBirthday removes a member's birthday objects (used when DOB is
-// cleared or the member is removed). Best-effort, then refreshes the cache.
-func (e *Engine) DeleteMemberBirthday(ctx context.Context, memberID string) error {
-	if !e.radicale.Enabled() {
-		return nil
-	}
-	srcID, coll, ok := e.managedSource("birthdays", "")
-	if !ok {
-		return nil
-	}
-	year := time.Now().Year()
-	for y := year - birthdayWindow - 1; y <= year+birthdayWindow+1; y++ {
-		_ = e.deleteFromCollection(ctx, coll, fmt.Sprintf("bday-%s-%d", memberID, y))
+	// Prune birthday objects no longer wanted (cleared DOB, removed member, or a
+	// year that dropped out of the window).
+	if err := e.reconcileCollection(ctx, coll, "bday-", desired); err != nil {
+		return err
 	}
 	return e.SyncSourceByID(ctx, srcID)
 }
@@ -110,13 +100,13 @@ func (e *Engine) ProjectChores(ctx context.Context) error {
 	if !ok {
 		return nil
 	}
-	now := time.Now()
-	from := now.AddDate(0, -1, 0).Format(dateFmt)
-	to := now.AddDate(0, 3, 0).Format(dateFmt)
+	// Project existing instances across the synced window (which grows as the user
+	// navigates) so the chores collection tracks what the calendar covers.
+	winFrom, winTo := e.window()
 	rows, err := e.db.Query(
 		`SELECT ci.id, c.title, ci.period_start, ci.period_end, COALESCE(ci.assigned_member_id, ''), COALESCE(c.color, '')
 		 FROM chore_instance ci JOIN chore c ON c.id = ci.chore_id
-		 WHERE ci.period_start >= ? AND ci.period_start < ?`, from, to)
+		 WHERE ci.period_start >= ? AND ci.period_start < ?`, winFrom.Format(dateFmt), winTo.Format(dateFmt))
 	if err != nil {
 		return err
 	}
@@ -152,11 +142,69 @@ func (e *Engine) ProjectChores(ctx context.Context) error {
 			return fmt.Errorf("chore %s: %w", ev.ID, err)
 		}
 	}
+	// Prune chore objects whose instance no longer exists. Reconcile against ALL
+	// instance ids (not just the window) so valid out-of-window objects survive.
+	desired, err := e.allChoreUIDs()
+	if err != nil {
+		return err
+	}
+	if err := e.reconcileCollection(ctx, coll, "chore-", desired); err != nil {
+		return err
+	}
 	// Chores are published to Radicale only — they are not pulled into the event
 	// cache (the calendar shows events + birthdays; chores live on the Chores
 	// page). Drop any chore-source rows a prior sync may have left in the cache.
 	if _, err := e.db.Exec(`DELETE FROM event WHERE calendar_source_id = ?`, srcID); err != nil {
 		return err
+	}
+	return nil
+}
+
+// allChoreUIDs returns the set of chore object UIDs that should exist on Radicale
+// (one per chore_instance row), for reconciliation/pruning.
+func (e *Engine) allChoreUIDs() (map[string]bool, error) {
+	rows, err := e.db.Query(`SELECT id FROM chore_instance`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out["chore-"+id] = true
+	}
+	return out, rows.Err()
+}
+
+// reconcileCollection deletes objects in a managed collection whose UID starts
+// with prefix but is not in the desired set (orphan cleanup). Best-effort.
+func (e *Engine) reconcileCollection(ctx context.Context, collURL, prefix string, desired map[string]bool) error {
+	u, err := url.Parse(collURL)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, calDAVTimeout)
+	defer cancel()
+	httpc := webdav.HTTPClientWithBasicAuth(http.DefaultClient, e.radicale.Username, e.radicale.Password)
+	wc, err := webdav.NewClient(httpc, u.Scheme+"://"+u.Host)
+	if err != nil {
+		return err
+	}
+	entries, err := wc.ReadDir(ctx, u.Path, false)
+	if err != nil {
+		return err
+	}
+	for _, fi := range entries {
+		if fi.IsDir {
+			continue
+		}
+		uid := strings.TrimSuffix(path.Base(fi.Path), ".ics")
+		if strings.HasPrefix(uid, prefix) && !desired[uid] {
+			_ = e.deleteFromCollection(ctx, collURL, uid)
+		}
 	}
 	return nil
 }

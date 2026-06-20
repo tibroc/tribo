@@ -76,9 +76,12 @@ func (e *Engine) EnsureWindow(ctx context.Context, from, to time.Time) {
 	}
 	e.winMu.Unlock()
 	if grew {
-		// Materialize birthdays for any newly-covered years, then pull the range.
+		// Materialize birthdays + chores for any newly-covered range, then pull.
 		if err := e.RefreshBirthdays(ctx); err != nil {
 			log.Printf("calsync: birthday refresh on window grow: %v", err)
+		}
+		if err := e.ProjectChores(ctx); err != nil {
+			log.Printf("calsync: chore projection on window grow: %v", err)
 		}
 		e.SyncAll(ctx)
 	}

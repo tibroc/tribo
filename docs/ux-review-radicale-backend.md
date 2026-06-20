@@ -8,10 +8,20 @@ running app (seeded, against a live Radicale); the rest is from code review.
 
 ## Priority summary
 
-> **Round 1 done:** A and A1 are fixed — chores no longer sync into the event
-> cache (they stay on the Radicale chores collection for external clients), and
-> WeekView routes events to a row per attendee (birthdays now show in the person's
-> row/color, not the gold Family row). See the round-1 commit.
+> **Round 1 done:** A and A1 — chores no longer sync into the event cache (they
+> stay on the Radicale chores collection for external clients); WeekView routes
+> events to a row per attendee.
+>
+> **Round 2 done:** A3 (orphan pruning) — `reconcileCollection` prunes birthday
+> objects on DOB-clear/member-delete and chore objects when an instance is
+> removed (verified live). A4 (partial) — `EnsureWindow` now re-projects chores
+> over the grown window; far-future chores still need instance generation (chores
+> are off Tribo's calendar, so this only affects external subscribers). E —
+> DayView shows an all-day strip (birthdays/holidays were invisible).
+> **Still deferred:** A2 (chore completion status on the external projection —
+> external-only value), H (RRULE dropped in migration — near-zero practical
+> impact: no recurring events come from the UI), F (browser-vs-family timezone —
+> edge case needing UI design).
 
 | # | Area | Sev | One-liner |
 |---|------|-----|-----------|

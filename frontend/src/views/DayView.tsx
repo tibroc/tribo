@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
-import { sameDay, startOfDay, type ViewProps } from '../lib/calendar'
+import { sameDay, startOfDay, colorForEvent, type ViewProps } from '../lib/calendar'
 import { fmtTime, fmtHour } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
@@ -9,6 +9,7 @@ import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
+import EventChip from '../components/EventChip'
 import PersonAvatar from '../components/PersonAvatar'
 import { ChoresPanel, TodosPanel } from '../components/panels'
 
@@ -71,6 +72,14 @@ export default function DayView({ members, events, cursor, today, header, workSc
     return all.sort((a, b) => a.start - b.start)
   }, [perMember, shared, members])
 
+  // All-day events (birthdays, holidays) — shown in a strip above the timeline,
+  // since they have no place on the hour grid.
+  const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
+  const allDayEvents = useMemo(
+    () => events.filter((ev) => ev.allDay && sameDay(new Date(ev.startAt), day)),
+    [events, day],
+  )
+
   const columns = [
     ...members.map((m) => ({ key: m.id, name: m.name, color: m.color, isFamily: false, blocks: perMember.get(m.id) ?? [], busy: busyFor(m.id) })),
     { key: 'family', name: t('common.family'), color: SHARED_COLOR, isFamily: true, blocks: shared, busy: [] as BusyBlock[] },
@@ -78,6 +87,16 @@ export default function DayView({ members, events, cursor, today, header, workSc
 
   return (
     <AppShell active="calendar" onNavigate={onNavigate} onFabClick={onAddEvent} header={<CalendarHeader controls={header} />} aside={<TodayPanel members={members} />}>
+      {allDayEvents.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-3 pb-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
+          <span className="text-xs font-bold uppercase tracking-wider shrink-0" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
+          {allDayEvents.map((ev) => (
+            <div key={ev.id} className="min-w-[120px]">
+              <EventChip dense title={ev.title} color={colorForEvent(ev, byId)} icon={ev.icon} onClick={() => onEditEvent(ev)} />
+            </div>
+          ))}
+        </div>
+      )}
       {/* Tablet: per-person columns — fills the island height */}
       <div className="hidden lg:grid lg:flex-1 lg:min-h-0" style={{ gridTemplateColumns: `64px repeat(${columns.length}, 1fr)`, gridTemplateRows: `auto minmax(${TOTAL_HEIGHT}px, 1fr)` }}>
         <div style={{ borderBottom: '1px solid var(--t-line)' }} />

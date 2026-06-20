@@ -69,7 +69,9 @@ func (s *Server) deleteFamilyMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.sync.RadicaleEnabled() {
-		if err := s.sync.DeleteMemberBirthday(r.Context(), id); err != nil {
+		// RefreshBirthdays reconciles the Birthdays collection — the removed
+		// member's birthday objects are pruned (no longer in the desired set).
+		if err := s.sync.RefreshBirthdays(r.Context()); err != nil {
 			log.Printf("birthday cleanup after member delete: %v", err)
 		}
 	}
