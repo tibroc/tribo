@@ -84,6 +84,10 @@ func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 		to = t
 	}
 
+	// Pull the requested range into the cache on demand if it falls outside the
+	// currently-synced window (so navigating to a distant month/year works).
+	s.sync.EnsureWindow(r.Context(), from, to)
+
 	events, err := s.events.ListEvents(from, to)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())

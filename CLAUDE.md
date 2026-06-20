@@ -165,7 +165,10 @@ and the Soccer→Hilda / Piano→conflict guardian demo.
 **Caveats:** OIDC login and Google Calendar sync aren't exercised in-repo (no
 Authentik / Google OAuth client here) — the configured/unconfigured and
 state-rejection paths are tested, but the live token round-trips need real
-providers. MCP-created events are cache-only (not yet pushed to Radicale).
-Calendar event navigation is bounded to a ±1-year cache window (no on-demand
-range generation for events yet). `/mcp` is unauthenticated in dev — gate it
+providers. MCP-created events are cache-only (not yet pushed to Radicale). The
+CalDAV sync window covers a rolling ±1 year and **grows on demand** as the user
+navigates further out (`Engine.EnsureWindow`, called from `GET /api/events`);
+birthdays are materialized for every year in the window. Projected chores are
+still only generated for the near term (≈-1mo..+3mo), so distant years show
+events/birthdays but not chores. `/mcp` is unauthenticated in dev — gate it
 behind a token/proxy in production.

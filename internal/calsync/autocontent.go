@@ -53,13 +53,15 @@ func (e *Engine) RefreshBirthdays(ctx context.Context) error {
 		return err
 	}
 
-	year := time.Now().Year()
+	// Cover every year in the synced window so birthdays show wherever the user
+	// has navigated (the window grows on demand — see EnsureWindow).
+	winFrom, winTo := e.window()
 	for _, m := range members {
 		mo, day, ok := parseMonthDay(m.dob)
 		if !ok {
 			continue
 		}
-		for y := year - birthdayWindow; y <= year+birthdayWindow; y++ {
+		for y := winFrom.Year(); y <= winTo.Year(); y++ {
 			start := time.Date(y, mo, day, 0, 0, 0, 0, time.UTC)
 			ev := calendar.BackendEvent{
 				ID:            fmt.Sprintf("bday-%s-%d", m.id, y),

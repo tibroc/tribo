@@ -103,7 +103,7 @@ func (e *Engine) loadToken(sourceID string) (*oauth2.Token, error) {
 	return &tok, json.Unmarshal(plain, &tok)
 }
 
-func (e *Engine) syncGoogle(ctx context.Context, src sourceRow) error {
+func (e *Engine) syncGoogle(ctx context.Context, src sourceRow, windowStart, windowEnd time.Time) error {
 	cfg := googleConfig()
 	if cfg == nil {
 		return errors.New("google sync not configured")
@@ -124,8 +124,8 @@ func (e *Engine) syncGoogle(ctx context.Context, src sourceRow) error {
 	}
 	now := time.Now()
 	res, err := svc.Events.List(calID).
-		TimeMin(now.AddDate(0, -3, 0).Format(time.RFC3339)).
-		TimeMax(now.AddDate(1, 0, 0).Format(time.RFC3339)).
+		TimeMin(windowStart.Format(time.RFC3339)).
+		TimeMax(windowEnd.Format(time.RFC3339)).
 		SingleEvents(true).MaxResults(2500).Context(ctx).Do()
 	if err != nil {
 		return err

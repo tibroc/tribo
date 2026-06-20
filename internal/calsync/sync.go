@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/emersion/go-ical"
@@ -25,10 +26,62 @@ type Engine struct {
 	db       *sql.DB
 	key      []byte
 	radicale RadicaleConfig
+
+	// Sync window: the [from, to] span pulled into the cache. It covers a rolling
+	// ±1 year and grows on demand as the user navigates further out (EnsureWindow).
+	winMu   sync.Mutex
+	winFrom time.Time
+	winTo   time.Time
+	syncMu  sync.Mutex // serializes source syncs (avoids concurrent full-refresh)
 }
 
 func NewEngine(db *sql.DB) *Engine {
-	return &Engine{db: db, key: deriveKey(), radicale: radicaleConfig()}
+	now := time.Now()
+	return &Engine{
+		db: db, key: deriveKey(), radicale: radicaleConfig(),
+		winFrom: now.AddDate(-1, 0, 0), winTo: now.AddDate(1, 0, 0),
+	}
+}
+
+// window returns the current sync span, first expanding it to always cover a
+// rolling ±1 year from now.
+func (e *Engine) window() (time.Time, time.Time) {
+	e.winMu.Lock()
+	defer e.winMu.Unlock()
+	now := time.Now()
+	if lo := now.AddDate(-1, 0, 0); lo.Before(e.winFrom) {
+		e.winFrom = lo
+	}
+	if hi := now.AddDate(1, 0, 0); hi.After(e.winTo) {
+		e.winTo = hi
+	}
+	return e.winFrom, e.winTo
+}
+
+// EnsureWindow makes sure events in [from, to] have been pulled into the cache.
+// When a request falls outside the synced span, it widens the window and pulls
+// on demand; otherwise it's a no-op (so it's cheap to call on every events read).
+// Zero bounds are ignored.
+func (e *Engine) EnsureWindow(ctx context.Context, from, to time.Time) {
+	if !e.radicale.Enabled() {
+		return
+	}
+	e.winMu.Lock()
+	grew := false
+	if !from.IsZero() && from.Before(e.winFrom) {
+		e.winFrom, grew = from, true
+	}
+	if !to.IsZero() && to.After(e.winTo) {
+		e.winTo, grew = to, true
+	}
+	e.winMu.Unlock()
+	if grew {
+		// Materialize birthdays for any newly-covered years, then pull the range.
+		if err := e.RefreshBirthdays(ctx); err != nil {
+			log.Printf("calsync: birthday refresh on window grow: %v", err)
+		}
+		e.SyncAll(ctx)
+	}
 }
 
 // NewSource is the payload to connect an external calendar.
@@ -122,11 +175,14 @@ func (e *Engine) SyncSourceByID(ctx context.Context, id string) error {
 }
 
 func (e *Engine) syncSource(ctx context.Context, src sourceRow) error {
+	e.syncMu.Lock()
+	defer e.syncMu.Unlock()
+	from, to := e.window()
 	switch src.typ {
 	case "caldav":
-		return e.syncCalDAV(ctx, src)
+		return e.syncCalDAV(ctx, src, from, to)
 	case "google":
-		return e.syncGoogle(ctx, src)
+		return e.syncGoogle(ctx, src, from, to)
 	default:
 		return nil
 	}
@@ -134,7 +190,7 @@ func (e *Engine) syncSource(ctx context.Context, src sourceRow) error {
 
 // ===== CalDAV =====
 
-func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
+func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow, windowStart, windowEnd time.Time) error {
 	u, err := url.Parse(src.url)
 	if err != nil {
 		return fmt.Errorf("bad url: %w", err)
@@ -146,10 +202,6 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	}
 
 	now := time.Now()
-	// Pull a year back through a year ahead so the current calendar year is fully
-	// covered (e.g. a birthday earlier this year still appears). Wider arbitrary-
-	// year navigation would need on-demand range generation (future work).
-	windowStart, windowEnd := now.AddDate(-1, 0, 0), now.AddDate(1, 0, 0)
 	query := &caldav.CalendarQuery{
 		CompRequest: caldav.CalendarCompRequest{Name: "VCALENDAR", AllProps: true, AllComps: true},
 		CompFilter: caldav.CompFilter{
