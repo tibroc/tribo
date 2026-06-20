@@ -40,6 +40,10 @@ func main() {
 		if err := syncEngine.RefreshBirthdays(context.Background()); err != nil {
 			log.Printf("birthday generation: %v", err)
 		}
+		// One-time: move any legacy internal-source events onto Radicale.
+		if err := syncEngine.MigrateInternalToRadicale(context.Background()); err != nil {
+			log.Printf("calendar migration: %v", err)
+		}
 		syncEngine.Start(context.Background())
 	} else {
 		log.Printf("calendars: RADICALE_URL unset — calendar backend disabled")

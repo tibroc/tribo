@@ -1,6 +1,6 @@
 # Roost
 
-Self-hosted, family-centered organizer. Go backend + SQLite, React frontend, Caddy reverse proxy, optional bundled Radicale (CalDAV), Authentik for OIDC login, MCP server for AI assistant integration. Single-family instance — keep the architecture simple.
+Self-hosted, family-centered organizer. Go backend + SQLite, React frontend, Caddy reverse proxy, Radicale (CalDAV) as the calendar backend, Authentik for OIDC login, MCP server for AI assistant integration. Single-family instance — keep the architecture simple.
 
 ## Start here
 
@@ -15,8 +15,16 @@ Self-hosted, family-centered organizer. Go backend + SQLite, React frontend, Cad
 - Design tokens (palette, fonts) live in `frontend/src/lib/tokens.ts` — single source of truth, don't redefine colors per-component.
 - Shared UI components (Card, NavIcon, EventChip, ViewSwitcher, PersonAvatar) live in `frontend/src/components/`.
 - Go packages per `docs/architecture.md`: business logic lives in `internal/{calendar,chores,todos,family}`; both REST handlers (`internal/api`) and MCP tools (`internal/mcp`) call into these — no duplicated logic.
-- SQLite only — no additional database services.
-- Radicale is treated as just another `CalendarSource`; nothing in the sync engine should special-case it.
+- **Radicale (CalDAV) is the calendar system of record.** All calendars
+  (per-person, family, birthdays, chores) are collections Tribo provisions on a
+  Radicale server configured via `RADICALE_URL`/`RADICALE_USER`/`RADICALE_PASSWORD`
+  (env, never the UI). Events are written CalDAV-first; the SQLite `event` table
+  is a disposable cache rebuilt from sync, with Tribo-only fields carried as
+  `X-TRIBO-*` iCal props. Calendars hard-require Radicale; without it they're
+  disabled (the rest of the app still runs). See the calendar-refactor plan/commits.
+- SQLite is the source of truth for everything *except* calendar events (members,
+  chores, todos, work schedules, sessions). No additional database services.
+- Google Calendar is an optional, read-only, per-person overlay (pulled, never pushed).
 
 ## Commands
 
@@ -135,8 +143,29 @@ schedules, and chores (`SettingsForms.tsx`); Google Calendar sync (OAuth connect
 flow `/api/calendar-sources/google/connect` → `/auth/google/callback`, pull +
 push via `google.golang.org/api/calendar/v3`, configured via `GOOGLE_*` env).
 
+**Calendar backend refactor (done — Radicale is now the system of record):**
+6 phases on `feature/radicale-backend`. (1) `RADICALE_*` env + a raw MKCALENDAR
+helper + `EnsureManagedCalendars` provisioning per-person/family/birthdays/chores
+collections + require-Radicale gating + `GET /api/calendar-status`. (2) CalDAV-first
+event CRUD (`calendar.EventBackend` → `calsync`): PUT/DELETE to the owning
+collection first, then upsert the disposable cache; Tribo fields ride as
+`X-TRIBO-*` props; pull rebuilds the cache (stable id = CalDAV UID) and recomputes
+guardians; 15s write timeout. (3) birthdays from `family_member.date_of_birth` +
+chore-instance projection, as discrete all-day events (no RRULE). (4) Google forced
+read-only + per-person (member as attendee for color). (5) frontend: EventForm
+**calendar picker** (the "modal does nothing" fix), member DOB field, Family
+calendars UI (managed read-only + Google connect-for-person), no-Radicale banner.
+(6) one-time migration of legacy `internal`-source events onto Radicale + seed/
+onboarding updates + docs. Notes: floating iCal times are parsed in the **family
+timezone** (`family.timezone`) so wall-clock/guardian math is server-TZ-independent;
+all-day events don't count toward guardian "busy". Verified end-to-end vs a live
+Radicale (podman) incl. create/edit/delete round-trip, cache rebuild, birthdays,
+and the Soccer→Hilda / Piano→conflict guardian demo.
+
 **Caveats:** OIDC login and Google Calendar sync aren't exercised in-repo (no
 Authentik / Google OAuth client here) — the configured/unconfigured and
 state-rejection paths are tested, but the live token round-trips need real
-providers. `/mcp` is unauthenticated in dev — gate it behind a token/proxy in
-production.
+providers. MCP-created events are cache-only (not yet pushed to Radicale).
+Calendar event navigation is bounded to a ±1-year cache window (no on-demand
+range generation for events yet). `/mcp` is unauthenticated in dev — gate it
+behind a token/proxy in production.

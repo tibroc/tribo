@@ -256,10 +256,13 @@ func (s *Service) guardianIDs() ([]string, error) {
 // guardianFree reports whether a guardian has no overlapping event (as attendee)
 // and no overlapping work-schedule block during [start, end].
 func (s *Service) guardianFree(guardianID, excludeEventID string, start, end time.Time, allDay bool) (bool, error) {
+	// Only timed events make a guardian busy. All-day events here are
+	// informational overlays (projected chores, birthdays) that shouldn't block
+	// a specific-time guardian assignment.
 	var busy int
 	if err := s.db.QueryRow(
 		`SELECT COUNT(*) FROM event e JOIN event_attendee ea ON ea.event_id = e.id
-		 WHERE ea.member_id = ? AND e.id != ? AND e.start_at < ? AND e.end_at > ?`,
+		 WHERE ea.member_id = ? AND e.id != ? AND e.all_day = 0 AND e.start_at < ? AND e.end_at > ?`,
 		guardianID, excludeEventID, end.Format(time.RFC3339), start.Format(time.RFC3339)).Scan(&busy); err != nil {
 		return false, err
 	}

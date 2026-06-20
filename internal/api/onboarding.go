@@ -205,6 +205,16 @@ func (s *Server) handleOnboarding(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	// Move onto Radicale: provision per-member/family/birthdays/chores collections,
+	// project chores, and migrate the just-created internal events + retire the
+	// internal sources. No-op when Radicale is unconfigured.
+	if s.sync.RadicaleEnabled() {
+		ctx := r.Context()
+		_ = s.sync.EnsureManagedCalendars(ctx)
+		_ = s.sync.RefreshBirthdays(ctx)
+		_ = s.sync.ProjectChores(ctx)
+		_ = s.sync.MigrateInternalToRadicale(ctx)
+	}
 	writeJSON(w, http.StatusCreated, map[string]string{"status": "ready"})
 }
 

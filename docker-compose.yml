@@ -3,7 +3,12 @@
 # Update with `docker compose pull && docker compose up -d`.
 # Pin a version by setting TRIBO_TAG (e.g. TRIBO_TAG=v1.2.0); defaults to latest.
 # To build locally instead, swap `image:` for `build: .` on the tribo service.
-# Radicale is wired but profile-gated off by default (Milestone 6).
+#
+# Calendars require a Radicale (CalDAV) backend — it is the system of record for
+# all calendars (per-person, family, birthdays, chores). Use the bundled radicale
+# service (`docker compose --profile with-radicale up`) or point at your own, and
+# set RADICALE_URL/RADICALE_USER/RADICALE_PASSWORD on the tribo service. Without
+# it, calendar features are disabled (the rest of the app still works).
 
 services:
   caddy:
@@ -42,6 +47,12 @@ services:
       # - OIDC_GUARDIAN_GROUPS=guardian
       # - OIDC_CHILD_GROUPS=children,child
       # - OIDC_GROUPS_SCOPE=groups
+      # Radicale calendar backend (required for calendar features). Point at the
+      # bundled radicale service or your own CalDAV server; the URL is the
+      # collection home Tribo provisions calendars under.
+      # - RADICALE_URL=http://radicale:5232/tribo/
+      # - RADICALE_USER=tribo
+      # - RADICALE_PASSWORD=change-me
       # CalDAV/Google credentials are encrypted at rest with this key
       # (falls back to SESSION_SECRET if unset):
       # - CREDENTIALS_KEY=change-me-to-a-long-random-string
@@ -52,11 +63,16 @@ services:
     volumes:
       - tribo_data:/data
 
+  # CalDAV backend. Enable with `--profile with-radicale`. Configure auth + rights
+  # (e.g. an htpasswd file mounted at /config) and a matching RADICALE_USER/
+  # RADICALE_PASSWORD on the tribo service; Tribo creates collections under
+  # RADICALE_URL.
   radicale:
     image: docker.io/tomsquest/docker-radicale
     profiles: ["with-radicale"]
     volumes:
       - radicale_data:/data
+      # - ./radicale-config:/config:ro
 
 volumes:
   caddy_data:

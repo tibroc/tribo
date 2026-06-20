@@ -166,6 +166,10 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	if err != nil {
 		return err
 	}
+	// Interpret zoneless ("floating") iCal times in the family's timezone, not the
+	// server's, so wall-clock times (and guardian/work-overlap math) are stable
+	// regardless of where Tribo runs.
+	loc := e.familyLocation()
 
 	tx, err := e.db.Begin()
 	if err != nil {
@@ -185,7 +189,7 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 			continue
 		}
 		for _, ev := range obj.Data.Events() {
-			pe, ok := icalToEvent(ev)
+			pe, ok := icalToEvent(ev, loc)
 			if !ok {
 				continue
 			}
@@ -227,6 +231,19 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	return nil
 }
 
+// familyLocation is the family's timezone (for interpreting floating iCal times),
+// falling back to the server's local zone.
+func (e *Engine) familyLocation() *time.Location {
+	var tz string
+	_ = e.db.QueryRow(`SELECT COALESCE(timezone, '') FROM family LIMIT 1`).Scan(&tz)
+	if tz != "" {
+		if l, err := time.LoadLocation(tz); err == nil {
+			return l
+		}
+	}
+	return time.Local
+}
+
 // memberIDs returns the set of valid family-member ids, for filtering attendees
 // parsed from X-TRIBO-ATTENDEES before inserting (avoids FK violations on stale ids).
 func (e *Engine) memberIDs() (map[string]bool, error) {
@@ -258,16 +275,16 @@ type parsedEvent struct {
 	attendees        []string // family-member ids
 }
 
-func icalToEvent(ev ical.Event) (parsedEvent, bool) {
+func icalToEvent(ev ical.Event, loc *time.Location) (parsedEvent, bool) {
 	uid := text(ev, ical.PropUID)
 	if uid == "" {
 		return parsedEvent{}, false
 	}
-	start, err := ev.DateTimeStart(time.Local)
+	start, err := ev.DateTimeStart(loc)
 	if err != nil {
 		return parsedEvent{}, false
 	}
-	end, err := ev.DateTimeEnd(time.Local)
+	end, err := ev.DateTimeEnd(loc)
 	if err != nil || end.IsZero() {
 		end = start.Add(time.Hour)
 	}
