@@ -78,6 +78,7 @@ export interface NewCalendarSource {
   username?: string
   password?: string
   readOnly?: boolean
+  memberId?: string // attach as a per-person overlay
 }
 
 export function addCalendarSource(src: NewCalendarSource): Promise<{ id: string }> {
@@ -483,6 +484,7 @@ export interface OnboardMember {
   color: string
   role: 'guardian' | 'child'
   defaultGuardianIndex?: number | null
+  dateOfBirth?: string | null // 'YYYY-MM-DD'
 }
 export interface OnboardChore {
   title: string

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Calendar, Clock, MapPin, AlignLeft, Star, ShieldCheck, AlertTriangle, Check, Trash2, Layers } from 'lucide-react'
+import { X, Calendar, Clock, MapPin, AlignLeft, Star, ShieldCheck, AlertTriangle, Check, Trash2, Layers, Users, Lock } from 'lucide-react'
 import {
   createEvent, updateEvent, deleteEvent, getEventGuardians, claimEvent,
   type TriboEvent, type NewEvent, type FamilyMember, type CalendarSource,
@@ -53,11 +53,13 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   const [important, setImportant] = useState(event?.visibilityTag === 'milestone')
   const [location, setLocation] = useState(event?.location ?? '')
   const [description, setDescription] = useState(event?.description ?? '')
+  const [externalAttendees, setExternalAttendees] = useState(event?.externalAttendees ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
   const hasChild = attendees.some((id) => byId.get(id)?.role === 'child')
+  const familyHasChild = members.some((m) => m.role === 'child')
 
   // Calendars an event can be saved to: the per-person and family calendars
   // (not the managed birthdays/chores calendars, nor read-only Google overlays).
@@ -112,6 +114,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
       visibilityTag: important ? 'milestone' : 'standard',
       requiresGuardian: requiresGuardian && hasChild,
       attendeeIds: attendees,
+      externalAttendees: externalAttendees.trim() || null,
     }
     setBusy(true)
     setError(null)
@@ -139,7 +142,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
         <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <button aria-label={t('common.close')} onClick={onClose}><X size={20} style={{ color: 'var(--t-text-soft)' }} /></button>
           <div className="font-display text-lg" style={{ fontWeight: 500 }}>{editing ? t('event.editTitle') : t('event.newTitle')}</div>
-          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy}>{t('common.save')}</button>
+          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy || (!editing && !sourceId)}>{t('common.save')}</button>
         </div>
 
         <div className="p-5 overflow-y-auto">
@@ -193,7 +196,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
               })}
             </div>
 
-            {hasChild && (
+            {hasChild ? (
               <GuardianCard
                 enabled={requiresGuardian}
                 onToggle={setRequiresGuardian}
@@ -202,6 +205,8 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                 editing={editing}
                 onClaimed={onSaved}
               />
+            ) : familyHasChild && (
+              <div className="text-xs mt-3" style={{ color: 'var(--t-text-soft)' }}>{t('event.guardianHint')}</div>
             )}
           </div>
 
@@ -211,9 +216,13 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
               <MapPin size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <input className="w-full bg-transparent outline-hidden text-sm" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('event.addLocation')} />
             </div>
-            <div className="flex items-center gap-3 py-2.5">
+            <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <AlignLeft size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <textarea className="w-full bg-transparent outline-hidden text-sm resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('event.notes')} />
+            </div>
+            <div className="flex items-center gap-3 py-2.5">
+              <Users size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
+              <input className="w-full bg-transparent outline-hidden text-sm" value={externalAttendees} onChange={(e) => setExternalAttendees(e.target.value)} placeholder={t('event.externalAttendees')} />
             </div>
           </div>
 
@@ -232,7 +241,11 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
             <div className="flex items-center gap-3 py-2.5">
               <Layers size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               {editing ? (
-                <span className="text-sm">{sources.find((s) => s.id === sourceId)?.displayName ?? '—'}</span>
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
+                  <Lock size={13} style={{ flexShrink: 0 }} />
+                  <span>{sources.find((s) => s.id === sourceId)?.displayName ?? '—'}</span>
+                  <span className="text-xs">· {t('event.calendarFixed')}</span>
+                </div>
               ) : (
                 <select
                   aria-label={t('event.calendar')}

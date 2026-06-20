@@ -95,6 +95,7 @@ type NewSource struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
 	ReadOnly    bool   `json:"readOnly"`
+	MemberID    string `json:"memberId"` // optional: attach as a per-person overlay
 }
 
 type sourceRow struct {
@@ -114,10 +115,16 @@ func (e *Engine) CreateSource(in NewSource) (string, error) {
 		return "", err
 	}
 	id := uuid.NewString()
+	// A user-added CalDAV/Google source is an unmanaged per-person overlay
+	// (kind=external). member_id is optional but expected for the new model.
+	var memberID any
+	if in.MemberID != "" {
+		memberID = in.MemberID
+	}
 	_, err = e.db.Exec(
-		`INSERT INTO calendar_source (id, type, display_name, is_shared, url, credentials, read_only)
-		 VALUES (?, ?, ?, 0, ?, ?, ?)`,
-		id, in.Type, in.DisplayName, in.URL, enc, b2i(in.ReadOnly))
+		`INSERT INTO calendar_source (id, type, display_name, is_shared, url, credentials, read_only, kind, member_id, managed)
+		 VALUES (?, ?, ?, 0, ?, ?, ?, 'external', ?, 0)`,
+		id, in.Type, in.DisplayName, in.URL, enc, b2i(in.ReadOnly), memberID)
 	return id, err
 }
 

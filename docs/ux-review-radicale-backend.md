@@ -18,10 +18,23 @@ running app (seeded, against a live Radicale); the rest is from code review.
 > over the grown window; far-future chores still need instance generation (chores
 > are off Tribo's calendar, so this only affects external subscribers). E —
 > DayView shows an all-day strip (birthdays/holidays were invisible).
+> **Round 3 done:** B (EventForm) — edit-mode source shown with a lock + "can't
+> be moved" hint, external-attendees input wired to the API, guardian-gating made
+> explicit (hint when no child attendee), Save disabled with no targetable
+> calendar. C (onboarding) — members step now collects date-of-birth (threaded
+> through `OnboardMember`/`onboardMember` → `date_of_birth`, so `RefreshBirthdays`
+> generates birthdays for onboarded families) and the calendar-step copy now
+> describes the auto-provisioned per-person/family/birthdays calendars + per-person
+> Google overlay. D (Family → Calendars) — the generic CalDAV connect is now a
+> per-person read-only overlay (member picker; `CreateSource` stores
+> `kind=external` + `member_id`, verified by `TestCreateSourcePersonOverlay`),
+> clearer disabled-vs-unreachable banners, and a lock affordance on managed rows.
+>
 > **Still deferred:** A2 (chore completion status on the external projection —
 > external-only value), H (RRULE dropped in migration — near-zero practical
 > impact: no recurring events come from the UI), F (browser-vs-family timezone —
-> edge case needing UI design).
+> edge case needing UI design), C3 (onboarding still creates legacy `internal`
+> sources that are migrated at startup — transitional indirection), I (P3 polish).
 
 | # | Area | Sev | One-liner |
 |---|------|-----|-----------|
@@ -30,9 +43,9 @@ running app (seeded, against a live Radicale); the rest is from code review.
 | A2 | Chore status not projected | **P2** | Done/skipped chores look identical to pending on the calendar |
 | A3 | Stale chore/birthday objects | **P2** | Deleted instances/cleared DOBs leave orphans on Radicale |
 | A4 | Distant-year chores missing | **P2** | EnsureWindow grows events but never re-projects chores |
-| B | EventForm gaps | **P2** | Edit-source not explained; no external-attendees UI; guardian gating hidden |
-| C | Onboarding | **P2** | No DOB collected → birthdays never generate; stale calendar-step copy |
-| D | Family → Calendars | **P2/P3** | Dual connect flows; weak banners; managed vs. manual not distinct |
+| B | ~~EventForm gaps~~ ✅ | **P2** | ~~Edit-source not explained; no external-attendees UI; guardian gating hidden~~ done |
+| C | ~~Onboarding~~ ✅ | **P2** | ~~No DOB collected → birthdays never generate; stale calendar-step copy~~ done (C3 deferred) |
+| D | ~~Family → Calendars~~ ✅ | **P2/P3** | ~~Dual connect flows; weak banners; managed vs. manual not distinct~~ done |
 | E | DayView all-day | **P2** | All-day events (birthdays, chores) invisible in the Day timeline |
 | F | Timezone / timestamp correctness | **P2** | Browser-TZ vs family-TZ drift; mixed-offset string compares |
 | G | Sync scaling | **P3** | Full-refresh re-pulls the whole growing window each tick |

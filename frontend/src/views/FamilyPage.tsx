@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
-  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages,
+  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle,
 } from 'lucide-react'
 import type { Section } from '../lib/calendar'
 import {
@@ -167,13 +167,15 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
           <Section title={t('family.calendars.title')} icon={Globe}
             action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setShowConnect(true)}><Plus size={14} /> {t('common.connect')}</Button>}>
             {calStatus && !calStatus.enabled && (
-              <div className="text-xs rounded-lg p-2 mb-2" style={{ background: 'color-mix(in srgb, var(--t-accent) 14%, transparent)', color: 'var(--t-accent)' }}>
-                {t('family.calendars.disabled')}
+              <div className="text-xs rounded-lg p-2.5 mb-2 flex items-start gap-2" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)', color: 'var(--t-text-soft)' }}>
+                <Globe size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{t('family.calendars.disabled')}</span>
               </div>
             )}
             {calStatus && calStatus.enabled && !calStatus.reachable && (
-              <div className="text-xs rounded-lg p-2 mb-2" style={{ background: 'color-mix(in srgb, var(--t-accent) 14%, transparent)', color: 'var(--t-accent)' }}>
-                {t('family.calendars.unreachable')}
+              <div className="text-xs rounded-lg p-2.5 mb-2 flex items-start gap-2" style={{ background: 'color-mix(in srgb, var(--t-danger) 12%, transparent)', color: 'var(--t-danger)' }}>
+                <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{t('family.calendars.unreachable')}</span>
               </div>
             )}
             <div className="space-y-2">
@@ -187,7 +189,10 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <div key={c.id} className="flex items-center gap-2 py-1">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{c.displayName}</div>
+                      <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                        {c.displayName}
+                        {c.managed && <Lock size={11} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} aria-label={t('family.calendars.managed')} />}
+                      </div>
                       <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
                     </div>
                     {/* Managed calendars are auto-provisioned — no manual sync/remove. */}
@@ -222,6 +227,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
 
         {showConnect && (
           <ConnectCalendarModal
+            members={members}
             onClose={() => setShowConnect(false)}
             onConnected={() => { setShowConnect(false); reloadSources() }}
           />
@@ -338,21 +344,24 @@ function SettingRow({ icon: Icon, title, sub, onClick }: { icon: typeof MapPin; 
 
 
 // CalDAV connect flow (designed just-in-time per the build brief).
-function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {
+function ConnectCalendarModal({ members, onClose, onConnected }: { members: FamilyMember[]; onClose: () => void; onConnected: () => void }) {
   const { t } = useTranslation()
   const [displayName, setDisplayName] = useState('')
   const [url, setUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [readOnly, setReadOnly] = useState(true)
+  const [memberId, setMemberId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const connect = async () => {
+    if (!memberId) { setError(t('family.calendars.memberRequired')); return }
     if (!url.trim()) { setError(t('family.calendars.urlRequired')); return }
     setBusy(true); setError(null)
     try {
-      await addCalendarSource({ type: 'caldav', displayName: displayName || 'Calendar', url: url.trim(), username, password, readOnly })
+      // A user-added CalDAV calendar is a read-only overlay for one person,
+      // mirroring the Google overlay model.
+      await addCalendarSource({ type: 'caldav', displayName: displayName || 'Calendar', url: url.trim(), username, password, readOnly: true, memberId })
       onConnected()
     } catch (e) { setError(String(e)); setBusy(false) }
   }
@@ -369,14 +378,15 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
         </div>
         <div className="p-5 space-y-3">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          <select className="w-full text-sm px-3 py-2 outline-hidden" style={field} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+            <option value="">{t('family.calendars.forWhom')}</option>
+            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
           <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.displayName')} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.urlPlaceholder')} value={url} onChange={(e) => setUrl(e.target.value)} />
           <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.usernamePlaceholder')} value={username} onChange={(e) => setUsername(e.target.value)} />
           <input type="password" className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.passwordPlaceholder')} value={password} onChange={(e) => setPassword(e.target.value)} />
-          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
-            <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded-sm" />
-            {t('family.calendars.readOnlyOption')}
-          </label>
+          <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('family.calendars.overlayHint')}</div>
         </div>
       </div>
     </div>

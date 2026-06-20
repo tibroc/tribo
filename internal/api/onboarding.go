@@ -15,6 +15,7 @@ type onboardMember struct {
 	Color                string `json:"color"`
 	Role                 string `json:"role"`
 	DefaultGuardianIndex *int   `json:"defaultGuardianIndex"`
+	DateOfBirth          string `json:"dateOfBirth"`
 }
 
 type onboardChore struct {
@@ -100,9 +101,13 @@ func (s *Server) handleOnboarding(w http.ResponseWriter, r *http.Request) {
 			role = "guardian"
 		}
 		memberIDs[i] = uuid.NewString()
+		var dob any
+		if strings.TrimSpace(m.DateOfBirth) != "" {
+			dob = strings.TrimSpace(m.DateOfBirth)
+		}
 		if _, err := tx.Exec(
-			`INSERT INTO family_member (id, family_id, name, color, role, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
-			memberIDs[i], familyID, m.Name, orDefault(m.Color, "#3E6259"), role, baseOrder+i); err != nil {
+			`INSERT INTO family_member (id, family_id, name, color, role, sort_order, date_of_birth) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			memberIDs[i], familyID, m.Name, orDefault(m.Color, "#3E6259"), role, baseOrder+i, dob); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}

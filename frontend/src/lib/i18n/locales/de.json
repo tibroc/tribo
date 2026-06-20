@@ -208,12 +208,14 @@
       "urlPlaceholder": "CalDAV-URL (z. B. https://host/dav/user/calendar/)",
       "usernamePlaceholder": "Benutzername (optional)",
       "passwordPlaceholder": "Passwort (optional)",
-      "readOnlyOption": "Schreibgeschützt (Tribo-Termine nicht in diesen Kalender übertragen)",
       "urlRequired": "CalDAV-URL ist erforderlich",
       "managed": "Von Tribo verwaltet",
-      "disabled": "Kalender brauchen ein Radicale-Backend — RADICALE_URL am Server setzen.",
-      "unreachable": "Kalender-Backend nicht erreichbar — Änderungen werden evtl. erst später gespeichert.",
-      "googleForWhom": "Google-Kalender hinzufügen für…"
+      "disabled": "Kalender benötigen ein Radicale-Backend — setze RADICALE_URL auf dem Server. Der Rest von Tribo funktioniert auch ohne.",
+      "unreachable": "Das Kalender-Backend ist gerade nicht erreichbar. Vorhandene Termine werden weiterhin angezeigt, aber neue Änderungen werden erst gespeichert, wenn es wieder läuft.",
+      "googleForWhom": "Google-Kalender hinzufügen für…",
+      "forWhom": "Wessen Kalender ist das?",
+      "memberRequired": "Wähle, zu welcher Person dieser Kalender gehört.",
+      "overlayHint": "Wird als schreibgeschützte Überlagerung in der Farbe dieser Person hinzugefügt."
     },
     "location": {
       "title": "Wetterort",
@@ -246,7 +248,10 @@
     "noGuardianAvailable": "Keine Aufsicht verfügbar",
     "multipleFree": "Mehrere Aufsichtspersonen sind frei — wer zuerst öffnet, übernimmt.",
     "claim": "Übernehmen · {{name}}",
-    "toggle": "umschalten"
+    "toggle": "umschalten",
+    "externalAttendees": "Gäste (kommagetrennt)",
+    "guardianHint": "Füge ein Kind als Teilnehmer hinzu, um eine Aufsichtsperson zu verlangen.",
+    "calendarFixed": "nicht verschiebbar"
   },
   "forms": {
     "addMember": "Mitglied hinzufügen",
@@ -381,10 +386,11 @@
       "guardianPlaceholder": "Erziehungsberechtigt…",
       "memberN": "Mitglied {{n}}",
       "addMember": "Mitglied hinzufügen",
-      "paletteHint": "<0>Das nächste Mitglied</0> erhält automatisch diese Farbe — so behält jede Familie eine ausgewogene, harmonische Palette."
+      "paletteHint": "<0>Das nächste Mitglied</0> erhält automatisch diese Farbe — so behält jede Familie eine ausgewogene, harmonische Palette.",
+      "dob": "Geburtstag"
     },
     "calendar": {
-      "note": "Ein integrierter <1>Familienkalender</1> wird automatisch erstellt. Du kannst jederzeit einen externen CalDAV-/Google-Kalender unter <3>Familie → Kalender</3> verbinden."
+      "note": "Tribo legt automatisch einen Kalender für <1>jede Person</1> sowie gemeinsame <3>Familien-</3> und <5>Geburtstags-</5>Kalender an. Einen schreibgeschützten Google-Kalender kannst du jeder Person später unter <7>Familie → Kalender</7> hinzufügen."
     },
     "recurrence": {
       "daily": "täglich",

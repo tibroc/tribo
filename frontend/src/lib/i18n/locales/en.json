@@ -208,12 +208,14 @@
       "urlPlaceholder": "CalDAV URL (e.g. https://host/dav/user/calendar/)",
       "usernamePlaceholder": "Username (optional)",
       "passwordPlaceholder": "Password (optional)",
-      "readOnlyOption": "Read-only (don't push Tribo events to this calendar)",
       "urlRequired": "CalDAV URL is required",
       "managed": "Managed by Tribo",
-      "disabled": "Calendars need a Radicale backend — set RADICALE_URL on the server.",
-      "unreachable": "Calendar backend unavailable — changes may not save until it's back.",
-      "googleForWhom": "Add Google calendar for…"
+      "disabled": "Calendars need a Radicale backend — set RADICALE_URL on the server. The rest of Tribo works without it.",
+      "unreachable": "Can't reach the calendar backend right now. Existing events still show, but new changes won't save until it's back.",
+      "googleForWhom": "Add Google calendar for…",
+      "forWhom": "Whose calendar is this?",
+      "memberRequired": "Pick which person this calendar belongs to.",
+      "overlayHint": "Added as a read-only overlay, shown in this person's colour."
     },
     "location": {
       "title": "Weather location",
@@ -246,7 +248,10 @@
     "noGuardianAvailable": "No guardian available",
     "multipleFree": "More than one guardian is free — whoever opens this first can take it.",
     "claim": "Claim · {{name}}",
-    "toggle": "toggle"
+    "toggle": "toggle",
+    "externalAttendees": "Guests (comma-separated)",
+    "guardianHint": "Add a child as an attendee to require a guardian.",
+    "calendarFixed": "can't be moved"
   },
   "forms": {
     "addMember": "Add member",
@@ -381,10 +386,11 @@
       "guardianPlaceholder": "Guardian…",
       "memberN": "Member {{n}}",
       "addMember": "Add member",
-      "paletteHint": "<0>The next member</0> is automatically given this colour — every family keeps a balanced, harmonious palette."
+      "paletteHint": "<0>The next member</0> is automatically given this colour — every family keeps a balanced, harmonious palette.",
+      "dob": "Birthday"
     },
     "calendar": {
-      "note": "A built-in <1>family calendar</1> is created automatically. You can connect an external CalDAV/Google calendar anytime from <3>Family → Calendars</3>."
+      "note": "Tribo sets up a calendar for <1>each person</1>, plus shared <3>family</3> and <5>birthdays</5> calendars automatically. You can connect a read-only Google calendar to any person later from <7>Family → Calendars</7>."
     },
     "recurrence": {
       "daily": "daily",

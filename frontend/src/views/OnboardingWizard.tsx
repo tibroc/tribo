@@ -9,7 +9,7 @@ import { useLocale } from '../lib/i18n'
 import { recurrenceLabel } from '../lib/chores'
 import { useTranslation, Trans } from 'react-i18next'
 
-interface MemberDraft { name: string; role: 'guardian' | 'child'; defaultGuardianIndex: number | null }
+interface MemberDraft { name: string; role: 'guardian' | 'child'; defaultGuardianIndex: number | null; dob: string }
 // `title` is the stable English value persisted to the backend; `labelKey` is its i18n key for display.
 interface ChoreTemplate { title: string; labelKey: string; recurrence: 'daily' | 'weekly' | 'monthly'; enabled: boolean; assignee: number | null }
 interface PatternTemplate { title: string; labelKey: string; startTime: string; durationMin: number; weekdays: number[]; enabled: boolean; member: number | null }
@@ -39,7 +39,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
   const [timezone, setTimezone] = useState(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Lisbon' } catch { return 'Europe/Lisbon' }
   })
-  const [members, setMembers] = useState<MemberDraft[]>([{ name: '', role: 'guardian', defaultGuardianIndex: null }])
+  const [members, setMembers] = useState<MemberDraft[]>([{ name: '', role: 'guardian', defaultGuardianIndex: null, dob: '' }])
   const [chores, setChores] = useState<ChoreTemplate[]>(CHORE_TEMPLATES.map((c) => ({ ...c, enabled: false, assignee: null })))
   const [patterns, setPatterns] = useState<PatternTemplate[]>(PATTERN_TEMPLATES.map((p) => ({ ...p, enabled: false, member: null })))
   const [busy, setBusy] = useState(false)
@@ -56,6 +56,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
       members: members.filter((m) => m.name.trim()).map((m, i) => ({
         name: m.name.trim(), color: markerColor(i), role: m.role,
         defaultGuardianIndex: m.role === 'child' ? m.defaultGuardianIndex : null,
+        dateOfBirth: m.dob.trim() || null,
       })),
       chores: chores.filter((c) => c.enabled && c.assignee != null).map((c) => ({
         title: c.title, recurrence: c.recurrence, mode: 'fixed',
@@ -179,29 +180,36 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
           {step === 2 && (
             <div className="space-y-2.5" style={{ maxWidth: 460 }}>
               {members.map((m, i) => (
-                <div key={i} className="flex items-center gap-3 p-2.5"
+                <div key={i} className="flex flex-col gap-2 p-2.5"
                   style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)', background: 'var(--t-surface)' }}>
-                  <div className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: '50% 50% 50% 30%', background: markerColor(i), color: '#fff', fontWeight: 700 }}>
-                    {m.name.trim() ? m.name.trim()[0].toUpperCase() : i + 1}
-                  </div>
-                  <div className="flex-1 flex items-center gap-2">
-                    <input className="flex-1 bg-transparent outline-hidden text-sm font-semibold" value={m.name} placeholder={t('onboarding.members.namePlaceholder')}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: '50% 50% 50% 30%', background: markerColor(i), color: '#fff', fontWeight: 700 }}>
+                      {m.name.trim() ? m.name.trim()[0].toUpperCase() : i + 1}
+                    </div>
+                    <input className="flex-1 bg-transparent outline-hidden text-sm font-semibold min-w-0" value={m.name} placeholder={t('onboarding.members.namePlaceholder')}
                       onChange={(e) => updateMember(setMembers, i, { name: e.target.value })} />
+                    <Segmented value={m.role} guardianLabel={t('onboarding.members.guardian')} childLabel={t('onboarding.members.child')} onChange={(role) => updateMember(setMembers, i, { role })} />
+                    {members.length > 1 && (
+                      <button aria-label={t('common.delete')} onClick={() => setMembers((cur) => cur.filter((_, j) => j !== i))}><Trash2 size={16} style={{ color: 'var(--t-text-soft)' }} /></button>
+                    )}
                   </div>
-                  <Segmented value={m.role} guardianLabel={t('onboarding.members.guardian')} childLabel={t('onboarding.members.child')} onChange={(role) => updateMember(setMembers, i, { role })} />
-                  {m.role === 'child' && guardians.length > 0 && (
-                    <select className="text-sm rounded-lg px-2 py-1.5 outline-hidden" style={field} value={m.defaultGuardianIndex ?? ''}
-                      onChange={(e) => updateMember(setMembers, i, { defaultGuardianIndex: e.target.value === '' ? null : Number(e.target.value) })}>
-                      <option value="">{t('onboarding.members.guardianPlaceholder')}</option>
-                      {guardians.map((g) => <option key={g.i} value={g.i}>{g.m.name || t('onboarding.members.memberN', { n: g.i + 1 })}</option>)}
-                    </select>
-                  )}
-                  {members.length > 1 && (
-                    <button aria-label={t('common.delete')} onClick={() => setMembers((cur) => cur.filter((_, j) => j !== i))}><Trash2 size={16} style={{ color: 'var(--t-text-soft)' }} /></button>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap" style={{ paddingLeft: 54 }}>
+                    <label className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--t-text-soft)' }}>
+                      {t('onboarding.members.dob')}
+                      <input type="date" className="bg-transparent outline-hidden text-xs rounded-lg px-2 py-1" style={field} value={m.dob}
+                        onChange={(e) => updateMember(setMembers, i, { dob: e.target.value })} />
+                    </label>
+                    {m.role === 'child' && guardians.length > 0 && (
+                      <select className="text-sm rounded-lg px-2 py-1.5 outline-hidden" style={field} value={m.defaultGuardianIndex ?? ''}
+                        onChange={(e) => updateMember(setMembers, i, { defaultGuardianIndex: e.target.value === '' ? null : Number(e.target.value) })}>
+                        <option value="">{t('onboarding.members.guardianPlaceholder')}</option>
+                        {guardians.map((g) => <option key={g.i} value={g.i}>{g.m.name || t('onboarding.members.memberN', { n: g.i + 1 })}</option>)}
+                      </select>
+                    )}
+                  </div>
                 </div>
               ))}
-              <button onClick={() => setMembers((cur) => [...cur, { name: '', role: 'guardian', defaultGuardianIndex: null }])}
+              <button onClick={() => setMembers((cur) => [...cur, { name: '', role: 'guardian', defaultGuardianIndex: null, dob: '' }])}
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold"
                 style={{ border: '1px dashed var(--t-line)', borderRadius: 'var(--t-radius-md)', color: 'var(--t-text-soft)' }}>
                 <Plus size={16} /> {t('onboarding.members.addMember')}
@@ -219,7 +227,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
             <div className="space-y-3" style={{ maxWidth: 470 }}>
               <div className="flex items-start gap-3 p-3" style={{ background: 'var(--t-today-wash)', borderRadius: 'var(--t-radius-md)', border: '1px solid var(--t-line)' }}>
                 <CalendarDays size={18} style={{ color: 'var(--t-brand)', flexShrink: 0, marginTop: 2 }} />
-                <div className="text-sm"><Trans i18nKey="onboarding.calendar.note">A built-in <b>family calendar</b> is created automatically. You can connect an external CalDAV/Google calendar anytime from <b>Family → Calendars</b>.</Trans></div>
+                <div className="text-sm"><Trans i18nKey="onboarding.calendar.note">Tribo sets up a calendar for <b>each person</b>, plus shared <b>family</b> and <b>birthdays</b> calendars automatically. You can connect a read-only Google calendar to any person later from <b>Family → Calendars</b>.</Trans></div>
               </div>
             </div>
           )}
