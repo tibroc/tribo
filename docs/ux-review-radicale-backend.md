@@ -8,10 +8,15 @@ running app (seeded, against a live Radicale); the rest is from code review.
 
 ## Priority summary
 
+> **Round 1 done:** A and A1 are fixed — chores no longer sync into the event
+> cache (they stay on the Radicale chores collection for external clients), and
+> WeekView routes events to a row per attendee (birthdays now show in the person's
+> row/color, not the gold Family row). See the round-1 commit.
+
 | # | Area | Sev | One-liner |
 |---|------|-----|-----------|
-| A | Chores-as-calendar-events | **P1** | Projected chores flood the calendar and bury real events |
-| A1 | WeekView all-day rendering | **P1** | Chore chips are title-less, gold, dumped in the "Family" row |
+| A | ~~Chores-as-calendar-events~~ ✅ | **P1** | ~~Projected chores flood the calendar and bury real events~~ done |
+| A1 | ~~WeekView all-day rendering~~ ✅ | **P1** | ~~Chore chips title-less/gold in Family row~~ done (routing by attendee) |
 | A2 | Chore status not projected | **P2** | Done/skipped chores look identical to pending on the calendar |
 | A3 | Stale chore/birthday objects | **P2** | Deleted instances/cleared DOBs leave orphans on Radicale |
 | A4 | Distant-year chores missing | **P2** | EnsureWindow grows events but never re-projects chores |

@@ -152,7 +152,13 @@ func (e *Engine) ProjectChores(ctx context.Context) error {
 			return fmt.Errorf("chore %s: %w", ev.ID, err)
 		}
 	}
-	return e.SyncSourceByID(ctx, srcID)
+	// Chores are published to Radicale only — they are not pulled into the event
+	// cache (the calendar shows events + birthdays; chores live on the Chores
+	// page). Drop any chore-source rows a prior sync may have left in the cache.
+	if _, err := e.db.Exec(`DELETE FROM event WHERE calendar_source_id = ?`, srcID); err != nil {
+		return err
+	}
+	return nil
 }
 
 const dateFmt = "2006-01-02"

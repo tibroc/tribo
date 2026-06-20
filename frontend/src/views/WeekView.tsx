@@ -29,7 +29,10 @@ function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date
       const dayEvents = byDay.get(`${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`) ?? []
       for (const ev of dayEvents) {
         const placed: Placed = { ev, time: ev.allDay ? undefined : fmtTime(new Date(ev.startAt), locale) }
-        if (ev.isShared || ev.attendeeIds.length === 0) shared[di].push(placed)
+        // Rows are people: an event shows in each attendee's row (e.g. a birthday
+        // lives on the shared Birthdays calendar but belongs to that person).
+        // Only attendee-less events (holidays, family dinner) go to the Family row.
+        if (ev.attendeeIds.length === 0) shared[di].push(placed)
         else ev.attendeeIds.forEach((mid) => perMember.get(mid)?.[di].push(placed))
       }
     }
@@ -117,7 +120,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
             </div>
             {days.map((d, di) => (
               <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderBottom: line, borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
-                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
+                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
                 {busyAt(person.id, di) && <div style={{ fontSize: '10.5px', fontWeight: 600, fontStyle: 'italic', color: 'var(--t-text-soft)', opacity: 0.55 }}>{t('calendar.busy')}</div>}
               </div>
             ))}
