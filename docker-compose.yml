@@ -5,10 +5,12 @@
 # To build locally instead, swap `image:` for `build: .` on the tribo service.
 #
 # Calendars require a Radicale (CalDAV) backend — it is the system of record for
-# all calendars (per-person, family, birthdays, chores). Use the bundled radicale
-# service (`docker compose --profile with-radicale up`) or point at your own, and
-# set RADICALE_URL/RADICALE_USER/RADICALE_PASSWORD on the tribo service. Without
-# it, calendar features are disabled (the rest of the app still works).
+# all calendars (per-person, family, birthdays, chores). The bundled radicale
+# service below is turnkey: it auto-generates its htpasswd from RADICALE_USER/
+# RADICALE_PASSWORD (defaults below) and Tribo is wired + gated on it. Change
+# RADICALE_PASSWORD for production (radicale is only reachable on the internal
+# compose network, never published). To use your own CalDAV server instead,
+# drop the radicale service + its depends_on and point RADICALE_URL at it.
 
 services:
   caddy:
@@ -47,12 +49,12 @@ services:
       # - OIDC_GUARDIAN_GROUPS=guardian
       # - OIDC_CHILD_GROUPS=children,child
       # - OIDC_GROUPS_SCOPE=groups
-      # Radicale calendar backend (required for calendar features). Point at the
-      # bundled radicale service or your own CalDAV server; the URL is the
-      # collection home Tribo provisions calendars under.
-      # - RADICALE_URL=http://radicale:5232/tribo/
-      # - RADICALE_USER=tribo
-      # - RADICALE_PASSWORD=change-me
+      # Radicale calendar backend (required for calendar features). Wired to the
+      # bundled radicale service; the URL is the collection home Tribo provisions
+      # calendars under. Override RADICALE_PASSWORD via a .env file or shell env.
+      - RADICALE_URL=http://radicale:5232/tribo/
+      - RADICALE_USER=${RADICALE_USER:-tribo}
+      - RADICALE_PASSWORD=${RADICALE_PASSWORD:-tribo-change-me}
       # CalDAV/Google credentials are encrypted at rest with this key
       # (falls back to SESSION_SECRET if unset):
       # - CREDENTIALS_KEY=change-me-to-a-long-random-string
@@ -60,19 +62,47 @@ services:
       # - GOOGLE_CLIENT_ID=...
       # - GOOGLE_CLIENT_SECRET=...
       # - GOOGLE_REDIRECT_URL=https://tribo.example.com/auth/google/callback
+    depends_on:
+      radicale:
+        condition: service_healthy
     volumes:
       - tribo_data:/data
 
-  # CalDAV backend. Enable with `--profile with-radicale`. Configure auth + rights
-  # (e.g. an htpasswd file mounted at /config) and a matching RADICALE_USER/
-  # RADICALE_PASSWORD on the tribo service; Tribo creates collections under
-  # RADICALE_URL.
+  # CalDAV backend (calendar system of record). Configured entirely via env:
+  # htpasswd auth with a bcrypt users file generated at startup from
+  # RADICALE_USER/RADICALE_PASSWORD, owner-only rights. Not published to the host.
   radicale:
     image: docker.io/tomsquest/docker-radicale
-    profiles: ["with-radicale"]
+    restart: unless-stopped
+    environment:
+      - TAKE_FILE_OWNERSHIP=true
+      - RADICALE_USER=${RADICALE_USER:-tribo}
+      - RADICALE_PASSWORD=${RADICALE_PASSWORD:-tribo-change-me}
+      - RADICALE_CONFIG_SERVER_HOSTS=0.0.0.0:5232
+      - RADICALE_CONFIG_AUTH_TYPE=htpasswd
+      - RADICALE_CONFIG_AUTH_HTPASSWD_FILENAME=/config/users
+      - RADICALE_CONFIG_AUTH_HTPASSWD_ENCRYPTION=bcrypt
+      - RADICALE_CONFIG_RIGHTS_TYPE=owner_only
+      - RADICALE_CONFIG_STORAGE_FILESYSTEM_FOLDER=/data/collections
+    # Generate the bcrypt htpasswd from env, then run radicale as its own user.
+    command:
+      - sh
+      - -ec
+      - |
+        /venv/bin/python -c '
+        import bcrypt, os
+        u = os.environ["RADICALE_USER"]; p = os.environ["RADICALE_PASSWORD"]
+        open("/config/users", "w").write(u + ":" + bcrypt.hashpw(p.encode(), bcrypt.gensalt()).decode() + "\n")
+        '
+        exec su-exec radicale /venv/bin/radicale --config /config/config
+    healthcheck:
+      test: ["CMD", "/venv/bin/python", "-c", "import socket; socket.create_connection(('127.0.0.1', 5232), 2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
     volumes:
       - radicale_data:/data
-      # - ./radicale-config:/config:ro
 
 volumes:
   caddy_data:
