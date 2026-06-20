@@ -19,20 +19,20 @@ import (
 )
 
 type deps struct {
-	db       *sql.DB
-	events   *calendar.Service
-	chores   *chores.Service
-	todos    *todos.Service
-	family   *family.Service
+	db     *sql.DB
+	events *calendar.Service
+	chores *chores.Service
+	todos  *todos.Service
+	family *family.Service
 }
 
-// NewServer builds the MCP server with all of Tribo's tools registered.
-func NewServer(db *sql.DB) *mcp.Server {
+// NewServer builds the MCP server with all of Tribo's tools registered. backend
+// is the CalDAV system of record (calsync.Engine) so MCP-created events are
+// written to Radicale like the REST path; pass nil for cache-only use (tests).
+func NewServer(db *sql.DB, backend calendar.EventBackend) *mcp.Server {
 	d := &deps{
 		db:     db,
-		// nil backend: MCP-created events are cache-only for now (Radicale push
-		// for the MCP surface is a follow-up).
-		events: calendar.NewService(db, nil),
+		events: calendar.NewService(db, backend),
 		chores: chores.NewService(db),
 		todos:  todos.NewService(db),
 		family: family.NewService(db),
@@ -43,8 +43,8 @@ func NewServer(db *sql.DB) *mcp.Server {
 }
 
 // NewHandler returns an HTTP handler to mount at /mcp.
-func NewHandler(db *sql.DB) http.Handler {
-	server := NewServer(db)
+func NewHandler(db *sql.DB, backend calendar.EventBackend) http.Handler {
+	server := NewServer(db, backend)
 	return mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, nil)
 }
 
@@ -80,9 +80,9 @@ type addEventIn struct {
 	RequiresGuardian bool     `json:"requiresGuardian,omitempty"`
 }
 type addEventOut struct {
-	ID              string `json:"id"`
+	ID               string `json:"id"`
 	AssignedGuardian string `json:"assignedGuardianId,omitempty"`
-	Conflict        string `json:"conflictStatus"`
+	Conflict         string `json:"conflictStatus"`
 }
 
 type addTodoIn struct {
@@ -136,9 +136,9 @@ func (d *deps) register(s *mcp.Server) {
 
 	mcp.AddTool(s, &mcp.Tool{Name: "add_event", Description: "Create a calendar event. Returns guardian assignment if applicable."},
 		func(ctx context.Context, _ *mcp.CallToolRequest, in addEventIn) (*mcp.CallToolResult, addEventOut, error) {
-			src := d.defaultSourceID()
+			src := d.sourceForAttendees(in.AttendeeIDs)
 			if src == "" {
-				return nil, addEventOut{}, errors.New("no calendar source configured")
+				return nil, addEventOut{}, errors.New("no calendar configured (calendars require a Radicale backend)")
 			}
 			ev, err := d.events.CreateEvent(ctx, calendar.NewEvent{
 				CalendarSourceID: src, Title: in.Title, StartAt: in.Start, EndAt: in.End,

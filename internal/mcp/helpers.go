@@ -7,20 +7,35 @@ import (
 	"tribo/internal/family"
 )
 
-func (d *deps) defaultSourceID() string {
+// sourceForAttendees picks the calendar a new event should live on: a single
+// attendee → that person's calendar; otherwise the family calendar (mirroring
+// the web EventForm). Falls back to any writable person calendar.
+func (d *deps) sourceForAttendees(attendeeIDs []string) string {
 	srcs, err := d.events.ListSources()
 	if err != nil {
 		return ""
 	}
+	var family, fallback string
 	for _, s := range srcs {
-		if !s.IsShared {
-			return s.ID
+		if s.ReadOnly {
+			continue
+		}
+		switch s.Kind {
+		case "person":
+			if len(attendeeIDs) == 1 && s.MemberID != nil && *s.MemberID == attendeeIDs[0] {
+				return s.ID
+			}
+			if fallback == "" {
+				fallback = s.ID
+			}
+		case "family":
+			family = s.ID
 		}
 	}
-	if len(srcs) > 0 {
-		return srcs[0].ID
+	if family != "" {
+		return family
 	}
-	return ""
+	return fallback
 }
 
 func (d *deps) memberLites() map[string]family.Member {
