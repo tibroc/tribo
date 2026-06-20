@@ -104,17 +104,17 @@ func (e *Engine) ProjectChores(ctx context.Context) error {
 	// navigates) so the chores collection tracks what the calendar covers.
 	winFrom, winTo := e.window()
 	rows, err := e.db.Query(
-		`SELECT ci.id, c.title, ci.period_start, ci.period_end, COALESCE(ci.assigned_member_id, ''), COALESCE(c.color, '')
+		`SELECT ci.id, c.title, ci.period_start, ci.period_end, COALESCE(ci.assigned_member_id, ''), COALESCE(c.color, ''), ci.status
 		 FROM chore_instance ci JOIN chore c ON c.id = ci.chore_id
 		 WHERE ci.period_start >= ? AND ci.period_start < ?`, winFrom.Format(dateFmt), winTo.Format(dateFmt))
 	if err != nil {
 		return err
 	}
-	type inst struct{ id, title, start, end, member, color string }
+	type inst struct{ id, title, start, end, member, color, status string }
 	var insts []inst
 	for rows.Next() {
 		var x inst
-		if err := rows.Scan(&x.id, &x.title, &x.start, &x.end, &x.member, &x.color); err != nil {
+		if err := rows.Scan(&x.id, &x.title, &x.start, &x.end, &x.member, &x.color, &x.status); err != nil {
 			rows.Close()
 			return err
 		}
@@ -134,6 +134,7 @@ func (e *Engine) ProjectChores(ctx context.Context) error {
 			AllDay:        true,
 			VisibilityTag: "routine",
 			Color:         x.color,
+			Status:        x.status,
 		}
 		if x.member != "" {
 			ev.AttendeeIDs = []string{x.member}

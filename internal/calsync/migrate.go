@@ -26,6 +26,14 @@ func (e *Engine) MigrateInternalToRadicale(ctx context.Context) error {
 		return nil // can't migrate without a target; leave data in place
 	}
 
+	// Recurrence rules aren't on calendar.Event, so pull them straight from the
+	// cache so recurring internal events (e.g. onboarding's FREQ=WEEKLY typical
+	// week) keep their RRULE instead of collapsing to one-offs.
+	rrules, err := e.eventRRULEs()
+	if err != nil {
+		return err
+	}
+
 	cal := calendar.NewService(e.db, nil)
 	events, err := cal.ListEvents(time.Time{}, time.Time{})
 	if err != nil {
@@ -51,6 +59,7 @@ func (e *Engine) MigrateInternalToRadicale(ctx context.Context) error {
 			StartAt:          ev.StartAt,
 			EndAt:            ev.EndAt,
 			AllDay:           ev.AllDay,
+			RecurrenceRule:   rrules[ev.ID],
 			VisibilityTag:    ev.VisibilityTag,
 			RequiresGuardian: ev.RequiresGuardian,
 			Icon:             ptr(ev.Icon),
@@ -71,6 +80,24 @@ func (e *Engine) MigrateInternalToRadicale(ctx context.Context) error {
 	e.SyncAll(ctx) // repopulate the cache from the managed collections
 	log.Printf("calsync: migrated %d event(s) off legacy internal sources to Radicale", migrated)
 	return nil
+}
+
+// eventRRULEs returns event id → recurrence_rule for rows that have one.
+func (e *Engine) eventRRULEs() (map[string]string, error) {
+	rows, err := e.db.Query(`SELECT id, recurrence_rule FROM event WHERE recurrence_rule IS NOT NULL AND recurrence_rule != ''`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var id, rr string
+		if err := rows.Scan(&id, &rr); err != nil {
+			return nil, err
+		}
+		out[id] = rr
+	}
+	return out, rows.Err()
 }
 
 func (e *Engine) internalSourceIDs() (map[string]bool, error) {

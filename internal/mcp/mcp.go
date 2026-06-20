@@ -78,6 +78,7 @@ type addEventIn struct {
 	AllDay           bool     `json:"allDay,omitempty"`
 	AttendeeIDs      []string `json:"attendeeIds,omitempty" jsonschema:"family member ids"`
 	RequiresGuardian bool     `json:"requiresGuardian,omitempty"`
+	CalendarSourceID string   `json:"calendarSourceId,omitempty" jsonschema:"owning calendar id; defaults to the single attendee's calendar, else the family calendar"`
 }
 type addEventOut struct {
 	ID               string `json:"id"`
@@ -136,7 +137,10 @@ func (d *deps) register(s *mcp.Server) {
 
 	mcp.AddTool(s, &mcp.Tool{Name: "add_event", Description: "Create a calendar event. Returns guardian assignment if applicable."},
 		func(ctx context.Context, _ *mcp.CallToolRequest, in addEventIn) (*mcp.CallToolResult, addEventOut, error) {
-			src := d.sourceForAttendees(in.AttendeeIDs)
+			src := in.CalendarSourceID
+			if src == "" {
+				src = d.sourceForAttendees(in.AttendeeIDs)
+			}
 			if src == "" {
 				return nil, addEventOut{}, errors.New("no calendar configured (calendars require a Radicale backend)")
 			}

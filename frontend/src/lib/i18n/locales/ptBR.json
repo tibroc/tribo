@@ -237,8 +237,6 @@
     "notes": "Notas",
     "important": "Importante",
     "importantHint": "Sempre mostrar, mesmo na visão Ano",
-    "personalCalendar": "Calendário pessoal",
-    "familyCalendar": "Calendário da família",
     "calendar": "Calendário",
     "noCalendar": "Nenhum calendário disponível",
     "deleteEvent": "Excluir evento",

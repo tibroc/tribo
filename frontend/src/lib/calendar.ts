@@ -1,6 +1,6 @@
 // Shared calendar primitives: date math, labels, and event grouping/coloring
 // used across all five calendar views.
-import { SHARED_COLOR } from './tokens'
+import { SHARED_COLOR, UNASSIGNED_COLOR } from './tokens'
 import type { FamilyMember, TriboEvent, WorkSchedule } from './api'
 
 export type ViewName = 'Day' | 'Week' | 'Month' | 'Year'
@@ -82,13 +82,17 @@ export function membersById(members: FamilyMember[]): Map<string, FamilyMember> 
 }
 
 // The marker color for an event: explicit override, else first attendee's color,
-// else the shared/gold color (family-wide or external).
+// else the shared/gold color for shared calendars, else a muted "unassigned" cue
+// (a personal-calendar event with no attendee shouldn't read as a family event).
 export function colorForEvent(ev: TriboEvent, byId: Map<string, FamilyMember>): string {
   if (ev.colorOverride) return ev.colorOverride
   if (!ev.isShared && ev.attendeeIds.length > 0) {
     const m = byId.get(ev.attendeeIds[0])
     if (m) return m.color
   }
+  // A non-shared (personal) calendar event with no attendee is unassigned — give
+  // it a muted cue so it doesn't read as a gold family event.
+  if (!ev.isShared && ev.attendeeIds.length === 0) return UNASSIGNED_COLOR
   return SHARED_COLOR
 }
 

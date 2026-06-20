@@ -237,8 +237,6 @@
     "notes": "Notes",
     "important": "Important",
     "importantHint": "Always show, even in the Year view",
-    "personalCalendar": "Personal calendar",
-    "familyCalendar": "Family calendar",
     "calendar": "Calendar",
     "noCalendar": "No calendar available",
     "deleteEvent": "Delete event",

@@ -36,7 +36,7 @@ func (s *Service) GuardianAlerts(from, to time.Time) ([]GuardianAlert, error) {
 		   FROM event
 		  WHERE requires_guardian = 1
 		    AND assigned_guardian_id IS NULL
-		    AND start_at < ? AND end_at > ?
+		    AND datetime(start_at) < datetime(?) AND datetime(end_at) > datetime(?)
 		  ORDER BY start_at`,
 		to.Format(time.RFC3339), from.Format(time.RFC3339))
 	if err != nil {
@@ -126,7 +126,7 @@ func (s *Service) Claim(eventID, memberID string, force bool) error {
 func (s *Service) recomputeWindow(start, end time.Time) error {
 	rows, err := s.db.Query(
 		`SELECT id FROM event
-		 WHERE requires_guardian = 1 AND start_at < ? AND end_at > ?`,
+		 WHERE requires_guardian = 1 AND datetime(start_at) < datetime(?) AND datetime(end_at) > datetime(?)`,
 		end.Format(time.RFC3339), start.Format(time.RFC3339))
 	if err != nil {
 		return err
@@ -262,7 +262,7 @@ func (s *Service) guardianFree(guardianID, excludeEventID string, start, end tim
 	var busy int
 	if err := s.db.QueryRow(
 		`SELECT COUNT(*) FROM event e JOIN event_attendee ea ON ea.event_id = e.id
-		 WHERE ea.member_id = ? AND e.id != ? AND e.all_day = 0 AND e.start_at < ? AND e.end_at > ?`,
+		 WHERE ea.member_id = ? AND e.id != ? AND e.all_day = 0 AND datetime(e.start_at) < datetime(?) AND datetime(e.end_at) > datetime(?)`,
 		guardianID, excludeEventID, end.Format(time.RFC3339), start.Format(time.RFC3339)).Scan(&busy); err != nil {
 		return false, err
 	}

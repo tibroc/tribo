@@ -30,27 +30,38 @@ running app (seeded, against a live Radicale); the rest is from code review.
 > `kind=external` + `member_id`, verified by `TestCreateSourcePersonOverlay`),
 > clearer disabled-vs-unreachable banners, and a lock affordance on managed rows.
 >
-> **Still deferred:** A2 (chore completion status on the external projection —
-> external-only value), H (RRULE dropped in migration — near-zero practical
-> impact: no recurring events come from the UI), F (browser-vs-family timezone —
-> edge case needing UI design), C3 (onboarding still creates legacy `internal`
-> sources that are migrated at startup — transitional indirection), I (P3 polish).
+> **Round 4 done (P3 polish):** A2 — chore projection now carries `X-TRIBO-STATUS`
+> plus a ✓/✗ summary cue, and status changes trigger a best-effort background
+> re-projection (`reprojectChores`). H — `BackendEvent.RecurrenceRule` +
+> `buildICS` emit RRULE, and the migration threads `recurrence_rule` so recurring
+> internal events survive (covered by `TestBuildICSRecurrenceAndStatus`). F2 —
+> guardian overlap queries wrap timestamps in SQLite `datetime()` for chronological
+> comparison across mixed offsets/`Z` (verified the driver normalizes both).
+> I — dead `event.personalCalendar`/`event.familyCalendar` keys removed, a muted
+> `UNASSIGNED_COLOR` cue for ownerless personal-calendar events, and `add_event`
+> gained an optional `calendarSourceId`.
+>
+> **Still deferred:** F1 (browser-vs-family timezone authority — needs UI design),
+> G (sync scaling — revisit if event counts grow), C3 (onboarding still creates
+> legacy `internal` sources migrated at startup — transitional indirection), and
+> the minor `recomputeWindow` edge case (a guardian event just outside an event's
+> own span).
 
 | # | Area | Sev | One-liner |
 |---|------|-----|-----------|
 | A | ~~Chores-as-calendar-events~~ ✅ | **P1** | ~~Projected chores flood the calendar and bury real events~~ done |
 | A1 | ~~WeekView all-day rendering~~ ✅ | **P1** | ~~Chore chips title-less/gold in Family row~~ done (routing by attendee) |
-| A2 | Chore status not projected | **P2** | Done/skipped chores look identical to pending on the calendar |
+| A2 | ~~Chore status not projected~~ ✅ | **P2** | ~~Done/skipped chores look identical to pending~~ done (X-TRIBO-STATUS + ✓/✗ cue) |
 | A3 | Stale chore/birthday objects | **P2** | Deleted instances/cleared DOBs leave orphans on Radicale |
 | A4 | Distant-year chores missing | **P2** | EnsureWindow grows events but never re-projects chores |
 | B | ~~EventForm gaps~~ ✅ | **P2** | ~~Edit-source not explained; no external-attendees UI; guardian gating hidden~~ done |
 | C | ~~Onboarding~~ ✅ | **P2** | ~~No DOB collected → birthdays never generate; stale calendar-step copy~~ done (C3 deferred) |
 | D | ~~Family → Calendars~~ ✅ | **P2/P3** | ~~Dual connect flows; weak banners; managed vs. manual not distinct~~ done |
 | E | DayView all-day | **P2** | All-day events (birthdays, chores) invisible in the Day timeline |
-| F | Timezone / timestamp correctness | **P2** | Browser-TZ vs family-TZ drift; mixed-offset string compares |
-| G | Sync scaling | **P3** | Full-refresh re-pulls the whole growing window each tick |
-| H | Migration drops RRULE | **P2** | Recurring internal events become one-offs when migrated |
-| I | Misc polish | **P3** | Dead i18n keys, no-attendee color, MCP source selection, etc. |
+| F | Timezone / timestamp correctness | **P2** | F2 ✅ (`datetime()` compares); F1 deferred (browser-TZ vs family-TZ drift) |
+| G | Sync scaling | **P3** | Full-refresh re-pulls the whole growing window each tick (deferred) |
+| H | ~~Migration drops RRULE~~ ✅ | **P2** | ~~Recurring internal events become one-offs when migrated~~ done |
+| I | ~~Misc polish~~ ✅ | **P3** | ~~Dead i18n keys, no-attendee color, MCP source selection~~ done |
 
 ---
 

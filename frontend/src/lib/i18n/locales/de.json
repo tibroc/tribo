@@ -237,8 +237,6 @@
     "notes": "Notizen",
     "important": "Wichtig",
     "importantHint": "Immer anzeigen, auch in der Jahresansicht",
-    "personalCalendar": "Persönlicher Kalender",
-    "familyCalendar": "Familienkalender",
     "calendar": "Kalender",
     "noCalendar": "Kein Kalender verfügbar",
     "deleteEvent": "Termin löschen",

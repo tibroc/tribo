@@ -28,9 +28,11 @@ type BackendEvent struct {
 	StartAt          string // RFC3339
 	EndAt            string
 	AllDay           bool
+	RecurrenceRule   string // iCal RRULE (e.g. "FREQ=WEEKLY"); "" for one-offs
 	VisibilityTag    string
 	RequiresGuardian bool
 	Icon             string
 	Color            string
+	Status           string // chore projection only: pending | done | skipped
 	AttendeeIDs      []string // family-member ids
 }

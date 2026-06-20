@@ -22,6 +22,7 @@ const (
 	propIcon             = "X-TRIBO-ICON"
 	propColor            = "X-TRIBO-COLOR"
 	propAttendees        = "X-TRIBO-ATTENDEES"
+	propStatus           = "X-TRIBO-STATUS" // chore projection: pending|done|skipped
 )
 
 // calDAVTimeout bounds a single event write so an unreachable backend fails fast.
@@ -98,7 +99,16 @@ func buildICS(in calendar.BackendEvent, uid string) *ical.Calendar {
 	ev := ical.NewEvent()
 	ev.Props.SetText(ical.PropUID, uid)
 	ev.Props.SetDateTime(ical.PropDateTimeStamp, time.Now().UTC())
-	ev.Props.SetText(ical.PropSummary, in.Title)
+	// Done/skipped chore projections get a human-visible cue in the summary so
+	// external subscribers (who don't read X-TRIBO-STATUS) can tell them apart.
+	summary := in.Title
+	switch in.Status {
+	case "done":
+		summary = "✓ " + summary
+	case "skipped":
+		summary = "✗ " + summary
+	}
+	ev.Props.SetText(ical.PropSummary, summary)
 
 	start, _ := time.Parse(time.RFC3339, in.StartAt)
 	end, _ := time.Parse(time.RFC3339, in.EndAt)
@@ -108,6 +118,9 @@ func buildICS(in calendar.BackendEvent, uid string) *ical.Calendar {
 	} else {
 		ev.Props.SetDateTime(ical.PropDateTimeStart, start)
 		ev.Props.SetDateTime(ical.PropDateTimeEnd, end)
+	}
+	if in.RecurrenceRule != "" {
+		ev.Props.SetText(ical.PropRecurrenceRule, in.RecurrenceRule)
 	}
 	if in.Description != "" {
 		ev.Props.SetText(ical.PropDescription, in.Description)
@@ -126,6 +139,9 @@ func buildICS(in calendar.BackendEvent, uid string) *ical.Calendar {
 	}
 	if in.Color != "" {
 		ev.Props.SetText(propColor, in.Color)
+	}
+	if in.Status != "" {
+		ev.Props.SetText(propStatus, in.Status)
 	}
 	if len(in.AttendeeIDs) > 0 {
 		ev.Props.SetText(propAttendees, strings.Join(in.AttendeeIDs, ","))
