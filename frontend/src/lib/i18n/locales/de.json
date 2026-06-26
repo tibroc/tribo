@@ -143,6 +143,7 @@
     "addChore": "Aufgabe hinzufügen",
     "groupToday": "Heute",
     "groupLater": "Später diese Woche",
+    "groupEarlier": "Früher diese Woche",
     "noneThisWeek": "Keine Aufgaben diese Woche",
     "donePeriod": "erledigt {{period}}",
     "nonePeriod": "Keine Aufgaben {{period}}",

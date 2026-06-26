@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
 import { sameDay, startOfDay, colorForEvent, eventDate, type ViewProps } from '../lib/calendar'
@@ -13,8 +13,8 @@ import EventChip from '../components/EventChip'
 import PersonAvatar from '../components/PersonAvatar'
 import { ChoresPanel, TodosPanel } from '../components/panels'
 
-const HOUR_START = 6
-const HOUR_END = 21 // 6 AM – 9 PM
+const HOUR_START = 0
+const HOUR_END = 24 // full day; the timeline scrolls and auto-scrolls to "now"
 const HOUR_HEIGHT = 56
 const SPAN = HOUR_END - HOUR_START
 const TOTAL_HEIGHT = SPAN * HOUR_HEIGHT // minimum timeline height (scrolls below this)
@@ -74,6 +74,41 @@ export default function DayView({ members, events, cursor, today, header, workSc
     return all.sort((a, b) => a.start - b.start)
   }, [perMember, shared, members])
 
+  // Where to auto-scroll the (now full-day) timeline: the current time on today,
+  // otherwise the earliest event, otherwise 8 AM. Anchored in the visible layout
+  // and scrolled into view on mount / day change so 24h doesn't open at midnight.
+  const focusFrac = useMemo(() => {
+    if (showNow) return nowFrac
+    return combined.length ? Math.min(...combined.map((b) => b.start)) : 8
+  }, [showNow, nowFrac, combined])
+  useLayoutEffect(() => {
+    // Center the focus time in its scroll container by setting scrollTop directly
+    // (scrollIntoView proved unreliable here). AppShell renders the view twice
+    // (desktop + mobile), so query the DOM for the *visible* anchor rather than
+    // relying on a ref. The flex/grid scroll height isn't final immediately after
+    // mount, so retry until the scroller is taller than its viewport, then scroll.
+    let cancelled = false
+    let tries = 0
+    const attempt = () => {
+      if (cancelled) return
+      const el = [...document.querySelectorAll<HTMLElement>('[data-day-anchor]')].find((a) => a.offsetParent !== null)
+      let p: HTMLElement | null = el ? el.parentElement : null
+      while (p) {
+        const oy = getComputedStyle(p).overflowY
+        if (oy === 'auto' || oy === 'scroll') break
+        p = p.parentElement
+      }
+      if (el && p && p.scrollHeight > p.clientHeight) {
+        const offset = el.getBoundingClientRect().top - p.getBoundingClientRect().top + p.scrollTop
+        p.scrollTop = Math.max(0, offset - p.clientHeight / 2)
+        return
+      }
+      if (tries++ < 40) setTimeout(attempt, 50)
+    }
+    attempt()
+    return () => { cancelled = true }
+  }, [day, focusFrac])
+
   // All-day events (birthdays, holidays) — shown in a strip above the timeline,
   // since they have no place on the hour grid.
   const allDayEvents = useMemo(
@@ -103,7 +138,7 @@ export default function DayView({ members, events, cursor, today, header, workSc
         <div style={{ borderBottom: '1px solid var(--t-line)' }} />
         {columns.map((c) => <ColumnHeader key={c.key} person={c} />)}
 
-        <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} />
+        <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} anchorFrac={focusFrac} />
         {columns.map((c) => (
           <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} locale={locale} />
         ))}
@@ -111,7 +146,7 @@ export default function DayView({ members, events, cursor, today, header, workSc
 
       {/* Phone: single combined column */}
       <div className="lg:hidden grid" style={{ gridTemplateColumns: '64px 1fr', height: TOTAL_HEIGHT }}>
-        <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} />
+        <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} anchorFrac={focusFrac} />
         <TimelineColumn blocks={combined} busy={[]} showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} locale={locale} />
       </div>
     </AppShell>
@@ -127,12 +162,13 @@ function ColumnHeader({ person }: { person: { name: string; color: string; isFam
   )
 }
 
-function TimeAxis({ showNow, nowFrac, locale }: { showNow: boolean; nowFrac: number; locale: string }) {
+function TimeAxis({ showNow, nowFrac, locale, anchorFrac }: { showNow: boolean; nowFrac: number; locale: string; anchorFrac?: number }) {
   return (
     <div className="relative h-full">
       {HOURS.map((h) => (
         <div key={h} className="absolute right-2.5 text-xs font-semibold" style={{ top: `${pct(h)}%`, transform: 'translateY(-2px)', color: 'var(--t-text-soft)' }}>{fmtHour(h, locale)}</div>
       ))}
+      {anchorFrac !== undefined && <div data-day-anchor style={{ position: 'absolute', top: `${pct(anchorFrac)}%`, width: 1, height: 1 }} />}
       {showNow && <div className="absolute right-0 rounded-full" style={{ top: `${pct(nowFrac)}%`, marginTop: -4, width: 8, height: 8, backgroundColor: 'var(--t-danger)' }} />}
     </div>
   )

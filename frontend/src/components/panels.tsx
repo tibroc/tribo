@@ -3,8 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
 import { recurrenceLabel } from '../lib/chores'
+import { useLocale } from '../lib/i18n'
 import Icon from './Icon'
 import PersonAvatar from './PersonAvatar'
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
+// Local "today" as the YYYY-MM-DD key chore instances use for period_start.
+function todayISO(): string {
+  const n = new Date()
+  return `${n.getFullYear()}-${pad2(n.getMonth() + 1)}-${pad2(n.getDate())}`
+}
 
 // Salvia checkbox: rounded square, filled salvia + checkmark when done.
 export function CheckBox({ done, onToggle, size = 23, label }: {
@@ -80,7 +88,7 @@ function GroupLabel({ children, flush }: { children: React.ReactNode; flush?: bo
 
 // A single chore row. `flush` = full-bleed dedicated-card row (11px 22px, edge
 // dividers); otherwise an inset aside row (11px 0).
-export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, last }: {
+export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, last, dayLabel }: {
   inst: ChoreInstance
   chore?: Chore
   member?: FamilyMember
@@ -88,11 +96,13 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
   onToggle: () => void
   flush?: boolean
   last?: boolean
+  dayLabel?: string
 }) {
   const { t } = useTranslation()
   const done = inst.status === 'done'
   const rotation = chore?.assignmentMode === 'rotation'
   const recur = chore ? recurrenceLabel(chore.recurrenceRule, chore.recurrenceInterval, t) : null
+  const subtitle = [dayLabel, rotation ? t('chores.rotation') : recur].filter(Boolean).join(' · ')
   return (
     <div
       className="flex items-center gap-3"
@@ -111,9 +121,9 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
         }} className="truncate">
           {inst.title}
         </div>
-        {recur && (
+        {subtitle && (
           <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)', marginTop: 1 }} className="truncate">
-            {rotation ? t('chores.rotation') : recur}
+            {subtitle}
           </div>
         )}
       </div>
@@ -134,12 +144,19 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
   emptyLabel?: string
 }) {
   const { t } = useTranslation()
+  const locale = useLocale()
   const indexOf = (id?: string) => {
     const i = members.findIndex((m) => m.id === id)
     return i < 0 ? undefined : i
   }
   const memberOf = (id?: string) => members.find((m) => m.id === id)
   const choreOf = (instCid: string) => chores?.find((c) => c.id === instCid)
+  const isDaily = (i: ChoreInstance) => choreOf(i.choreId)?.recurrenceRule === 'daily'
+  const today = todayISO()
+  const weekdayOf = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number)
+    return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(y, m - 1, d))
+  }
 
   const renderRow = (i: ChoreInstance, last: boolean) => (
     <ChoreRow
@@ -148,21 +165,33 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
       chore={choreOf(i.choreId)}
       member={memberOf(i.assignedMemberId)}
       memberIndex={indexOf(i.assignedMemberId)}
+      // Daily chores have one instance per day; label the non-today ones with
+      // their weekday so a week of them is readable instead of identical rows.
+      dayLabel={grouped && isDaily(i) && i.periodStart !== today ? weekdayOf(i.periodStart) : undefined}
       onToggle={() => onToggle(i)}
       flush={flush}
       last={last}
     />
   )
 
-  // Grouping: daily chores → "Today", everything else → "Later this week".
+  // Grouping: a daily chore yields one instance per day, so bucket those by their
+  // actual date (Today / Later / Earlier this week). Weekly+ chores cover the
+  // whole period, so they live under "Later this week" regardless of day.
   const groups: { label: string; items: ChoreInstance[] }[] = (() => {
     if (!grouped || !chores) return [{ label: '', items: instances }]
-    const today: ChoreInstance[] = []
+    const todayItems: ChoreInstance[] = []
     const later: ChoreInstance[] = []
-    for (const i of instances) (choreOf(i.choreId)?.recurrenceRule === 'daily' ? today : later).push(i)
+    const earlier: ChoreInstance[] = []
+    for (const i of instances) {
+      if (!isDaily(i)) { later.push(i); continue }
+      if (i.periodStart === today) todayItems.push(i)
+      else if (i.periodStart < today) earlier.push(i)
+      else later.push(i)
+    }
     return [
-      { label: t('chores.groupToday'), items: today },
+      { label: t('chores.groupToday'), items: todayItems },
       { label: t('chores.groupLater'), items: later },
+      { label: t('chores.groupEarlier'), items: earlier },
     ].filter((g) => g.items.length > 0)
   })()
 

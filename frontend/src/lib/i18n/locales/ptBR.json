@@ -143,6 +143,7 @@
     "addChore": "Adicionar tarefa",
     "groupToday": "Hoje",
     "groupLater": "Mais tarde esta semana",
+    "groupEarlier": "No início desta semana",
     "noneThisWeek": "Nenhuma tarefa esta semana",
     "donePeriod": "concluídas {{period}}",
     "nonePeriod": "Nenhuma tarefa {{period}}",
