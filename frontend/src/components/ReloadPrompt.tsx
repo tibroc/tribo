@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useTranslation } from 'react-i18next'
 
@@ -11,6 +12,15 @@ export default function ReloadPrompt() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW()
+
+  // The "ready to work offline" note is just a confirmation — auto-dismiss it so
+  // it doesn't linger over the UI. The update prompt stays until acted on.
+  useEffect(() => {
+    if (offlineReady && !needRefresh) {
+      const id = setTimeout(() => setOfflineReady(false), 5000)
+      return () => clearTimeout(id)
+    }
+  }, [offlineReady, needRefresh, setOfflineReady])
 
   if (!offlineReady && !needRefresh) return null
 

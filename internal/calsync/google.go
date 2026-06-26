@@ -49,10 +49,15 @@ func (e *Engine) GoogleAuthURL(state string) (string, error) {
 }
 
 // ConnectGoogle exchanges an OAuth code for tokens and stores a google source.
-func (e *Engine) ConnectGoogle(ctx context.Context, code, displayName string) (string, error) {
+// Google calendars are a read-only overlay always assigned to a family member
+// (so their events display in that person's color); memberID is required.
+func (e *Engine) ConnectGoogle(ctx context.Context, code, displayName, memberID string) (string, error) {
 	cfg := googleConfig()
 	if cfg == nil {
 		return "", errors.New("google sync not configured")
+	}
+	if memberID == "" {
+		return "", errors.New("a family member must be chosen for the Google calendar")
 	}
 	tok, err := cfg.Exchange(ctx, code)
 	if err != nil {
@@ -67,10 +72,11 @@ func (e *Engine) ConnectGoogle(ctx context.Context, code, displayName string) (s
 		displayName = "Google Calendar"
 	}
 	// url holds the calendar id ("primary" for the account's main calendar).
+	// read_only=1 + kind='external': pulled-only, never pushed.
 	if _, err := e.db.Exec(
-		`INSERT INTO calendar_source (id, type, display_name, is_shared, url, credentials, read_only)
-		 VALUES (?, 'google', ?, 0, 'primary', ?, 0)`,
-		id, displayName, enc); err != nil {
+		`INSERT INTO calendar_source (id, type, display_name, is_shared, url, credentials, read_only, kind, member_id)
+		 VALUES (?, 'google', ?, 0, 'primary', ?, 1, 'external', ?)`,
+		id, displayName, enc, memberID); err != nil {
 		return "", err
 	}
 	return id, nil
@@ -97,7 +103,7 @@ func (e *Engine) loadToken(sourceID string) (*oauth2.Token, error) {
 	return &tok, json.Unmarshal(plain, &tok)
 }
 
-func (e *Engine) syncGoogle(ctx context.Context, src sourceRow) error {
+func (e *Engine) syncGoogle(ctx context.Context, src sourceRow, windowStart, windowEnd time.Time) error {
 	cfg := googleConfig()
 	if cfg == nil {
 		return errors.New("google sync not configured")
@@ -118,9 +124,17 @@ func (e *Engine) syncGoogle(ctx context.Context, src sourceRow) error {
 	}
 	now := time.Now()
 	res, err := svc.Events.List(calID).
-		TimeMin(now.AddDate(0, -3, 0).Format(time.RFC3339)).
-		TimeMax(now.AddDate(1, 0, 0).Format(time.RFC3339)).
+		TimeMin(windowStart.Format(time.RFC3339)).
+		TimeMax(windowEnd.Format(time.RFC3339)).
 		SingleEvents(true).MaxResults(2500).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+
+	// The member this overlay belongs to (events show in their color via attendee).
+	var memberID string
+	_ = e.db.QueryRow(`SELECT COALESCE(member_id, '') FROM calendar_source WHERE id = ?`, src.id).Scan(&memberID)
+	members, err := e.memberIDs()
 	if err != nil {
 		return err
 	}
@@ -139,12 +153,19 @@ func (e *Engine) syncGoogle(ctx context.Context, src sourceRow) error {
 		if !ok {
 			continue
 		}
+		// Prefix the cache id so a Google event id can't collide with a CalDAV UID.
+		cacheID := "g-" + pe.uid
 		if _, err := tx.Exec(
 			`INSERT INTO event (id, calendar_source_id, title, description, location, start_at, end_at, all_day, external_id, visibility_tag)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'standard')`,
-			uuid.NewString(), src.id, pe.title, nullable(pe.description), nullable(pe.location),
+			cacheID, src.id, pe.title, nullable(pe.description), nullable(pe.location),
 			pe.start, pe.end, b2i(pe.allDay), pe.uid); err != nil {
 			return err
+		}
+		if memberID != "" && members[memberID] {
+			if _, err := tx.Exec(`INSERT OR IGNORE INTO event_attendee (event_id, member_id) VALUES (?, ?)`, cacheID, memberID); err != nil {
+				return err
+			}
 		}
 		count++
 	}
@@ -203,37 +224,4 @@ func orUntitled(s string) string {
 		return "(untitled)"
 	}
 	return s
-}
-
-// pushGoogle inserts a locally-created event into the Google calendar.
-func (e *Engine) pushGoogle(ctx context.Context, src sourceRow, title, startStr, endStr string, allDay bool) (string, error) {
-	cfg := googleConfig()
-	if cfg == nil {
-		return "", errors.New("google sync not configured")
-	}
-	tok, err := e.loadToken(src.id)
-	if err != nil {
-		return "", err
-	}
-	svc, err := gcal.NewService(ctx, option.WithHTTPClient(cfg.Client(ctx, tok)))
-	if err != nil {
-		return "", err
-	}
-	ev := &gcal.Event{Summary: title}
-	if allDay {
-		ev.Start = &gcal.EventDateTime{Date: startStr[:10]}
-		ev.End = &gcal.EventDateTime{Date: endStr[:10]}
-	} else {
-		ev.Start = &gcal.EventDateTime{DateTime: startStr}
-		ev.End = &gcal.EventDateTime{DateTime: endStr}
-	}
-	calID := src.url
-	if calID == "" {
-		calID = "primary"
-	}
-	created, err := svc.Events.Insert(calID, ev).Context(ctx).Do()
-	if err != nil {
-		return "", err
-	}
-	return created.Id, nil
 }

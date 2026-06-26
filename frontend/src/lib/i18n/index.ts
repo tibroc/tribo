@@ -4,6 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import en from './locales/en.json'
 import de from './locales/de.json'
 import ptBR from './locales/ptBR.json'
+import { useTimeFormatPreference, applyHourCycle } from '../timeformat'
 
 // Supported UI languages. Stored per-device (localStorage 'tribo-lang'); the
 // switcher lives in Family → App settings.
@@ -38,6 +39,11 @@ i18n
     },
   })
 
+// Keep <html lang> in sync with the UI language so native date/time pickers and
+// assistive tech follow it (set on load and on every change).
+document.documentElement.lang = i18n.language
+i18n.on('languageChanged', (lng) => { document.documentElement.lang = lng })
+
 // BCP-47 locale for Intl date/number formatting, derived from the active UI
 // language ('en' → 'en-US' so clock shows 12h; de/pt-BR are 24h).
 export function intlLocale(lang: string): string {
@@ -46,10 +52,13 @@ export function intlLocale(lang: string): string {
   return 'en-US'
 }
 
-// The active Intl locale; re-renders the caller when the language changes.
+// The active Intl locale, with the user's clock-format preference applied as a
+// Unicode hour-cycle extension. Re-renders the caller when language or the
+// time-format preference changes.
 export function useLocale(): string {
   const { i18n: inst } = useTranslation()
-  return intlLocale(inst.language)
+  const pref = useTimeFormatPreference()
+  return applyHourCycle(intlLocale(inst.language), pref)
 }
 
 export default i18n

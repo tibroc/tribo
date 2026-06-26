@@ -39,6 +39,9 @@ export const PEOPLE = {
 } as const
 
 export const SHARED_COLOR = FAMILY_COLOR
+// A muted slate for events with no owner/attendee — visually distinct from the
+// gold "family" color so an unassigned event doesn't read as a family event.
+export const UNASSIGNED_COLOR = '#8A9199'
 
 export const fonts = {
   display: 'Spectral, Georgia, serif',

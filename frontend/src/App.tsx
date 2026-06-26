@@ -3,6 +3,7 @@ import type { Section, Intent, EventFocus } from './lib/calendar'
 import { palette } from './lib/tokens'
 import { SessionProvider, useSession } from './lib/session'
 import { ThemeProvider } from './lib/theme'
+import { TimeFormatProvider } from './lib/timeformat'
 import { LoginScreen, MapProfileScreen } from './views/AuthScreens'
 import ReloadPrompt from './components/ReloadPrompt'
 import OnboardingWizard from './views/OnboardingWizard'
@@ -16,10 +17,12 @@ import ReviewPage from './views/ReviewPage'
 export default function App() {
   return (
     <ThemeProvider>
-      <SessionProvider>
-        <Gate />
-      </SessionProvider>
-      <ReloadPrompt />
+      <TimeFormatProvider>
+        <SessionProvider>
+          <Gate />
+        </SessionProvider>
+        <ReloadPrompt />
+      </TimeFormatProvider>
     </ThemeProvider>
   )
 }

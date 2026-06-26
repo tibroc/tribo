@@ -127,6 +127,7 @@ export default function CalendarPage({ onNavigate, openNew, focus }: { onNavigat
         onNavigate={onNavigate}
         onAddEvent={() => setFormEvent(null)}
         onEditEvent={(e) => setFormEvent(e)}
+        onPickDate={(d) => { setCursor(d); setView('Day') }}
       />
       {formEvent !== undefined && (
         <EventForm

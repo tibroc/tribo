@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
 import {
-  addDays, mondayOf, sameDay, groupByDay, type ViewProps,
+  addDays, mondayOf, sameDay, groupByDay, colorForEvent, membersById, type ViewProps,
 } from '../lib/calendar'
 import { fmtTime, weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
@@ -29,7 +29,10 @@ function useWeekData(events: TriboEvent[], members: FamilyMember[], monday: Date
       const dayEvents = byDay.get(`${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`) ?? []
       for (const ev of dayEvents) {
         const placed: Placed = { ev, time: ev.allDay ? undefined : fmtTime(new Date(ev.startAt), locale) }
-        if (ev.isShared || ev.attendeeIds.length === 0) shared[di].push(placed)
+        // Rows are people: an event shows in each attendee's row (e.g. a birthday
+        // lives on the shared Birthdays calendar but belongs to that person).
+        // Only attendee-less events (holidays, family dinner) go to the Family row.
+        if (ev.attendeeIds.length === 0) shared[di].push(placed)
         else ev.attendeeIds.forEach((mid) => perMember.get(mid)?.[di].push(placed))
       }
     }
@@ -77,6 +80,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
   onEditEvent: (e: TriboEvent) => void
 }) {
   const { t } = useTranslation()
+  const byId = useMemo(() => membersById(members), [members])
   const line = '1px solid var(--t-line)'
   // Subtle table polish: a stronger divider under the header row, a faint wash
   // on the label column, and a faint wash on weekend columns.
@@ -112,12 +116,12 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
               <PersonAvatar name={person.name} color={person.color} size={38} />
               <div className="min-w-0">
                 <div className="text-sm font-semibold truncate">{person.name}</div>
-                <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{person.role}</div>
+                <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{t(`forms.role.${person.role}`)}</div>
               </div>
             </div>
             {days.map((d, di) => (
               <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderBottom: line, borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
-                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={person.color} time={p.time} icon={p.ev.icon} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
+                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={p.ev.colorOverride || person.color} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
                 {busyAt(person.id, di) && <div style={{ fontSize: '10.5px', fontWeight: 600, fontStyle: 'italic', color: 'var(--t-text-soft)', opacity: 0.55 }}>{t('calendar.busy')}</div>}
               </div>
             ))}
@@ -132,7 +136,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
       </div>
       {days.map((d, di) => (
         <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
-          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={SHARED_COLOR} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} onClick={() => onEditEvent(p.ev)} />)}
+          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={colorForEvent(p.ev, byId)} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} onClick={() => onEditEvent(p.ev)} />)}
         </div>
       ))}
     </div>
@@ -150,10 +154,11 @@ function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEdit
   onEditEvent: (e: TriboEvent) => void
 }) {
   const { t } = useTranslation()
+  const byId = useMemo(() => membersById(members), [members])
   const isToday = sameDay(day, today)
   const items: { ev: TriboEvent; time?: string; color: string; who: string }[] = []
-  members.forEach((p) => (perMember.get(p.id)?.[di] ?? []).forEach((pl) => items.push({ ...pl, color: p.color, who: p.name })))
-  ;(shared[di] ?? []).forEach((pl) => items.push({ ...pl, color: SHARED_COLOR, who: t('common.family') }))
+  members.forEach((p) => (perMember.get(p.id)?.[di] ?? []).forEach((pl) => items.push({ ...pl, color: pl.ev.colorOverride || p.color, who: p.name })))
+  ;(shared[di] ?? []).forEach((pl) => items.push({ ...pl, color: colorForEvent(pl.ev, byId), who: t('common.family') }))
   items.sort((a, b) => +new Date(a.ev.startAt) - +new Date(b.ev.startAt))
 
   return (

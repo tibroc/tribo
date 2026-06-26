@@ -34,7 +34,7 @@ type Server struct {
 func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *calsync.Engine) http.Handler {
 	s := &Server{
 		db:      db,
-		events:  calendar.NewService(db),
+		events:  calendar.NewService(db, syncEngine),
 		chores:  chores.NewService(db),
 		todos:   todos.NewService(db),
 		family:  family.NewService(db),
@@ -58,6 +58,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	mux.HandleFunc("POST /api/work-schedules", s.createWorkSchedule)
 	mux.HandleFunc("PATCH /api/work-schedules/{id}", s.patchWorkSchedule)
 	mux.HandleFunc("DELETE /api/work-schedules/{id}", s.deleteWorkSchedule)
+	mux.HandleFunc("GET /api/calendar-status", s.calendarStatus)
 	mux.HandleFunc("GET /api/calendar-sources", s.listCalendarSources)
 	mux.HandleFunc("POST /api/calendar-sources", s.createCalendarSource)
 	mux.HandleFunc("GET /api/calendar-sources/google/connect", s.googleConnect)
@@ -101,7 +102,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	root.Handle("/api/", authSvc.Protect(mux))
 
 	// MCP server (open in dev; protect behind a token/proxy in production).
-	mcpHandler := mcp.NewHandler(db)
+	mcpHandler := mcp.NewHandler(db, syncEngine)
 	root.Handle("/mcp", mcpHandler)
 	root.Handle("/mcp/", mcpHandler)
 

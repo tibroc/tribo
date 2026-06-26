@@ -28,7 +28,6 @@ const (
 //
 // Events are anchored to the Monday of the current week, so the Week view's
 // default (current) week always shows data with correct "today" highlighting.
-// Recurring-event generation arrives in a later milestone.
 func seed(db *sql.DB) error {
 	// A fresh instance starts empty so the onboarding wizard runs. Set
 	// TRIBO_SEED=true to load the Silva family example data instead.
@@ -62,20 +61,20 @@ func seed(db *sql.DB) error {
 	}
 
 	members := []struct {
-		id, name, color, role string
-		defaultGuardian       any
-		order                 int
+		id, name, color, role, dob string
+		defaultGuardian            any
+		order                      int
 	}{
-		{memberAlberto, "Alberto", "#4C7EA8", "guardian", nil, 0},
-		{memberHilda, "Hilda", "#D1577A", "guardian", nil, 1},
-		{memberMarie, "Marie", "#5C9460", "child", memberHilda, 2},
-		{memberGuilherme, "Guilherme", "#8A6BB8", "child", memberAlberto, 3},
+		{memberAlberto, "Alberto", "#4C7EA8", "guardian", "1985-04-15", nil, 0},
+		{memberHilda, "Hilda", "#D1577A", "guardian", "1987-03-10", nil, 1},
+		{memberMarie, "Marie", "#5C9460", "child", "2014-11-08", memberHilda, 2},
+		{memberGuilherme, "Guilherme", "#8A6BB8", "child", "2016-05-03", memberAlberto, 3},
 	}
 	for _, m := range members {
 		if _, err := tx.Exec(
-			`INSERT INTO family_member (id, family_id, name, color, role, default_guardian_id, sort_order)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			m.id, familyID, m.name, m.color, m.role, m.defaultGuardian, m.order); err != nil {
+			`INSERT INTO family_member (id, family_id, name, color, role, default_guardian_id, date_of_birth, sort_order)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			m.id, familyID, m.name, m.color, m.role, m.defaultGuardian, m.dob, m.order); err != nil {
 			return err
 		}
 	}
@@ -172,8 +171,8 @@ func seed(db *sql.DB) error {
 
 	// Year-spanning milestones (birthdays + holidays) so the Month/Year views
 	// demonstrate the milestone-dot behavior. All-day, visibility=milestone.
-	// (Recurrence is modeled as one concrete dated event per year until the
-	// recurrence engine lands in a later milestone.)
+	// Recurring milestones are modeled as one concrete dated event per year
+	// (the calendar deliberately stores discrete dated events, not RRULEs).
 	year := monday.Year()
 	allDay := func(month time.Month, day int) (time.Time, time.Time) {
 		s := time.Date(year, month, day, 0, 0, 0, 0, loc)
@@ -187,11 +186,9 @@ func seed(db *sql.DB) error {
 		icon   string
 		ext    string
 	}
+	// Member birthdays come from each member's date_of_birth (auto-generated on
+	// the Birthdays calendar); only non-birthday holidays are seeded here.
 	milestones := []milestone{
-		{"Hilda's birthday", time.March, 10, memberHilda, "cake", ""},
-		{"Alberto's birthday", time.April, 15, memberAlberto, "cake", ""},
-		{"Guilherme's birthday", time.May, 3, memberGuilherme, "cake", ""},
-		{"Marie's birthday", time.November, 8, memberMarie, "cake", ""},
 		{"Summer holidays begin", time.June, 26, "", "", ""},
 		{"Christmas Day", time.December, 25, "", "", ""},
 	}
@@ -290,7 +287,7 @@ func seed(db *sql.DB) error {
 	if _, err := db.Exec(`UPDATE event SET requires_guardian = 1 WHERE title IN ('Soccer', 'Piano')`); err != nil {
 		return err
 	}
-	return calendar.NewService(db).RecomputeWindow(monday, monday.AddDate(0, 0, 7))
+	return calendar.NewService(db, nil).RecomputeWindow(monday, monday.AddDate(0, 0, 7))
 }
 
 // seedChoreHistory generates instances for the past 8 weeks (+ current/next) and

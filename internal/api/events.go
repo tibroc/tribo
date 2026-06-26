@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"log"
+	"errors"
 	"net/http"
 	"time"
 
@@ -14,17 +14,40 @@ import (
 )
 
 const gcalStateCookie = "tribo_gcal_state"
+const gcalMemberCookie = "tribo_gcal_member"
 
-// GET /api/calendar-sources/google/connect — returns the Google consent URL.
+// eventErrorStatus maps calendar service errors to HTTP status codes: bad client
+// input → 400, a missing event → 404, anything else (CalDAV/backend) → 502.
+func eventErrorStatus(err error) int {
+	var ve calendar.ValidationError
+	switch {
+	case errors.As(err, &ve):
+		return http.StatusBadRequest
+	case errors.Is(err, calendar.ErrNotFound):
+		return http.StatusNotFound
+	default:
+		return http.StatusBadGateway
+	}
+}
+
+// GET /api/calendar-sources/google/connect?memberId=… — returns the Google
+// consent URL. A Google calendar is a read-only overlay for one member, so the
+// chosen member is stashed in a cookie to survive the OAuth round-trip.
 func (s *Server) googleConnect(w http.ResponseWriter, r *http.Request) {
 	if !s.sync.GoogleEnabled() {
 		writeError(w, http.StatusBadRequest, "Google sync is not configured on this server")
+		return
+	}
+	memberID := r.URL.Query().Get("memberId")
+	if memberID == "" {
+		writeError(w, http.StatusBadRequest, "memberId is required (a Google calendar belongs to one person)")
 		return
 	}
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	state := base64.RawURLEncoding.EncodeToString(b)
 	http.SetCookie(w, &http.Cookie{Name: gcalStateCookie, Value: state, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 600})
+	http.SetCookie(w, &http.Cookie{Name: gcalMemberCookie, Value: memberID, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 600})
 	url, err := s.sync.GoogleAuthURL(state)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -41,7 +64,12 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: gcalStateCookie, Value: "", Path: "/", MaxAge: -1})
-	id, err := s.sync.ConnectGoogle(r.Context(), r.URL.Query().Get("code"), "Google Calendar")
+	memberID := ""
+	if mc, err := r.Cookie(gcalMemberCookie); err == nil {
+		memberID = mc.Value
+	}
+	http.SetCookie(w, &http.Cookie{Name: gcalMemberCookie, Value: "", Path: "/", MaxAge: -1})
+	id, err := s.sync.ConnectGoogle(r.Context(), r.URL.Query().Get("code"), "Google Calendar", memberID)
 	if err != nil {
 		http.Error(w, "google connect failed: "+err.Error(), http.StatusBadGateway)
 		return
@@ -71,6 +99,10 @@ func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 		to = t
 	}
 
+	// Pull the requested range into the cache on demand if it falls outside the
+	// currently-synced window (so navigating to a distant month/year works).
+	s.sync.EnsureWindow(r.Context(), from, to)
+
 	events, err := s.events.ListEvents(from, to)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -86,23 +118,22 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	ev, err := s.events.CreateEvent(in)
+	ev, err := s.events.CreateEvent(r.Context(), in)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, eventErrorStatus(err), err.Error())
 		return
 	}
-	s.pushIfExternal(ev.ID)
 	writeJSON(w, http.StatusCreated, ev)
 }
 
-// pushIfExternal writes an event to its CalDAV source in the background.
-// PushEvent itself no-ops for internal/read-only sources.
-func (s *Server) pushIfExternal(eventID string) {
-	go func() {
-		if err := s.sync.PushEvent(context.Background(), eventID); err != nil {
-			log.Printf("calsync push %s: %v", eventID, err)
-		}
-	}()
+// GET /api/calendar-status — whether the Radicale backend is configured and
+// currently reachable, so the UI can surface a "calendars unavailable" banner.
+func (s *Server) calendarStatus(w http.ResponseWriter, r *http.Request) {
+	enabled := s.sync.RadicaleEnabled()
+	writeJSON(w, http.StatusOK, map[string]bool{
+		"enabled":   enabled,
+		"reachable": enabled && s.sync.RadicaleReachable(r.Context()),
+	})
 }
 
 func (s *Server) listCalendarSources(w http.ResponseWriter, _ *http.Request) {
@@ -156,12 +187,11 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	ev, err := s.events.UpdateEvent(r.PathValue("id"), in)
+	ev, err := s.events.UpdateEvent(r.Context(), r.PathValue("id"), in)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, eventErrorStatus(err), err.Error())
 		return
 	}
-	s.pushIfExternal(ev.ID)
 	writeJSON(w, http.StatusOK, ev)
 }
 
@@ -194,8 +224,8 @@ func (s *Server) claimEvent(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/events/{id}
 func (s *Server) deleteEvent(w http.ResponseWriter, r *http.Request) {
-	if err := s.events.DeleteEvent(r.PathValue("id")); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if err := s.events.DeleteEvent(r.Context(), r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})

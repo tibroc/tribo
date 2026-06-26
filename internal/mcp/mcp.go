@@ -19,21 +19,43 @@ import (
 )
 
 type deps struct {
-	db       *sql.DB
-	events   *calendar.Service
-	chores   *chores.Service
-	todos    *todos.Service
-	family   *family.Service
+	db        *sql.DB
+	events    *calendar.Service
+	chores    *chores.Service
+	todos     *todos.Service
+	family    *family.Service
+	choreProj choreProjector
 }
 
-// NewServer builds the MCP server with all of Tribo's tools registered.
-func NewServer(db *sql.DB) *mcp.Server {
+// choreProjector refreshes the Radicale Chores collection after a status change.
+// Implemented by *calsync.Engine; the MCP path uses it to stay consistent with
+// the REST path (which calls Server.reprojectChores).
+type choreProjector interface {
+	RadicaleEnabled() bool
+	ProjectChores(ctx context.Context) error
+}
+
+// reprojectChores mirrors the just-changed chore status onto Radicale so external
+// subscribers see it, matching the REST handler. Best-effort, no-op without Radicale.
+func (d *deps) reprojectChores(ctx context.Context) {
+	if d.choreProj != nil && d.choreProj.RadicaleEnabled() {
+		_ = d.choreProj.ProjectChores(ctx)
+	}
+}
+
+// NewServer builds the MCP server with all of Tribo's tools registered. backend
+// is the CalDAV system of record (calsync.Engine) so MCP-created events are
+// written to Radicale like the REST path; pass nil for cache-only use (tests).
+func NewServer(db *sql.DB, backend calendar.EventBackend) *mcp.Server {
 	d := &deps{
 		db:     db,
-		events: calendar.NewService(db),
+		events: calendar.NewService(db, backend),
 		chores: chores.NewService(db),
 		todos:  todos.NewService(db),
 		family: family.NewService(db),
+	}
+	if cp, ok := backend.(choreProjector); ok {
+		d.choreProj = cp
 	}
 	server := mcp.NewServer(&mcp.Implementation{Name: "tribo", Version: "0.1.0"}, nil)
 	d.register(server)
@@ -41,8 +63,8 @@ func NewServer(db *sql.DB) *mcp.Server {
 }
 
 // NewHandler returns an HTTP handler to mount at /mcp.
-func NewHandler(db *sql.DB) http.Handler {
-	server := NewServer(db)
+func NewHandler(db *sql.DB, backend calendar.EventBackend) http.Handler {
+	server := NewServer(db, backend)
 	return mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, nil)
 }
 
@@ -76,11 +98,12 @@ type addEventIn struct {
 	AllDay           bool     `json:"allDay,omitempty"`
 	AttendeeIDs      []string `json:"attendeeIds,omitempty" jsonschema:"family member ids"`
 	RequiresGuardian bool     `json:"requiresGuardian,omitempty"`
+	CalendarSourceID string   `json:"calendarSourceId,omitempty" jsonschema:"owning calendar id; defaults to the single attendee's calendar, else the family calendar"`
 }
 type addEventOut struct {
-	ID              string `json:"id"`
+	ID               string `json:"id"`
 	AssignedGuardian string `json:"assignedGuardianId,omitempty"`
-	Conflict        string `json:"conflictStatus"`
+	Conflict         string `json:"conflictStatus"`
 }
 
 type addTodoIn struct {
@@ -134,11 +157,14 @@ func (d *deps) register(s *mcp.Server) {
 
 	mcp.AddTool(s, &mcp.Tool{Name: "add_event", Description: "Create a calendar event. Returns guardian assignment if applicable."},
 		func(ctx context.Context, _ *mcp.CallToolRequest, in addEventIn) (*mcp.CallToolResult, addEventOut, error) {
-			src := d.defaultSourceID()
+			src := in.CalendarSourceID
 			if src == "" {
-				return nil, addEventOut{}, errors.New("no calendar source configured")
+				src = d.sourceForAttendees(in.AttendeeIDs)
 			}
-			ev, err := d.events.CreateEvent(calendar.NewEvent{
+			if src == "" {
+				return nil, addEventOut{}, errors.New("no calendar configured (calendars require a Radicale backend)")
+			}
+			ev, err := d.events.CreateEvent(ctx, calendar.NewEvent{
 				CalendarSourceID: src, Title: in.Title, StartAt: in.Start, EndAt: in.End,
 				AllDay: in.AllDay, AttendeeIDs: in.AttendeeIDs, RequiresGuardian: in.RequiresGuardian,
 			})
@@ -178,6 +204,7 @@ func (d *deps) register(s *mcp.Server) {
 			if err := d.chores.SetStatus(in.InstanceID, "done", in.MemberID); err != nil {
 				return nil, statusOut{}, err
 			}
+			d.reprojectChores(ctx)
 			return nil, statusOut{Status: "done"}, nil
 		})
 

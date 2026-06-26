@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Calendar, Clock, MapPin, AlignLeft, Star, ShieldCheck, AlertTriangle, Check, Trash2, Layers } from 'lucide-react'
+import { X, Calendar, Clock, MapPin, AlignLeft, Star, ShieldCheck, AlertTriangle, Check, Trash2, Layers, Users, Lock } from 'lucide-react'
 import {
   createEvent, updateEvent, deleteEvent, getEventGuardians, claimEvent,
   type TriboEvent, type NewEvent, type FamilyMember, type CalendarSource,
 } from '../lib/api'
 import PersonAvatar from './PersonAvatar'
 import Button from './Button'
+import { useLocale } from '../lib/i18n'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -39,12 +40,20 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   onSaved: () => void
 }) {
   const { t } = useTranslation()
+  const locale = useLocale() // carries the time-format preference (hour-cycle) for native pickers
   const editing = !!event
   const initialStart = event ? new Date(event.startAt) : defaultDate
   const initialEnd = event ? new Date(event.endAt) : new Date(defaultDate.getTime() + 60 * 60 * 1000)
 
   const [title, setTitle] = useState(event?.title ?? '')
-  const [dateStr, setDateStr] = useState(`${initialStart.getFullYear()}-${pad(initialStart.getMonth() + 1)}-${pad(initialStart.getDate())}`)
+  // An all-day event's date is the authoritative, offset-invariant prefix of its
+  // timestamp; reading it via initialStart (new Date) would shift the day for a
+  // browser whose timezone differs from the family's.
+  const [dateStr, setDateStr] = useState(
+    event?.allDay
+      ? event.startAt.slice(0, 10)
+      : `${initialStart.getFullYear()}-${pad(initialStart.getMonth() + 1)}-${pad(initialStart.getDate())}`,
+  )
   const [allDay, setAllDay] = useState(event?.allDay ?? false)
   const [startTime, setStartTime] = useState(`${pad(initialStart.getHours())}:${pad(initialStart.getMinutes())}`)
   const [endTime, setEndTime] = useState(`${pad(initialEnd.getHours())}:${pad(initialEnd.getMinutes())}`)
@@ -53,11 +62,37 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   const [important, setImportant] = useState(event?.visibilityTag === 'milestone')
   const [location, setLocation] = useState(event?.location ?? '')
   const [description, setDescription] = useState(event?.description ?? '')
+  const [externalAttendees, setExternalAttendees] = useState(event?.externalAttendees ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
   const hasChild = attendees.some((id) => byId.get(id)?.role === 'child')
+  const familyHasChild = members.some((m) => m.role === 'child')
+
+  // Calendars an event can be saved to: the per-person and family calendars
+  // (not the managed birthdays/chores calendars, nor read-only Google overlays).
+  const targetable = useMemo(
+    () => sources.filter((s) => (s.kind === 'person' || s.kind === 'family') && !s.readOnly),
+    [sources],
+  )
+  const familySource = sources.find((s) => s.kind === 'family')
+  const personSourceFor = (mid?: string) => sources.find((s) => s.kind === 'person' && s.memberId === mid)
+  const defaultSourceId = () => {
+    if (attendees.length === 1) {
+      const ps = personSourceFor(attendees[0])
+      if (ps) return ps.id
+    }
+    return familySource?.id ?? targetable[0]?.id ?? ''
+  }
+  const [sourceId, setSourceId] = useState(event?.calendarSourceId ?? '')
+  const [pickedSource, setPickedSource] = useState(false)
+  // For a new event, follow the attendee-based default until the user overrides
+  // it. Depends on sources too, since they load asynchronously after mount.
+  useEffect(() => {
+    if (!editing && !pickedSource) setSourceId(defaultSourceId())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attendees, editing, pickedSource, sources])
 
   const toggleAttendee = (id: string) =>
     setAttendees((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
@@ -76,13 +111,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
       endAt = localRFC3339(new Date(y, m - 1, d, eh, em))
     }
 
-    // Personal calendar when someone's involved; shared/family calendar otherwise.
-    const personal = sources.find((s) => !s.isShared)
-    const shared = sources.find((s) => s.isShared)
-    const sourceId = event?.calendarSourceId ?? (attendees.length > 0 ? personal?.id : shared?.id) ?? personal?.id ?? sources[0]?.id
-
+    if (!sourceId) { setError(t('event.noCalendar')); return }
     const payload: NewEvent = {
-      calendarSourceId: sourceId ?? '',
+      calendarSourceId: sourceId,
       title: title.trim(),
       description: description || null,
       location: location || null,
@@ -92,6 +123,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
       visibilityTag: important ? 'milestone' : 'standard',
       requiresGuardian: requiresGuardian && hasChild,
       attendeeIds: attendees,
+      externalAttendees: externalAttendees.trim() || null,
     }
     setBusy(true)
     setError(null)
@@ -119,7 +151,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
         <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid var(--t-line)' }}>
           <button aria-label={t('common.close')} onClick={onClose}><X size={20} style={{ color: 'var(--t-text-soft)' }} /></button>
           <div className="font-display text-lg" style={{ fontWeight: 500 }}>{editing ? t('event.editTitle') : t('event.newTitle')}</div>
-          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy}>{t('common.save')}</button>
+          <button className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }} onClick={save} disabled={busy || (!editing && !sourceId)}>{t('common.save')}</button>
         </div>
 
         <div className="p-5 overflow-y-auto">
@@ -134,7 +166,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           <div className="px-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <Calendar size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-hidden text-sm font-medium" />
+              <input type="date" lang={locale} value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-hidden text-sm font-medium" />
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Clock size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
@@ -143,9 +175,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                   <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
+                    <input type="time" lang={locale} value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
                     <span style={{ color: 'var(--t-text-soft)' }}>–</span>
-                    <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
+                    <input type="time" lang={locale} value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -173,7 +205,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
               })}
             </div>
 
-            {hasChild && (
+            {hasChild ? (
               <GuardianCard
                 enabled={requiresGuardian}
                 onToggle={setRequiresGuardian}
@@ -182,6 +214,8 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                 editing={editing}
                 onClaimed={onSaved}
               />
+            ) : familyHasChild && (
+              <div className="text-xs mt-3" style={{ color: 'var(--t-text-soft)' }}>{t('event.guardianHint')}</div>
             )}
           </div>
 
@@ -191,9 +225,13 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
               <MapPin size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <input className="w-full bg-transparent outline-hidden text-sm" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('event.addLocation')} />
             </div>
-            <div className="flex items-center gap-3 py-2.5">
+            <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <AlignLeft size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
               <textarea className="w-full bg-transparent outline-hidden text-sm resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('event.notes')} />
+            </div>
+            <div className="flex items-center gap-3 py-2.5">
+              <Users size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
+              <input className="w-full bg-transparent outline-hidden text-sm" value={externalAttendees} onChange={(e) => setExternalAttendees(e.target.value)} placeholder={t('event.externalAttendees')} />
             </div>
           </div>
 
@@ -211,7 +249,23 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Layers size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <span className="text-sm">{attendees.length > 0 ? t('event.personalCalendar') : t('event.familyCalendar')}</span>
+              {editing ? (
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
+                  <Lock size={13} style={{ flexShrink: 0 }} />
+                  <span>{sources.find((s) => s.id === sourceId)?.displayName ?? '—'}</span>
+                  <span className="text-xs">· {t('event.calendarFixed')}</span>
+                </div>
+              ) : (
+                <select
+                  aria-label={t('event.calendar')}
+                  className="flex-1 bg-transparent outline-hidden text-sm font-medium"
+                  value={sourceId}
+                  onChange={(e) => { setSourceId(e.target.value); setPickedSource(true) }}
+                >
+                  {targetable.length === 0 && <option value="">{t('event.noCalendar')}</option>}
+                  {targetable.map((s) => <option key={s.id} value={s.id}>{s.displayName}</option>)}
+                </select>
+              )}
             </div>
           </div>
 

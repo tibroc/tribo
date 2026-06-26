@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
-  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages,
+  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle, Clock,
 } from 'lucide-react'
 import type { Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
   addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility, googleConnectUrl,
+  getCalendarStatus,
   getWeatherSettings, updateWeatherSettings, geocodeLocation,
-  type FamilyMember, type WorkSchedule, type Chore, type CalendarSource,
+  type FamilyMember, type WorkSchedule, type Chore, type CalendarSource, type CalendarStatus,
   type WeatherSettings, type WeatherUnits, type GeoResult,
 } from '../lib/api'
 import AppShell from '../components/AppShell'
@@ -22,6 +23,7 @@ import { RecurrencePill } from '../components/panels'
 import { recurrenceLabel } from '../lib/chores'
 import { useSession } from '../lib/session'
 import { useTheme, type ThemePreference } from '../lib/theme'
+import { useTimeFormat, type TimeFormatPreference } from '../lib/timeformat'
 import { weekdayLabels } from '../lib/datetime'
 import { useLocale, LANGUAGES } from '../lib/i18n'
 import { useTranslation } from 'react-i18next'
@@ -37,6 +39,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showAppearance, setShowAppearance] = useState(false)
   const [showAccount, setShowAccount] = useState(false)
   const [showLanguage, setShowLanguage] = useState(false)
+  const [showTimeFormat, setShowTimeFormat] = useState(false)
   const reloadWeather = () => getWeatherSettings().then(setWeather).catch(() => {})
   const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
   const reloadSchedules = () => getWorkSchedules().then(setSchedules).catch(() => {})
@@ -58,9 +61,13 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
 
   const [showConnect, setShowConnect] = useState(false)
   const [calError, setCalError] = useState<string | null>(null)
+  const [calStatus, setCalStatus] = useState<CalendarStatus | null>(null)
+  const [googleMember, setGoogleMember] = useState('') // member picked for a new Google overlay
+  useEffect(() => { getCalendarStatus().then(setCalStatus).catch(() => {}) }, [])
   const [showWizard, setShowWizard] = useState(false)
   const { session, refresh: refreshSession } = useSession()
   const theme = useTheme()
+  const timeFormat = useTimeFormat()
   const { t, i18n } = useTranslation()
   const currentLang = LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES.find((l) => i18n.language.startsWith(l.code.slice(0, 2))) ?? LANGUAGES[0]
   const dayInitials = weekdayLabels(useLocale(), 'narrow')
@@ -117,7 +124,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <button onClick={() => setWsModal(s)} className="flex items-center gap-2 mb-2 w-full text-left">
                     <PersonAvatar name={m?.name} color={m?.color} index={mi >= 0 ? mi : undefined} size={28} />
                     <div className="text-sm font-semibold">{m?.name}</div>
-                    <div className="text-xs ml-auto" style={{ color: 'var(--t-text-soft)' }}>{s.label} · {s.startTime} – {s.endTime}</div>
+                    <div className="text-xs ml-auto" style={{ color: 'var(--t-text-soft)' }}>{scheduleLabel(s.label, t)} · {s.startTime} – {s.endTime}</div>
                     <ChevronRight size={14} style={{ color: 'var(--t-text-soft)' }} />
                   </button>
                   <div className="flex gap-1 mb-2">
@@ -159,43 +166,71 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             ))}
           </Section>
 
-          {/* Calendars — internal + connected external (CalDAV) sources. */}
+          {/* Calendars — managed Radicale calendars (read-only here) + Google overlays. */}
           <Section title={t('family.calendars.title')} icon={Globe}
             action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setShowConnect(true)}><Plus size={14} /> {t('common.connect')}</Button>}>
+            {calStatus && !calStatus.enabled && (
+              <div className="text-xs rounded-lg p-2.5 mb-2 flex items-start gap-2" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)', color: 'var(--t-text-soft)' }}>
+                <Globe size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{t('family.calendars.disabled')}</span>
+              </div>
+            )}
+            {calStatus && calStatus.enabled && !calStatus.reachable && (
+              <div className="text-xs rounded-lg p-2.5 mb-2 flex items-start gap-2" style={{ background: 'color-mix(in srgb, var(--t-danger) 12%, transparent)', color: 'var(--t-danger)' }}>
+                <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{t('family.calendars.unreachable')}</span>
+              </div>
+            )}
             <div className="space-y-2">
-              {sources.map((c) => (
-                <div key={c.id} className="flex items-center gap-2 py-1">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.isShared ? 'var(--t-accent)' : 'var(--t-brand)' }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{c.displayName}</div>
-                    <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>
-                      {c.type === 'internal' ? t('family.calendars.builtin') : `${c.type}${c.readOnly ? ' · ' + t('family.calendars.readOnly') : ''}`}
+              {sources.map((c) => {
+                const member = c.memberId ? members.find((m) => m.id === c.memberId) : undefined
+                const dot = member?.color ?? (c.isShared ? 'var(--t-accent)' : 'var(--t-brand)')
+                const sub = c.managed
+                  ? t('family.calendars.managed')
+                  : `${c.type === 'internal' ? t('family.calendars.builtin') : c.type}${member ? ' · ' + member.name : ''}${c.readOnly ? ' · ' + t('family.calendars.readOnly') : ''}`
+                return (
+                  <div key={c.id} className="flex items-center gap-2 py-1">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                        {calendarName(c, t)}
+                        {c.managed && <Lock size={11} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} aria-label={t('family.calendars.managed')} />}
+                      </div>
+                      <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
                     </div>
+                    {/* Managed calendars are auto-provisioned — no manual sync/remove. */}
+                    {!c.managed && c.type !== 'internal' && (
+                      <>
+                        <button aria-label={t('family.calendars.syncNow')} onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
+                          <RefreshCw size={14} style={{ color: 'var(--t-text-soft)' }} />
+                        </button>
+                        <button aria-label={t('family.calendars.remove')} onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
+                          <Trash2 size={14} style={{ color: 'var(--t-text-soft)' }} />
+                        </button>
+                      </>
+                    )}
                   </div>
-                  {c.type !== 'internal' && (
-                    <>
-                      <button aria-label={t('family.calendars.syncNow')} onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
-                        <RefreshCw size={14} style={{ color: 'var(--t-text-soft)' }} />
-                      </button>
-                      <button aria-label={t('family.calendars.remove')} onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
-                        <Trash2 size={14} style={{ color: 'var(--t-text-soft)' }} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
-            <AddRow label={t('family.calendars.connectGoogle')} onClick={() => {
-              googleConnectUrl()
-                .then((r) => { window.location.href = r.authUrl })
-                .catch((e) => setCalError(String(e)))
-            }} />
+            {/* Google overlay: pick the person it belongs to, then connect (read-only). */}
+            <div className="flex items-center gap-2 mt-3">
+              <select className="text-sm rounded-lg px-2 py-1.5 outline-hidden flex-1" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)' }}
+                value={googleMember} onChange={(e) => setGoogleMember(e.target.value)}>
+                <option value="">{t('family.calendars.googleForWhom')}</option>
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              <Button variant="outline" size="sm" disabled={!googleMember} onClick={() => {
+                googleConnectUrl(googleMember).then((r) => { window.location.href = r.authUrl }).catch((e) => setCalError(String(e)))
+              }}>{t('family.calendars.connectGoogle')}</Button>
+            </div>
             {calError && <div className="text-xs mt-2" style={{ color: '#9b1c1c' }}>{calError}</div>}
           </Section>
         </div>
 
         {showConnect && (
           <ConnectCalendarModal
+            members={members}
             onClose={() => setShowConnect(false)}
             onConnected={() => { setShowConnect(false); reloadSources() }}
           />
@@ -223,6 +258,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         {showAppearance && <AppearanceModal onClose={() => setShowAppearance(false)} />}
         {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
         {showLanguage && <LanguageModal onClose={() => setShowLanguage(false)} />}
+        {showTimeFormat && <TimeFormatModal onClose={() => setShowTimeFormat(false)} />}
 
         {/* App settings */}
         <Section title={t('settings.appSettings')}>
@@ -231,6 +267,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
               sub={weather?.locationName ? t('settings.locationSet', { name: weather.locationName }) : t('settings.locationUnset')}
               onClick={() => setShowLocation(true)} />
             <SettingRow icon={Languages} title={t('language.title')} sub={currentLang.label} onClick={() => setShowLanguage(true)} />
+            <SettingRow icon={Clock} title={t('settings.timeFormat')} sub={timeFormatSub(timeFormat.preference, t)} onClick={() => setShowTimeFormat(true)} />
             <SettingRow icon={Palette} title={t('settings.appearance')} sub={appearanceSub(theme.preference, t)} onClick={() => setShowAppearance(true)} />
             <SettingRow icon={LogIn} title={t('settings.account')} sub={accountSub(session, t)} onClick={() => setShowAccount(true)} />
             <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
@@ -311,31 +348,25 @@ function SettingRow({ icon: Icon, title, sub, onClick }: { icon: typeof MapPin; 
 }
 
 
-function AddRow({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="w-full flex items-center justify-center gap-2 py-2.5 mt-2 text-sm font-semibold"
-      style={{ border: '1px dashed var(--t-line)', borderRadius: 'var(--t-radius-md)', color: 'var(--t-text-soft)' }}>
-      <Plus size={16} /> {label}
-    </button>
-  )
-}
-
 // CalDAV connect flow (designed just-in-time per the build brief).
-function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {
+function ConnectCalendarModal({ members, onClose, onConnected }: { members: FamilyMember[]; onClose: () => void; onConnected: () => void }) {
   const { t } = useTranslation()
   const [displayName, setDisplayName] = useState('')
   const [url, setUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [readOnly, setReadOnly] = useState(true)
+  const [memberId, setMemberId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const connect = async () => {
+    if (!memberId) { setError(t('family.calendars.memberRequired')); return }
     if (!url.trim()) { setError(t('family.calendars.urlRequired')); return }
     setBusy(true); setError(null)
     try {
-      await addCalendarSource({ type: 'caldav', displayName: displayName || 'Calendar', url: url.trim(), username, password, readOnly })
+      // A user-added CalDAV calendar is a read-only overlay for one person,
+      // mirroring the Google overlay model.
+      await addCalendarSource({ type: 'caldav', displayName: displayName || 'Calendar', url: url.trim(), username, password, readOnly: true, memberId })
       onConnected()
     } catch (e) { setError(String(e)); setBusy(false) }
   }
@@ -352,14 +383,15 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
         </div>
         <div className="p-5 space-y-3">
           {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          <select className="w-full text-sm px-3 py-2 outline-hidden" style={field} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+            <option value="">{t('family.calendars.forWhom')}</option>
+            {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
           <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.displayName')} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.urlPlaceholder')} value={url} onChange={(e) => setUrl(e.target.value)} />
           <input className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.usernamePlaceholder')} value={username} onChange={(e) => setUsername(e.target.value)} />
           <input type="password" className="w-full text-sm px-3 py-2 outline-hidden" style={field} placeholder={t('family.calendars.passwordPlaceholder')} value={password} onChange={(e) => setPassword(e.target.value)} />
-          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
-            <input type="checkbox" checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} className="w-4 h-4 rounded-sm" />
-            {t('family.calendars.readOnlyOption')}
-          </label>
+          <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('family.calendars.overlayHint')}</div>
         </div>
       </div>
     </div>
@@ -369,6 +401,27 @@ function ConnectCalendarModal({ onClose, onConnected }: { onClose: () => void; o
 function appearanceSub(p: ThemePreference, t: TFunction): string {
   if (p === 'system') return t('settings.appearanceSystem')
   return p === 'dark' ? t('settings.appearanceDark') : t('settings.appearanceLight')
+}
+
+// The default "Work" label is stored in English by seed/onboarding; localize it.
+// A custom label the user typed is shown verbatim.
+function scheduleLabel(label: string, t: TFunction): string {
+  return label === 'Work' ? t('family.workLabel') : label
+}
+
+// Managed birthdays/chores/family calendars carry English display names; show a
+// localized label instead. Person calendars keep the member's name.
+function calendarName(c: CalendarSource, t: TFunction): string {
+  if (c.managed && (c.kind === 'birthdays' || c.kind === 'chores' || c.kind === 'family')) {
+    return t(`family.calendars.kind.${c.kind}`)
+  }
+  return c.displayName
+}
+
+function timeFormatSub(p: TimeFormatPreference, t: TFunction): string {
+  if (p === '24h') return t('settings.timeFormat24')
+  if (p === '12h') return t('settings.timeFormat12')
+  return t('settings.timeFormatSystem')
 }
 
 function accountSub(session: { authEnabled: boolean; authenticated: boolean } | null, t: TFunction): string {
@@ -422,6 +475,35 @@ function AppearanceModal({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('settings.themeHint')}</div>
+    </SettingsSheet>
+  )
+}
+
+// Clock-format picker — System / 24-hour / 12-hour, applied live.
+function TimeFormatModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
+  const { preference, setPreference } = useTimeFormat()
+  const options: { key: TimeFormatPreference; label: string }[] = [
+    { key: 'system', label: t('settings.timeFormatSystem') },
+    { key: '24h', label: t('settings.timeFormat24') },
+    { key: '12h', label: t('settings.timeFormat12') },
+  ]
+  return (
+    <SettingsSheet title={t('settings.timeFormat')} onClose={onClose}>
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>
+        {options.map((o, i) => {
+          const active = preference === o.key
+          return (
+            <button key={o.key} onClick={() => setPreference(o.key)}
+              className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm"
+              style={{ borderBottom: i === options.length - 1 ? 'none' : '1px solid var(--t-line)', background: active ? 'var(--t-shell)' : 'transparent' }}>
+              <span className="flex-1 font-medium">{o.label}</span>
+              {active && <Check size={16} style={{ color: 'var(--t-brand)' }} />}
+            </button>
+          )
+        })}
+      </div>
+      <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('settings.timeFormatHint')}</div>
     </SettingsSheet>
   )
 }

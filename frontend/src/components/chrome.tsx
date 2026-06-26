@@ -99,7 +99,7 @@ export function Weather({ size = 17 }: { size?: number }) {
 
 // A plain centered title (Home/Family/Chores/To-dos). Wordmark + right cluster
 // are supplied by AppShell, so this is just the Spectral title.
-export function SimpleHeader({ title }: { title?: string; left?: ReactNode; right?: ReactNode; wordmark?: boolean }) {
+export function SimpleHeader({ title }: { title?: string }) {
   if (!title) return null
   return <div style={disp(24, { textAlign: 'center' })}>{title}</div>
 }

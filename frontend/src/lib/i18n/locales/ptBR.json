@@ -96,6 +96,11 @@
     "themeLight": "Claro",
     "themeDark": "Escuro",
     "themeSystem": "Sistema",
+    "timeFormat": "Formato de hora",
+    "timeFormatSystem": "Segue o idioma",
+    "timeFormat24": "24 horas (16:00)",
+    "timeFormat12": "12 horas (4:00 PM)",
+    "timeFormatHint": "Aplica-se aos horários exibidos no app, neste dispositivo.",
     "account": "Conta",
     "accountLoading": "Carregando…",
     "accountLocal": "Modo local — login não configurado",
@@ -143,6 +148,7 @@
     "addChore": "Adicionar tarefa",
     "groupToday": "Hoje",
     "groupLater": "Mais tarde esta semana",
+    "groupEarlier": "No início desta semana",
     "noneThisWeek": "Nenhuma tarefa esta semana",
     "donePeriod": "concluídas {{period}}",
     "nonePeriod": "Nenhuma tarefa {{period}}",
@@ -185,6 +191,7 @@
     "roleGuardian": "Responsável",
     "roleChild": "Criança · Responsável padrão: {{name}}",
     "workSchedulesTitle": "Horários de trabalho",
+    "workLabel": "Trabalho",
     "showBusy": "Mostrar como \"ocupado\" no calendário",
     "addChore": "Adicionar tarefa",
     "banner": {
@@ -208,8 +215,19 @@
       "urlPlaceholder": "URL CalDAV (ex.: https://host/dav/user/calendar/)",
       "usernamePlaceholder": "Usuário (opcional)",
       "passwordPlaceholder": "Senha (opcional)",
-      "readOnlyOption": "Somente leitura (não enviar eventos do Tribo para este calendário)",
-      "urlRequired": "A URL CalDAV é obrigatória"
+      "urlRequired": "A URL CalDAV é obrigatória",
+      "managed": "Gerenciado pelo Tribo",
+      "disabled": "Os calendários precisam de um backend Radicale — defina RADICALE_URL no servidor. O resto do Tribo funciona sem ele.",
+      "unreachable": "Não foi possível acessar o backend de calendário agora. Os eventos existentes continuam aparecendo, mas novas alterações não serão salvas até ele voltar.",
+      "googleForWhom": "Adicionar Google Agenda para…",
+      "forWhom": "De quem é este calendário?",
+      "memberRequired": "Escolha a qual pessoa este calendário pertence.",
+      "overlayHint": "Adicionado como sobreposição somente leitura, exibido na cor desta pessoa.",
+      "kind": {
+        "birthdays": "Aniversários",
+        "chores": "Tarefas",
+        "family": "Família"
+      }
     },
     "location": {
       "title": "Local do clima",
@@ -231,8 +249,8 @@
     "notes": "Notas",
     "important": "Importante",
     "importantHint": "Sempre mostrar, mesmo na visão Ano",
-    "personalCalendar": "Calendário pessoal",
-    "familyCalendar": "Calendário da família",
+    "calendar": "Calendário",
+    "noCalendar": "Nenhum calendário disponível",
     "deleteEvent": "Excluir evento",
     "requiresGuardian": "Requer responsável",
     "guardianAutoAssign": "Um responsável será atribuído automaticamente ao salvar.",
@@ -240,7 +258,10 @@
     "noGuardianAvailable": "Nenhum responsável disponível",
     "multipleFree": "Mais de um responsável está livre — quem abrir primeiro pode assumir.",
     "claim": "Assumir · {{name}}",
-    "toggle": "alternar"
+    "toggle": "alternar",
+    "externalAttendees": "Convidados (separados por vírgula)",
+    "guardianHint": "Adicione uma criança como participante para exigir um responsável.",
+    "calendarFixed": "não pode ser movido"
   },
   "forms": {
     "addMember": "Adicionar membro",
@@ -281,7 +302,8 @@
     "assignmentMode": {
       "fixed": "Fixo — uma pessoa",
       "rotation": "Rodízio — reveza"
-    }
+    },
+    "dateOfBirth": "Data de nascimento"
   },
   "calendar": {
     "thisWeek": "Esta semana",
@@ -374,10 +396,11 @@
       "guardianPlaceholder": "Responsável…",
       "memberN": "Membro {{n}}",
       "addMember": "Adicionar membro",
-      "paletteHint": "<0>O próximo membro</0> recebe automaticamente esta cor — assim cada família mantém uma paleta equilibrada e harmoniosa."
+      "paletteHint": "<0>O próximo membro</0> recebe automaticamente esta cor — assim cada família mantém uma paleta equilibrada e harmoniosa.",
+      "dob": "Aniversário"
     },
     "calendar": {
-      "note": "Um <1>calendário da família</1> integrado é criado automaticamente. Você pode conectar um calendário externo CalDAV/Google a qualquer momento em <3>Família → Calendários</3>."
+      "note": "O Tribo cria automaticamente um calendário para <1>cada pessoa</1>, além de calendários compartilhados de <3>família</3> e <5>aniversários</5>. Você pode conectar um calendário Google somente leitura a qualquer pessoa depois em <7>Família → Calendários</7>."
     },
     "recurrence": {
       "daily": "diária",
