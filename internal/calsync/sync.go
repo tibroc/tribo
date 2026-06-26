@@ -35,6 +35,16 @@ type Engine struct {
 	syncMu  sync.Mutex // serializes source syncs (avoids concurrent full-refresh)
 }
 
+// syncTimeout bounds a single source pull (network + DB write). Without it a hung
+// backend would hold syncMu indefinitely, wedging every other sync and any
+// EnsureWindow call on the events read path.
+const syncTimeout = 60 * time.Second
+
+// syncHTTPClient is the CalDAV pull client. Its timeout is a backstop in case the
+// transport ever ignores the request context; the per-sync context deadline
+// (syncTimeout) is the primary bound, so this is set slightly longer.
+var syncHTTPClient = &http.Client{Timeout: 2 * time.Minute}
+
 func NewEngine(db *sql.DB) *Engine {
 	now := time.Now()
 	return &Engine{
@@ -187,6 +197,8 @@ func (e *Engine) SyncSourceByID(ctx context.Context, id string) error {
 func (e *Engine) syncSource(ctx context.Context, src sourceRow) error {
 	e.syncMu.Lock()
 	defer e.syncMu.Unlock()
+	ctx, cancel := context.WithTimeout(ctx, syncTimeout)
+	defer cancel()
 	from, to := e.window()
 	switch src.typ {
 	case "caldav":
@@ -205,7 +217,7 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow, windowStart, win
 	if err != nil {
 		return fmt.Errorf("bad url: %w", err)
 	}
-	httpc := webdav.HTTPClientWithBasicAuth(http.DefaultClient, src.creds.Username, src.creds.Password)
+	httpc := webdav.HTTPClientWithBasicAuth(syncHTTPClient, src.creds.Username, src.creds.Password)
 	client, err := caldav.NewClient(httpc, u.Scheme+"://"+u.Host)
 	if err != nil {
 		return err
