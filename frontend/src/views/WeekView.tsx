@@ -116,7 +116,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
               <PersonAvatar name={person.name} color={person.color} size={38} />
               <div className="min-w-0">
                 <div className="text-sm font-semibold truncate">{person.name}</div>
-                <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{person.role}</div>
+                <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{t(`forms.role.${person.role}`)}</div>
               </div>
             </div>
             {days.map((d, di) => (

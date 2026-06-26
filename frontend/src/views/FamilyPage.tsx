@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
-  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle,
+  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle, Clock,
 } from 'lucide-react'
 import type { Section } from '../lib/calendar'
 import {
@@ -23,6 +23,7 @@ import { RecurrencePill } from '../components/panels'
 import { recurrenceLabel } from '../lib/chores'
 import { useSession } from '../lib/session'
 import { useTheme, type ThemePreference } from '../lib/theme'
+import { useTimeFormat, type TimeFormatPreference } from '../lib/timeformat'
 import { weekdayLabels } from '../lib/datetime'
 import { useLocale, LANGUAGES } from '../lib/i18n'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +39,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showAppearance, setShowAppearance] = useState(false)
   const [showAccount, setShowAccount] = useState(false)
   const [showLanguage, setShowLanguage] = useState(false)
+  const [showTimeFormat, setShowTimeFormat] = useState(false)
   const reloadWeather = () => getWeatherSettings().then(setWeather).catch(() => {})
   const reloadSources = () => getCalendarSources().then(setSources).catch(() => {})
   const reloadSchedules = () => getWorkSchedules().then(setSchedules).catch(() => {})
@@ -65,6 +67,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showWizard, setShowWizard] = useState(false)
   const { session, refresh: refreshSession } = useSession()
   const theme = useTheme()
+  const timeFormat = useTimeFormat()
   const { t, i18n } = useTranslation()
   const currentLang = LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES.find((l) => i18n.language.startsWith(l.code.slice(0, 2))) ?? LANGUAGES[0]
   const dayInitials = weekdayLabels(useLocale(), 'narrow')
@@ -255,6 +258,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         {showAppearance && <AppearanceModal onClose={() => setShowAppearance(false)} />}
         {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
         {showLanguage && <LanguageModal onClose={() => setShowLanguage(false)} />}
+        {showTimeFormat && <TimeFormatModal onClose={() => setShowTimeFormat(false)} />}
 
         {/* App settings */}
         <Section title={t('settings.appSettings')}>
@@ -263,6 +267,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
               sub={weather?.locationName ? t('settings.locationSet', { name: weather.locationName }) : t('settings.locationUnset')}
               onClick={() => setShowLocation(true)} />
             <SettingRow icon={Languages} title={t('language.title')} sub={currentLang.label} onClick={() => setShowLanguage(true)} />
+            <SettingRow icon={Clock} title={t('settings.timeFormat')} sub={timeFormatSub(timeFormat.preference, t)} onClick={() => setShowTimeFormat(true)} />
             <SettingRow icon={Palette} title={t('settings.appearance')} sub={appearanceSub(theme.preference, t)} onClick={() => setShowAppearance(true)} />
             <SettingRow icon={LogIn} title={t('settings.account')} sub={accountSub(session, t)} onClick={() => setShowAccount(true)} />
             <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
@@ -398,6 +403,12 @@ function appearanceSub(p: ThemePreference, t: TFunction): string {
   return p === 'dark' ? t('settings.appearanceDark') : t('settings.appearanceLight')
 }
 
+function timeFormatSub(p: TimeFormatPreference, t: TFunction): string {
+  if (p === '24h') return t('settings.timeFormat24')
+  if (p === '12h') return t('settings.timeFormat12')
+  return t('settings.timeFormatSystem')
+}
+
 function accountSub(session: { authEnabled: boolean; authenticated: boolean } | null, t: TFunction): string {
   if (!session) return t('settings.accountLoading')
   if (!session.authEnabled) return t('settings.accountLocal')
@@ -449,6 +460,35 @@ function AppearanceModal({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('settings.themeHint')}</div>
+    </SettingsSheet>
+  )
+}
+
+// Clock-format picker — System / 24-hour / 12-hour, applied live.
+function TimeFormatModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
+  const { preference, setPreference } = useTimeFormat()
+  const options: { key: TimeFormatPreference; label: string }[] = [
+    { key: 'system', label: t('settings.timeFormatSystem') },
+    { key: '24h', label: t('settings.timeFormat24') },
+    { key: '12h', label: t('settings.timeFormat12') },
+  ]
+  return (
+    <SettingsSheet title={t('settings.timeFormat')} onClose={onClose}>
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--t-line)' }}>
+        {options.map((o, i) => {
+          const active = preference === o.key
+          return (
+            <button key={o.key} onClick={() => setPreference(o.key)}
+              className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm"
+              style={{ borderBottom: i === options.length - 1 ? 'none' : '1px solid var(--t-line)', background: active ? 'var(--t-shell)' : 'transparent' }}>
+              <span className="flex-1 font-medium">{o.label}</span>
+              {active && <Check size={16} style={{ color: 'var(--t-brand)' }} />}
+            </button>
+          )
+        })}
+      </div>
+      <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('settings.timeFormatHint')}</div>
     </SettingsSheet>
   )
 }

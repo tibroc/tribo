@@ -7,6 +7,7 @@ import {
 } from '../lib/api'
 import PersonAvatar from './PersonAvatar'
 import Button from './Button'
+import { useLocale } from '../lib/i18n'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -39,6 +40,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   onSaved: () => void
 }) {
   const { t } = useTranslation()
+  const locale = useLocale() // carries the time-format preference (hour-cycle) for native pickers
   const editing = !!event
   const initialStart = event ? new Date(event.startAt) : defaultDate
   const initialEnd = event ? new Date(event.endAt) : new Date(defaultDate.getTime() + 60 * 60 * 1000)
@@ -164,7 +166,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           <div className="px-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <Calendar size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-hidden text-sm font-medium" />
+              <input type="date" lang={locale} value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-hidden text-sm font-medium" />
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Clock size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
@@ -173,9 +175,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                   <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
+                    <input type="time" lang={locale} value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
                     <span style={{ color: 'var(--t-text-soft)' }}>–</span>
-                    <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
+                    <input type="time" lang={locale} value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
