@@ -44,24 +44,10 @@ func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if body.Status == nil && body.AssignedMemberID == nil {
-		writeError(w, http.StatusBadRequest, "nothing to update")
+	t, err := s.todos.Patch(r.PathValue("id"), body.Status, body.AssignedMemberID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
-	}
-	id := r.PathValue("id")
-	var t *todos.Todo
-	var err error
-	if body.AssignedMemberID != nil {
-		if t, err = s.todos.SetAssignee(id, *body.AssignedMemberID); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-	}
-	if body.Status != nil {
-		if t, err = s.todos.SetStatus(id, *body.Status); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
 	}
 	writeJSON(w, http.StatusOK, t)
 }

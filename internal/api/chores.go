@@ -1,12 +1,22 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
 
 	"tribo/internal/chores"
 )
+
+// reprojectChores refreshes the Radicale Chores collection after a status change
+// so external subscribers see done/skipped reflected (best-effort, off the
+// request path). No-op when Radicale is unconfigured.
+func (s *Server) reprojectChores() {
+	if s.sync.RadicaleEnabled() {
+		go func() { _ = s.sync.ProjectChores(context.Background()) }()
+	}
+}
 
 func (s *Server) listChores(w http.ResponseWriter, _ *http.Request) {
 	cs, err := s.chores.ListChores()
@@ -81,6 +91,7 @@ func (s *Server) completeChore(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.reprojectChores()
 	writeJSON(w, http.StatusOK, map[string]string{"status": "done"})
 }
 
@@ -89,6 +100,7 @@ func (s *Server) skipChore(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.reprojectChores()
 	writeJSON(w, http.StatusOK, map[string]string{"status": "skipped"})
 }
 
@@ -106,6 +118,7 @@ func (s *Server) patchChoreInstance(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.reprojectChores()
 	writeJSON(w, http.StatusOK, map[string]string{"status": body.Status})
 }
 

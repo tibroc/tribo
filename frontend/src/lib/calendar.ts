@@ -1,6 +1,6 @@
 // Shared calendar primitives: date math, labels, and event grouping/coloring
 // used across all five calendar views.
-import { SHARED_COLOR } from './tokens'
+import { SHARED_COLOR, UNASSIGNED_COLOR } from './tokens'
 import type { FamilyMember, TriboEvent, WorkSchedule } from './api'
 
 export type ViewName = 'Day' | 'Week' | 'Month' | 'Year'
@@ -43,6 +43,7 @@ export interface ViewProps {
   onNavigate: (k: NavKey) => void
   onAddEvent: () => void
   onEditEvent: (e: TriboEvent) => void
+  onPickDate: (date: Date) => void // jump to a specific day (e.g. from the Year grid)
 }
 
 // ===== Date helpers =====
@@ -76,19 +77,37 @@ export function dayKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 }
 
+// The calendar day an event falls on. An all-day event carries a zoned timestamp
+// whose *date* is authoritative and offset-invariant (it survives the CalDAV
+// round-trip unchanged), so we read the date parts directly. Using new Date()
+// would reinterpret midnight in the browser's timezone and shift the event a day
+// for anyone whose timezone differs from the family's. Timed events keep using
+// the instant.
+export function eventDate(ev: TriboEvent): Date {
+  if (ev.allDay) {
+    const [y, m, d] = ev.startAt.slice(0, 10).split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+  return new Date(ev.startAt)
+}
+
 // ===== Color =====
 export function membersById(members: FamilyMember[]): Map<string, FamilyMember> {
   return new Map(members.map((m) => [m.id, m]))
 }
 
 // The marker color for an event: explicit override, else first attendee's color,
-// else the shared/gold color (family-wide or external).
+// else the shared/gold color for shared calendars, else a muted "unassigned" cue
+// (a personal-calendar event with no attendee shouldn't read as a family event).
 export function colorForEvent(ev: TriboEvent, byId: Map<string, FamilyMember>): string {
   if (ev.colorOverride) return ev.colorOverride
   if (!ev.isShared && ev.attendeeIds.length > 0) {
     const m = byId.get(ev.attendeeIds[0])
     if (m) return m.color
   }
+  // A non-shared (personal) calendar event with no attendee is unassigned — give
+  // it a muted cue so it doesn't read as a gold family event.
+  if (!ev.isShared && ev.attendeeIds.length === 0) return UNASSIGNED_COLOR
   return SHARED_COLOR
 }
 
@@ -97,7 +116,7 @@ export function colorForEvent(ev: TriboEvent, byId: Map<string, FamilyMember>): 
 export function groupByDay(events: TriboEvent[]): Map<string, TriboEvent[]> {
   const map = new Map<string, TriboEvent[]>()
   for (const ev of events) {
-    const k = dayKey(new Date(ev.startAt))
+    const k = dayKey(eventDate(ev))
     const arr = map.get(k)
     if (arr) arr.push(ev)
     else map.set(k, [ev])

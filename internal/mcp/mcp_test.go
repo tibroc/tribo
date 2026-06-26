@@ -22,7 +22,7 @@ func TestMCPTools(t *testing.T) {
 	defer db.Close()
 
 	ctx := context.Background()
-	server := mcp.NewServer(db)
+	server := mcp.NewServer(db, nil)
 	clientT, serverT := sdk.NewInMemoryTransports()
 	if _, err := server.Connect(ctx, serverT, nil); err != nil {
 		t.Fatalf("server connect: %v", err)

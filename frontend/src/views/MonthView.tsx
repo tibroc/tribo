@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay,
-  dayKey, type ViewProps, type MonthCell,
+  dayKey, eventDate, type ViewProps, type MonthCell,
 } from '../lib/calendar'
 import { fmtTime, fmtMonthDay, fmtWeekdayLongDay, weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
@@ -192,7 +192,7 @@ function MonthHighlights({ events, byId, locale }: { events: TriboEvent[]; byId:
   const { t } = useTranslation()
   const highlights = events
     .filter((e) => e.visibilityTag === 'milestone')
-    .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt))
+    .sort((a, b) => +eventDate(a) - +eventDate(b))
   return (
     <Card>
       <div style={{ fontFamily: 'var(--t-font-display)', fontWeight: 500, fontSize: 20, marginBottom: 10 }} className="flex items-center gap-2"><Cake size={16} /> {t('calendar.thisMonth')}</div>
@@ -201,7 +201,7 @@ function MonthHighlights({ events, byId, locale }: { events: TriboEvent[]; byId:
       ) : (
         <div className="space-y-2">
           {highlights.map((h) => {
-            const d = new Date(h.startAt)
+            const d = eventDate(h)
             return (
               <div key={h.id} className="flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorForEvent(h, byId) }} />

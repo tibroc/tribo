@@ -10,21 +10,91 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/emersion/go-ical"
 	"github.com/emersion/go-webdav"
 	"github.com/emersion/go-webdav/caldav"
 	"github.com/google/uuid"
+
+	"tribo/internal/calendar"
 )
 
 type Engine struct {
-	db  *sql.DB
-	key []byte
+	db       *sql.DB
+	key      []byte
+	radicale RadicaleConfig
+
+	// Sync window: the [from, to] span pulled into the cache. It covers a rolling
+	// ±1 year and grows on demand as the user navigates further out (EnsureWindow).
+	winMu   sync.Mutex
+	winFrom time.Time
+	winTo   time.Time
+	syncMu  sync.Mutex // serializes source syncs (avoids concurrent full-refresh)
 }
 
+// syncTimeout bounds a single source pull (network + DB write). Without it a hung
+// backend would hold syncMu indefinitely, wedging every other sync and any
+// EnsureWindow call on the events read path.
+const syncTimeout = 60 * time.Second
+
+// syncHTTPClient is the CalDAV pull client. Its timeout is a backstop in case the
+// transport ever ignores the request context; the per-sync context deadline
+// (syncTimeout) is the primary bound, so this is set slightly longer.
+var syncHTTPClient = &http.Client{Timeout: 2 * time.Minute}
+
 func NewEngine(db *sql.DB) *Engine {
-	return &Engine{db: db, key: deriveKey()}
+	now := time.Now()
+	return &Engine{
+		db: db, key: deriveKey(), radicale: radicaleConfig(),
+		winFrom: now.AddDate(-1, 0, 0), winTo: now.AddDate(1, 0, 0),
+	}
+}
+
+// window returns the current sync span, first expanding it to always cover a
+// rolling ±1 year from now.
+func (e *Engine) window() (time.Time, time.Time) {
+	e.winMu.Lock()
+	defer e.winMu.Unlock()
+	now := time.Now()
+	if lo := now.AddDate(-1, 0, 0); lo.Before(e.winFrom) {
+		e.winFrom = lo
+	}
+	if hi := now.AddDate(1, 0, 0); hi.After(e.winTo) {
+		e.winTo = hi
+	}
+	return e.winFrom, e.winTo
+}
+
+// EnsureWindow makes sure events in [from, to] have been pulled into the cache.
+// When a request falls outside the synced span, it widens the window and pulls
+// on demand; otherwise it's a no-op (so it's cheap to call on every events read).
+// Zero bounds are ignored.
+func (e *Engine) EnsureWindow(ctx context.Context, from, to time.Time) {
+	if !e.radicale.Enabled() {
+		return
+	}
+	e.winMu.Lock()
+	grew := false
+	if !from.IsZero() && from.Before(e.winFrom) {
+		e.winFrom, grew = from, true
+	}
+	if !to.IsZero() && to.After(e.winTo) {
+		e.winTo, grew = to, true
+	}
+	e.winMu.Unlock()
+	if grew {
+		// Materialize birthdays + chores for any newly-covered range, then pull.
+		if err := e.RefreshBirthdays(ctx); err != nil {
+			log.Printf("calsync: birthday refresh on window grow: %v", err)
+		}
+		if err := e.ProjectChores(ctx); err != nil {
+			log.Printf("calsync: chore projection on window grow: %v", err)
+		}
+		e.SyncAll(ctx)
+	}
 }
 
 // NewSource is the payload to connect an external calendar.
@@ -35,6 +105,7 @@ type NewSource struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
 	ReadOnly    bool   `json:"readOnly"`
+	MemberID    string `json:"memberId"` // optional: attach as a per-person overlay
 }
 
 type sourceRow struct {
@@ -54,10 +125,16 @@ func (e *Engine) CreateSource(in NewSource) (string, error) {
 		return "", err
 	}
 	id := uuid.NewString()
+	// A user-added CalDAV/Google source is an unmanaged per-person overlay
+	// (kind=external). member_id is optional but expected for the new model.
+	var memberID any
+	if in.MemberID != "" {
+		memberID = in.MemberID
+	}
 	_, err = e.db.Exec(
-		`INSERT INTO calendar_source (id, type, display_name, is_shared, url, credentials, read_only)
-		 VALUES (?, ?, ?, 0, ?, ?, ?)`,
-		id, in.Type, in.DisplayName, in.URL, enc, b2i(in.ReadOnly))
+		`INSERT INTO calendar_source (id, type, display_name, is_shared, url, credentials, read_only, kind, member_id, managed)
+		 VALUES (?, ?, ?, 0, ?, ?, ?, 'external', ?, 0)`,
+		id, in.Type, in.DisplayName, in.URL, enc, b2i(in.ReadOnly), memberID)
 	return id, err
 }
 
@@ -118,11 +195,16 @@ func (e *Engine) SyncSourceByID(ctx context.Context, id string) error {
 }
 
 func (e *Engine) syncSource(ctx context.Context, src sourceRow) error {
+	e.syncMu.Lock()
+	defer e.syncMu.Unlock()
+	ctx, cancel := context.WithTimeout(ctx, syncTimeout)
+	defer cancel()
+	from, to := e.window()
 	switch src.typ {
 	case "caldav":
-		return e.syncCalDAV(ctx, src)
+		return e.syncCalDAV(ctx, src, from, to)
 	case "google":
-		return e.syncGoogle(ctx, src)
+		return e.syncGoogle(ctx, src, from, to)
 	default:
 		return nil
 	}
@@ -130,12 +212,12 @@ func (e *Engine) syncSource(ctx context.Context, src sourceRow) error {
 
 // ===== CalDAV =====
 
-func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
+func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow, windowStart, windowEnd time.Time) error {
 	u, err := url.Parse(src.url)
 	if err != nil {
 		return fmt.Errorf("bad url: %w", err)
 	}
-	httpc := webdav.HTTPClientWithBasicAuth(http.DefaultClient, src.creds.Username, src.creds.Password)
+	httpc := webdav.HTTPClientWithBasicAuth(syncHTTPClient, src.creds.Username, src.creds.Password)
 	client, err := caldav.NewClient(httpc, u.Scheme+"://"+u.Host)
 	if err != nil {
 		return err
@@ -146,7 +228,7 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 		CompRequest: caldav.CalendarCompRequest{Name: "VCALENDAR", AllProps: true, AllComps: true},
 		CompFilter: caldav.CompFilter{
 			Name:  "VCALENDAR",
-			Comps: []caldav.CompFilter{{Name: "VEVENT", Start: now.AddDate(0, -3, 0), End: now.AddDate(1, 0, 0)}},
+			Comps: []caldav.CompFilter{{Name: "VEVENT", Start: windowStart, End: windowEnd}},
 		},
 	}
 	objects, err := client.QueryCalendar(ctx, u.Path, query)
@@ -154,13 +236,24 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 		return fmt.Errorf("query: %w", err)
 	}
 
+	members, err := e.memberIDs()
+	if err != nil {
+		return err
+	}
+	// Interpret zoneless ("floating") iCal times in the family's timezone, not the
+	// server's, so wall-clock times (and guardian/work-overlap math) are stable
+	// regardless of where Tribo runs.
+	loc := e.familyLocation()
+
 	tx, err := e.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	// Full refresh of remote-origin events for this source.
+	// Full refresh: rebuild the cache for this source from the system of record.
+	// The cache row id is the CalDAV UID, so our own events keep a stable id
+	// across re-pulls (we generate UIDs); attendees/metadata come from X-TRIBO-*.
 	if _, err := tx.Exec(`DELETE FROM event WHERE calendar_source_id = ? AND external_id IS NOT NULL`, src.id); err != nil {
 		return err
 	}
@@ -170,16 +263,29 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 			continue
 		}
 		for _, ev := range obj.Data.Events() {
-			pe, ok := icalToEvent(ev)
+			pe, ok := icalToEvent(ev, loc)
 			if !ok {
 				continue
 			}
+			vis := pe.visibility
+			if vis != "routine" && vis != "standard" && vis != "milestone" {
+				vis = "standard"
+			}
 			if _, err := tx.Exec(
-				`INSERT INTO event (id, calendar_source_id, title, description, location, start_at, end_at, all_day, recurrence_rule, external_id, visibility_tag)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'standard')`,
-				uuid.NewString(), src.id, pe.title, nullable(pe.description), nullable(pe.location),
-				pe.start, pe.end, b2i(pe.allDay), nullable(pe.rrule), pe.uid); err != nil {
+				`INSERT INTO event (id, calendar_source_id, title, description, location, start_at, end_at, all_day,
+				   recurrence_rule, external_id, visibility_tag, requires_guardian, icon, color_override)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				pe.uid, src.id, pe.title, nullable(pe.description), nullable(pe.location),
+				pe.start, pe.end, b2i(pe.allDay), nullable(pe.rrule), pe.uid, vis,
+				b2i(pe.requiresGuardian), nullable(pe.icon), nullable(pe.color)); err != nil {
 				return err
+			}
+			for _, mid := range pe.attendees {
+				if members[mid] {
+					if _, err := tx.Exec(`INSERT OR IGNORE INTO event_attendee (event_id, member_id) VALUES (?, ?)`, pe.uid, mid); err != nil {
+						return err
+					}
+				}
 			}
 			count++
 		}
@@ -190,82 +296,45 @@ func (e *Engine) syncCalDAV(ctx context.Context, src sourceRow) error {
 	if err := tx.Commit(); err != nil {
 		return err
 	}
+	// Recompute guardian assignment/conflict over the synced window now that
+	// attendees are in the cache (computed fields live only in the cache).
+	if err := calendar.NewService(e.db, nil).RecomputeWindow(windowStart, windowEnd); err != nil {
+		log.Printf("calsync: recompute after sync %s: %v", src.id, err)
+	}
 	log.Printf("calsync: pulled %d events from %s", count, src.id)
 	return nil
 }
 
-// PushEvent writes a locally-created/edited event to a writable external source
-// (CalDAV or Google). Best-effort: returns nil for internal/read-only sources.
-func (e *Engine) PushEvent(ctx context.Context, eventID string) error {
-	var sourceID, title, startStr, endStr string
-	var desc, loc, externalID *string
-	var allDay int
-	err := e.db.QueryRow(
-		`SELECT calendar_source_id, title, description, location, start_at, end_at, all_day, external_id
-		 FROM event WHERE id = ?`, eventID).
-		Scan(&sourceID, &title, &desc, &loc, &startStr, &endStr, &allDay, &externalID)
-	if err != nil {
-		return err
-	}
-	src, err := e.loadSource(sourceID)
-	if err != nil || src.readOnly {
-		return nil
-	}
-	if src.typ == "google" {
-		if externalID != nil && *externalID != "" {
-			return nil // update-on-edit for Google isn't handled in v1
+// familyLocation is the family's timezone (for interpreting floating iCal times),
+// falling back to the server's local zone.
+func (e *Engine) familyLocation() *time.Location {
+	var tz string
+	_ = e.db.QueryRow(`SELECT COALESCE(timezone, '') FROM family LIMIT 1`).Scan(&tz)
+	if tz != "" {
+		if l, err := time.LoadLocation(tz); err == nil {
+			return l
 		}
-		newID, err := e.pushGoogle(ctx, src, title, startStr, endStr, allDay != 0)
-		if err != nil {
-			return err
-		}
-		_, _ = e.db.Exec(`UPDATE event SET external_id = ? WHERE id = ?`, newID, eventID)
-		return nil
 	}
-	if src.typ != "caldav" {
-		return nil
-	}
+	return time.Local
+}
 
-	uid := eventID
-	if externalID != nil && *externalID != "" {
-		uid = *externalID
-	}
-	cal := ical.NewCalendar()
-	cal.Props.SetText(ical.PropProductID, "-//Tribo//EN")
-	cal.Props.SetText(ical.PropVersion, "2.0")
-	ev := ical.NewEvent()
-	ev.Props.SetText(ical.PropUID, uid)
-	ev.Props.SetDateTime(ical.PropDateTimeStamp, time.Now().UTC())
-	ev.Props.SetText(ical.PropSummary, title)
-	start, _ := time.Parse(time.RFC3339, startStr)
-	end, _ := time.Parse(time.RFC3339, endStr)
-	ev.Props.SetDateTime(ical.PropDateTimeStart, start)
-	ev.Props.SetDateTime(ical.PropDateTimeEnd, end)
-	if desc != nil {
-		ev.Props.SetText(ical.PropDescription, *desc)
-	}
-	if loc != nil {
-		ev.Props.SetText(ical.PropLocation, *loc)
-	}
-	cal.Children = append(cal.Children, ev.Component)
-
-	u, _ := url.Parse(src.url)
-	httpc := webdav.HTTPClientWithBasicAuth(http.DefaultClient, src.creds.Username, src.creds.Password)
-	client, err := caldav.NewClient(httpc, u.Scheme+"://"+u.Host)
+// memberIDs returns the set of valid family-member ids, for filtering attendees
+// parsed from X-TRIBO-ATTENDEES before inserting (avoids FK violations on stale ids).
+func (e *Engine) memberIDs() (map[string]bool, error) {
+	rows, err := e.db.Query(`SELECT id FROM family_member`)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	path := u.Path
-	if path != "" && path[len(path)-1] != '/' {
-		path += "/"
+	defer rows.Close()
+	out := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out[id] = true
 	}
-	if _, err := client.PutCalendarObject(ctx, path+uid+".ics", cal); err != nil {
-		return err
-	}
-	if externalID == nil || *externalID == "" {
-		_, _ = e.db.Exec(`UPDATE event SET external_id = ? WHERE id = ?`, uid, eventID)
-	}
-	return nil
+	return out, rows.Err()
 }
 
 // ===== ICS mapping =====
@@ -273,18 +342,23 @@ func (e *Engine) PushEvent(ctx context.Context, eventID string) error {
 type parsedEvent struct {
 	uid, title, description, location, start, end, rrule string
 	allDay                                               bool
+	// Tribo metadata carried as X-TRIBO-* props (empty/false for foreign events).
+	visibility       string
+	icon, color      string
+	requiresGuardian bool
+	attendees        []string // family-member ids
 }
 
-func icalToEvent(ev ical.Event) (parsedEvent, bool) {
+func icalToEvent(ev ical.Event, loc *time.Location) (parsedEvent, bool) {
 	uid := text(ev, ical.PropUID)
 	if uid == "" {
 		return parsedEvent{}, false
 	}
-	start, err := ev.DateTimeStart(time.Local)
+	start, err := ev.DateTimeStart(loc)
 	if err != nil {
 		return parsedEvent{}, false
 	}
-	end, err := ev.DateTimeEnd(time.Local)
+	end, err := ev.DateTimeEnd(loc)
 	if err != nil || end.IsZero() {
 		end = start.Add(time.Hour)
 	}
@@ -294,15 +368,28 @@ func icalToEvent(ev ical.Event) (parsedEvent, bool) {
 			allDay = true
 		}
 	}
+	var attendees []string
+	if a := text(ev, propAttendees); a != "" {
+		for _, id := range strings.Split(a, ",") {
+			if id = strings.TrimSpace(id); id != "" {
+				attendees = append(attendees, id)
+			}
+		}
+	}
 	return parsedEvent{
-		uid:         uid,
-		title:       textOr(ev, ical.PropSummary, "(untitled)"),
-		description: text(ev, ical.PropDescription),
-		location:    text(ev, ical.PropLocation),
-		start:       start.Format(time.RFC3339),
-		end:         end.Format(time.RFC3339),
-		rrule:       text(ev, ical.PropRecurrenceRule),
-		allDay:      allDay,
+		uid:              uid,
+		title:            textOr(ev, ical.PropSummary, "(untitled)"),
+		description:      text(ev, ical.PropDescription),
+		location:         text(ev, ical.PropLocation),
+		start:            start.Format(time.RFC3339),
+		end:              end.Format(time.RFC3339),
+		rrule:            text(ev, ical.PropRecurrenceRule),
+		allDay:           allDay,
+		visibility:       text(ev, propVisibility),
+		icon:             text(ev, propIcon),
+		color:            text(ev, propColor),
+		requiresGuardian: text(ev, propRequiresGuardian) == "1",
+		attendees:        attendees,
 	}, true
 }
 

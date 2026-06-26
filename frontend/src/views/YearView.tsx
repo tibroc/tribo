@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
-  buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey,
+  buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey, eventDate,
   type ViewProps,
 } from '../lib/calendar'
 import { fmtMonthDay, monthLabels } from '../lib/datetime'
@@ -12,7 +12,7 @@ import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
 
-export default function YearView({ members, events, cursor, today, header, onNavigate, onAddEvent }: ViewProps) {
+export default function YearView({ members, events, cursor, today, header, onNavigate, onAddEvent, onPickDate }: ViewProps) {
   const year = cursor.getFullYear()
   const byId = useMemo(() => membersById(members), [members])
   const byDay = useMemo(() => groupByDay(events), [events])
@@ -28,8 +28,8 @@ export default function YearView({ members, events, cursor, today, header, onNav
   const progress = inThisYear ? Math.max(0, Math.min(100, Math.round((dayOfYear / daysInYear) * 100))) : 0
 
   const highlights = useMemo(() => events
-    .filter((e) => e.visibilityTag === 'milestone' && new Date(e.startAt).getFullYear() === year)
-    .map((e) => ({ e, d: new Date(e.startAt) }))
+    .filter((e) => e.visibilityTag === 'milestone' && eventDate(e).getFullYear() === year)
+    .map((e) => ({ e, d: eventDate(e) }))
     .sort((a, b) => +a.d - +b.d), [events, year])
 
   // Overview widget (right column): this year's milestones.
@@ -68,20 +68,21 @@ export default function YearView({ members, events, cursor, today, header, onNav
 
         {/* 12 month panels — stretched to fill the island (3×4) on desktop. */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 lg:flex-1 lg:min-h-0 lg:grid-rows-4">
-          {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsLong[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} />)}
+          {Array.from({ length: 12 }, (_, m) => <YearMonth key={m} monthName={monthsLong[m]} year={year} month={m} byDay={byDay} byId={byId} today={today} onPickDate={onPickDate} />)}
         </div>
       </div>
     </AppShell>
   )
 }
 
-function YearMonth({ year, month, monthName, byDay, byId, today }: {
+function YearMonth({ year, month, monthName, byDay, byId, today, onPickDate }: {
   year: number
   month: number
   monthName: string
   byDay: Map<string, TriboEvent[]>
   byId: Map<string, FamilyMember>
   today: Date
+  onPickDate: (date: Date) => void
 }) {
   const cells = buildMonthCells(year, month, 42)
   const line = '1px solid var(--t-line)'
@@ -101,7 +102,14 @@ function YearMonth({ year, month, monthName, byDay, byId, today }: {
           const milestone = cell.inMonth ? (byDay.get(dayKey(cell.dateObj)) ?? []).find((e) => e.visibilityTag === 'milestone') : undefined
           const isToday = sameDay(cell.dateObj, today) && cell.inMonth
           return (
-            <div key={i} className="relative flex items-center justify-center min-h-[22px]" style={{ opacity: cell.inMonth ? 1 : 0.25 }}>
+            <button
+              key={i}
+              type="button"
+              disabled={!cell.inMonth}
+              onClick={() => cell.inMonth && onPickDate(cell.dateObj)}
+              className="relative flex items-center justify-center min-h-[22px] enabled:cursor-pointer"
+              style={{ opacity: cell.inMonth ? 1 : 0.25 }}
+            >
               <div
                 className="font-display font-semibold inline-flex items-center justify-center rounded-full w-4 h-4 text-[9px] lg:w-5 lg:h-5 lg:text-xs"
                 style={isToday ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { color: 'var(--t-text)' }}
@@ -109,7 +117,7 @@ function YearMonth({ year, month, monthName, byDay, byId, today }: {
               {milestone && (
                 <span className="absolute rounded-full" style={{ bottom: 3, width: 4, height: 4, backgroundColor: colorForEvent(milestone, byId) }} />
               )}
-            </div>
+            </button>
           )
         })}
       </div>

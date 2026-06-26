@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ type onboardMember struct {
 	Color                string `json:"color"`
 	Role                 string `json:"role"`
 	DefaultGuardianIndex *int   `json:"defaultGuardianIndex"`
+	DateOfBirth          string `json:"dateOfBirth"`
 }
 
 type onboardChore struct {
@@ -100,9 +102,13 @@ func (s *Server) handleOnboarding(w http.ResponseWriter, r *http.Request) {
 			role = "guardian"
 		}
 		memberIDs[i] = uuid.NewString()
+		var dob any
+		if strings.TrimSpace(m.DateOfBirth) != "" {
+			dob = strings.TrimSpace(m.DateOfBirth)
+		}
 		if _, err := tx.Exec(
-			`INSERT INTO family_member (id, family_id, name, color, role, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
-			memberIDs[i], familyID, m.Name, orDefault(m.Color, "#3E6259"), role, baseOrder+i); err != nil {
+			`INSERT INTO family_member (id, family_id, name, color, role, sort_order, date_of_birth) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			memberIDs[i], familyID, m.Name, orDefault(m.Color, "#3E6259"), role, baseOrder+i, dob); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -204,6 +210,24 @@ func (s *Server) handleOnboarding(w http.ResponseWriter, r *http.Request) {
 	if _, err := s.chores.Generate(time.Now(), time.Now()); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	// Move onto Radicale: provision per-member/family/birthdays/chores collections,
+	// project chores, and migrate the just-created internal events + retire the
+	// internal sources. No-op when Radicale is unconfigured.
+	if s.sync.RadicaleEnabled() {
+		ctx := r.Context()
+		if err := s.sync.EnsureManagedCalendars(ctx); err != nil {
+			log.Printf("onboarding: provision managed calendars: %v", err)
+		}
+		if err := s.sync.RefreshBirthdays(ctx); err != nil {
+			log.Printf("onboarding: refresh birthdays: %v", err)
+		}
+		if err := s.sync.ProjectChores(ctx); err != nil {
+			log.Printf("onboarding: project chores: %v", err)
+		}
+		if err := s.sync.MigrateInternalToRadicale(ctx); err != nil {
+			log.Printf("onboarding: migrate internal events to Radicale: %v", err)
+		}
 	}
 	writeJSON(w, http.StatusCreated, map[string]string{"status": "ready"})
 }

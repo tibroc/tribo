@@ -166,8 +166,8 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
         )}
       </div>
 
-      {/* ── Mobile body ── */}
-      <div className="lg:hidden relative px-3 pb-24" style={{ zIndex: 2 }}>
+      {/* ── Mobile body ── (pb clears the bottom bar + the floating FAB above it) */}
+      <div className="lg:hidden relative px-3 pb-40" style={{ zIndex: 2 }}>
         <main
           style={{
             background: 'var(--t-surface)', border: '1px solid var(--t-line)',

@@ -17,9 +17,12 @@ export function fmtTime(d: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(d)
 }
 
-// Hour-only axis label, e.g. "6 AM" (en) / "06:00" (de, pt-BR).
+// Hour-only axis label: "6 AM" in 12h locales, "06:00" in 24h ones. The minutes
+// are shown only for 24h (decided from the resolved hour cycle, so it's correct
+// regardless of language + the user's time-format preference).
 export function fmtHour(hour: number, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: locale.startsWith('en') ? undefined : '2-digit' }).format(new Date(2024, 0, 1, hour))
+  const is12 = new Intl.DateTimeFormat(locale, { hour: 'numeric' }).resolvedOptions().hour12
+  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: is12 ? undefined : '2-digit' }).format(new Date(2024, 0, 1, hour))
 }
 
 // "Monday, January 15" / "Montag, 15. Januar" / "segunda-feira, 15 de janeiro"

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/emersion/go-ical"
 )
@@ -37,7 +38,7 @@ func TestICalToEvent(t *testing.T) {
 		t.Fatalf("want 2 events, got %d", len(events))
 	}
 
-	timed, ok := icalToEvent(events[0])
+	timed, ok := icalToEvent(events[0], time.UTC)
 	if !ok || timed.uid != "evt-123@example.com" || timed.title != "Dentist" || timed.allDay {
 		t.Fatalf("timed event mapped wrong: %+v ok=%v", timed, ok)
 	}
@@ -45,7 +46,7 @@ func TestICalToEvent(t *testing.T) {
 		t.Fatalf("location not mapped: %q", timed.location)
 	}
 
-	allDay, ok := icalToEvent(events[1])
+	allDay, ok := icalToEvent(events[1], time.UTC)
 	if !ok || !allDay.allDay || allDay.title != "Grandma's birthday" {
 		t.Fatalf("all-day event mapped wrong: %+v ok=%v", allDay, ok)
 	}

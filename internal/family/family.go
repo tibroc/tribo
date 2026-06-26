@@ -16,6 +16,7 @@ type Member struct {
 	Color             string  `json:"color"`
 	Role              string  `json:"role"` // "guardian" | "child"
 	DefaultGuardianID *string `json:"defaultGuardianId,omitempty"`
+	DateOfBirth       *string `json:"dateOfBirth,omitempty"` // 'YYYY-MM-DD'
 }
 
 // WorkSchedule is a guardian's recurring availability block (used for
@@ -43,6 +44,7 @@ type MemberInput struct {
 	Color             string  `json:"color"`
 	Role              string  `json:"role"`
 	DefaultGuardianID *string `json:"defaultGuardianId"`
+	DateOfBirth       *string `json:"dateOfBirth"` // 'YYYY-MM-DD'; nil clears
 	Pin               *string `json:"pin"`
 }
 
@@ -61,9 +63,9 @@ func (s *Service) AddMember(in MemberInput) (*Member, error) {
 	_ = s.db.QueryRow(`SELECT COALESCE(MAX(sort_order)+1, 0) FROM family_member`).Scan(&order)
 	id := uuid.NewString()
 	if _, err := s.db.Exec(
-		`INSERT INTO family_member (id, family_id, name, color, role, default_guardian_id, pin, sort_order)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, familyID, in.Name, orDefault(in.Color, "#3E6259"), in.Role, in.DefaultGuardianID, in.Pin, order); err != nil {
+		`INSERT INTO family_member (id, family_id, name, color, role, default_guardian_id, date_of_birth, pin, sort_order)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, familyID, in.Name, orDefault(in.Color, "#3E6259"), in.Role, in.DefaultGuardianID, in.DateOfBirth, in.Pin, order); err != nil {
 		return nil, err
 	}
 	return s.getMember(id)
@@ -77,8 +79,8 @@ func (s *Service) UpdateMember(id string, in MemberInput) (*Member, error) {
 		in.Role = "guardian"
 	}
 	if _, err := s.db.Exec(
-		`UPDATE family_member SET name = ?, color = ?, role = ?, default_guardian_id = ? WHERE id = ?`,
-		in.Name, in.Color, in.Role, in.DefaultGuardianID, id); err != nil {
+		`UPDATE family_member SET name = ?, color = ?, role = ?, default_guardian_id = ?, date_of_birth = ? WHERE id = ?`,
+		in.Name, in.Color, in.Role, in.DefaultGuardianID, in.DateOfBirth, id); err != nil {
 		return nil, err
 	}
 	if in.Pin != nil {
@@ -96,15 +98,21 @@ func (s *Service) UpdateMember(id string, in MemberInput) (*Member, error) {
 // DeleteMember removes a member; fails clearly if they're still referenced.
 func (s *Service) DeleteMember(id string) error {
 	if _, err := s.db.Exec(`DELETE FROM family_member WHERE id = ?`, id); err != nil {
-		return errors.New("can't remove a member still linked to events or chores — reassign those first")
+		// A foreign-key violation means the member is still referenced (events,
+		// chores, or a child's default guardian); surface a friendly hint. Any
+		// other error is a genuine DB failure and must not be masked.
+		if strings.Contains(strings.ToLower(err.Error()), "constraint") {
+			return errors.New("can't remove a member still linked to events or chores — reassign those first")
+		}
+		return err
 	}
 	return nil
 }
 
 func (s *Service) getMember(id string) (*Member, error) {
 	var m Member
-	err := s.db.QueryRow(`SELECT id, name, color, role, default_guardian_id FROM family_member WHERE id = ?`, id).
-		Scan(&m.ID, &m.Name, &m.Color, &m.Role, &m.DefaultGuardianID)
+	err := s.db.QueryRow(`SELECT id, name, color, role, default_guardian_id, date_of_birth FROM family_member WHERE id = ?`, id).
+		Scan(&m.ID, &m.Name, &m.Color, &m.Role, &m.DefaultGuardianID, &m.DateOfBirth)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +129,7 @@ func orDefault(v, fallback string) string {
 // ListMembers returns family members in display order.
 func (s *Service) ListMembers() ([]Member, error) {
 	rows, err := s.db.Query(
-		`SELECT id, name, color, role, default_guardian_id
+		`SELECT id, name, color, role, default_guardian_id, date_of_birth
 		 FROM family_member ORDER BY sort_order`)
 	if err != nil {
 		return nil, err
@@ -131,7 +139,7 @@ func (s *Service) ListMembers() ([]Member, error) {
 	members := []Member{}
 	for rows.Next() {
 		var m Member
-		if err := rows.Scan(&m.ID, &m.Name, &m.Color, &m.Role, &m.DefaultGuardianID); err != nil {
+		if err := rows.Scan(&m.ID, &m.Name, &m.Color, &m.Role, &m.DefaultGuardianID, &m.DateOfBirth); err != nil {
 			return nil, err
 		}
 		members = append(members, m)

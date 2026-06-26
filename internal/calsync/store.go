@@ -109,7 +109,10 @@ func (e *Engine) loadSource(id string) (sourceRow, error) {
 }
 
 func (e *Engine) externalSources() ([]sourceRow, error) {
-	rows, err := e.db.Query(`SELECT id FROM calendar_source WHERE type IN ('caldav', 'google')`)
+	// Exclude the managed Chores collection: chores are pushed to Radicale for
+	// external clients but intentionally NOT pulled back into Tribo's event cache
+	// (they'd clutter the calendar and duplicate the Chores page).
+	rows, err := e.db.Query(`SELECT id FROM calendar_source WHERE type IN ('caldav', 'google') AND kind != 'chores'`)
 	if err != nil {
 		return nil, err
 	}
