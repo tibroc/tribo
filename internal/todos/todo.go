@@ -85,18 +85,51 @@ func (s *Service) SetStatus(id, status string) (*Todo, error) {
 	return s.get(id)
 }
 
-// SetAssignee assigns a todo to a member (empty memberID clears the assignment).
-func (s *Service) SetAssignee(id, memberID string) (*Todo, error) {
-	var v any
-	if strings.TrimSpace(memberID) != "" {
-		v = memberID
+// Patch applies an optional assignee change and/or status change in a single
+// transaction. A nil pointer leaves that field unchanged. Validation runs before
+// any write, so an invalid status can't leave a half-applied assignee behind.
+func (s *Service) Patch(id string, status, assignedMemberID *string) (*Todo, error) {
+	if status == nil && assignedMemberID == nil {
+		return nil, errors.New("nothing to update")
 	}
-	res, err := s.db.Exec(`UPDATE todo SET assigned_member_id = ? WHERE id = ?`, v, id)
+	if status != nil && *status != "open" && *status != "done" {
+		return nil, errors.New("status must be open or done")
+	}
+
+	tx, err := s.db.Begin()
 	if err != nil {
 		return nil, err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return nil, errors.New("todo not found")
+	defer tx.Rollback()
+
+	if assignedMemberID != nil {
+		var v any
+		if strings.TrimSpace(*assignedMemberID) != "" {
+			v = *assignedMemberID
+		}
+		res, err := tx.Exec(`UPDATE todo SET assigned_member_id = ? WHERE id = ?`, v, id)
+		if err != nil {
+			return nil, err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return nil, errors.New("todo not found")
+		}
+	}
+	if status != nil {
+		var completedAt any
+		if *status == "done" {
+			completedAt = time.Now().Format(time.RFC3339)
+		}
+		res, err := tx.Exec(`UPDATE todo SET status = ?, completed_at = ? WHERE id = ?`, *status, completedAt, id)
+		if err != nil {
+			return nil, err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return nil, errors.New("todo not found")
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	return s.get(id)
 }

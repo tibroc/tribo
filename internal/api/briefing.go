@@ -99,7 +99,11 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	// Per-person week: grouped event highlights + this week's chores.
-	weekChores, _ := s.chores.ListInstances(weekStart, weekEnd)
+	weekChores, err := s.chores.ListInstances(weekStart, weekEnd)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	for _, m := range members {
 		pw := personWeek{MemberID: m.ID, Name: m.Name, Color: m.Color, Highlights: []weekHighlight{}, Chores: []string{}}
 		pw.Highlights = highlightsFor(m.ID, weekEvents)
@@ -127,7 +131,11 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	// Countdown to the next milestone after today (look a year ahead).
-	upcoming, _ := s.events.ListEvents(today, today.AddDate(1, 0, 0))
+	upcoming, err := s.events.ListEvents(today, today.AddDate(1, 0, 0))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	for _, ev := range upcoming {
 		if ev.VisibilityTag != "milestone" {
 			continue
@@ -142,7 +150,11 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	// Last week's tally.
-	out.LastWeek = s.tallyFor(weekStart.AddDate(0, 0, -7), weekStart)
+	out.LastWeek, err = s.tallyFor(weekStart.AddDate(0, 0, -7), weekStart)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	writeJSON(w, http.StatusOK, out)
 }
@@ -205,9 +217,12 @@ func highlightsFor(memberID string, events []calendar.Event) []weekHighlight {
 }
 
 // tallyFor counts chores + todos completed in [from, to).
-func (s *Server) tallyFor(from, to time.Time) tally {
+func (s *Server) tallyFor(from, to time.Time) (tally, error) {
 	var t tally
-	instances, _ := s.chores.ListInstances(from, to)
+	instances, err := s.chores.ListInstances(from, to)
+	if err != nil {
+		return t, err
+	}
 	for _, ci := range instances {
 		ps, _ := time.Parse("2006-01-02", ci.PeriodStart)
 		if ps.Before(from) || !ps.Before(to) {
@@ -218,7 +233,10 @@ func (s *Server) tallyFor(from, to time.Time) tally {
 			t.ChoresDone++
 		}
 	}
-	allTodos, _ := s.todos.List()
+	allTodos, err := s.todos.List()
+	if err != nil {
+		return t, err
+	}
 	for _, td := range allTodos {
 		if td.Status == "done" && td.CompletedAt != nil {
 			done, err := time.Parse(time.RFC3339, *td.CompletedAt)
@@ -228,7 +246,7 @@ func (s *Server) tallyFor(from, to time.Time) tally {
 			}
 		}
 	}
-	return t
+	return t, nil
 }
 
 func sameYMD(a, b time.Time) bool {

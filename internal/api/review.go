@@ -79,7 +79,11 @@ func (s *Server) getReview(w http.ResponseWriter, r *http.Request) {
 	out := review{Period: period, RangeStart: rangeStart.Format(time.RFC3339), RangeEnd: today.Format(time.RFC3339), PerPerson: []personReview{}, Consistency: []choreConsistency{}}
 
 	// Hero: chores in range.
-	rangeInstances, _ := s.chores.ListInstances(rangeStart, rangeEnd)
+	rangeInstances, err := s.chores.ListInstances(rangeStart, rangeEnd)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	inRange := func(ci chores.Instance) bool {
 		ps, _ := time.Parse("2006-01-02", ci.PeriodStart)
 		return !ps.Before(rangeStart) && ps.Before(rangeEnd)
@@ -96,7 +100,11 @@ func (s *Server) getReview(w http.ResponseWriter, r *http.Request) {
 	out.Chores.Pct = pct(out.Chores.Done, out.Chores.Total)
 
 	// Hero: todos (done in range; total = done-in-range + currently open).
-	allTodos, _ := s.todos.List()
+	allTodos, err := s.todos.List()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	openCount := 0
 	for _, td := range allTodos {
 		if td.Status == "done" && td.CompletedAt != nil {
@@ -112,11 +120,19 @@ func (s *Server) getReview(w http.ResponseWriter, r *http.Request) {
 	out.Todos.Pct = pct(out.Todos.Done, out.Todos.Total)
 
 	// Hero: events in range.
-	evs, _ := s.events.ListEvents(rangeStart, rangeEnd)
+	evs, err := s.events.ListEvents(rangeStart, rangeEnd)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	out.Events = len(evs)
 
 	// Per-person chores/todos in range + streak.
-	weekStreaks := s.computeStreaks(today)
+	weekStreaks, err := s.computeStreaks(today)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	for _, m := range members {
 		pr := personReview{MemberID: m.ID, Name: m.Name, Color: m.Color, Streak: weekStreaks[m.ID]}
 		for _, ci := range rangeInstances {
@@ -146,11 +162,19 @@ func (s *Server) getReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Chore consistency: fixed last 8 weeks.
-	out.Consistency = s.choreConsistency(today)
+	out.Consistency, err = s.choreConsistency(today)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	// Year to date.
 	yearStart := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
-	ytdInstances, _ := s.chores.ListInstances(yearStart, rangeEnd)
+	ytdInstances, err := s.chores.ListInstances(yearStart, rangeEnd)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	for _, ci := range ytdInstances {
 		ps, _ := time.Parse("2006-01-02", ci.PeriodStart)
 		if !ps.Before(yearStart) && ps.Before(rangeEnd) && ci.Status == "done" {
@@ -165,7 +189,11 @@ func (s *Server) getReview(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	yearEvents, _ := s.events.ListEvents(yearStart, rangeEnd)
+	yearEvents, err := s.events.ListEvents(yearStart, rangeEnd)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	for _, ev := range yearEvents {
 		if ev.Icon != nil && *ev.Icon == "cake" {
 			out.YTD.Birthdays++
@@ -176,14 +204,23 @@ func (s *Server) getReview(w http.ResponseWriter, r *http.Request) {
 }
 
 // choreConsistency builds the 8-week done/not-done grid (index 7 = current week).
-func (s *Server) choreConsistency(today time.Time) []choreConsistency {
+func (s *Server) choreConsistency(today time.Time) ([]choreConsistency, error) {
 	out := []choreConsistency{}
-	cs, _ := s.chores.ListChores()
-	members, _, _ := s.membersByID()
+	cs, err := s.chores.ListChores()
+	if err != nil {
+		return nil, err
+	}
+	members, _, err := s.membersByID()
+	if err != nil {
+		return nil, err
+	}
 
 	currentWeek := mondayOf(today)
 	windowStart := currentWeek.AddDate(0, 0, -7*7) // 8 weeks back incl. current
-	instances, _ := s.chores.ListInstances(windowStart, currentWeek.AddDate(0, 0, 7))
+	instances, err := s.chores.ListInstances(windowStart, currentWeek.AddDate(0, 0, 7))
+	if err != nil {
+		return nil, err
+	}
 
 	// Index done instances per chore per week bucket.
 	doneByChoreWeek := map[string]map[int]bool{}
@@ -221,16 +258,19 @@ func (s *Server) choreConsistency(today time.Time) []choreConsistency {
 		}
 		out = append(out, choreConsistency{ChoreID: c.ID, Title: c.Title, Color: color, Who: who, Rotation: rotation, History: hist})
 	}
-	return out
+	return out, nil
 }
 
 // computeStreaks returns, per member, the run of consecutive recent fully-completed
 // weeks ending at last week (weeks with ≥1 assigned instance, all done).
-func (s *Server) computeStreaks(today time.Time) map[string]int {
+func (s *Server) computeStreaks(today time.Time) (map[string]int, error) {
 	streaks := map[string]int{}
 	currentWeek := mondayOf(today)
 	windowStart := currentWeek.AddDate(0, 0, -7*16)
-	instances, _ := s.chores.ListInstances(windowStart, currentWeek)
+	instances, err := s.chores.ListInstances(windowStart, currentWeek)
+	if err != nil {
+		return nil, err
+	}
 
 	// member -> weekMonday(date string) -> [total, done]. Key by calendar date,
 	// not Unix: period_start parses as UTC while `today` is local, so instant
@@ -269,5 +309,5 @@ func (s *Server) computeStreaks(today time.Time) map[string]int {
 		}
 		streaks[member] = streak
 	}
-	return streaks
+	return streaks, nil
 }
