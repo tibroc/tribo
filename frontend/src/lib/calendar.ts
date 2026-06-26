@@ -43,6 +43,7 @@ export interface ViewProps {
   onNavigate: (k: NavKey) => void
   onAddEvent: () => void
   onEditEvent: (e: TriboEvent) => void
+  onPickDate: (date: Date) => void // jump to a specific day (e.g. from the Year grid)
 }
 
 // ===== Date helpers =====

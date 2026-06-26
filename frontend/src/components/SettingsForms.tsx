@@ -213,13 +213,13 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation()
   const [memberId, setMemberId] = useState(schedule?.memberId ?? guardians[0]?.id ?? '')
   const [days, setDays] = useState(schedule?.daysOfWeek ?? '1111100')
   const [start, setStart] = useState(schedule?.startTime ?? '09:00')
   const [end, setEnd] = useState(schedule?.endTime ?? '17:00')
-  const [label, setLabel] = useState(schedule?.label ?? 'Work')
+  const [label, setLabel] = useState(schedule?.label ?? t('family.workLabel'))
   const [show, setShow] = useState(schedule?.showOnCalendar ?? false)
-  const { t } = useTranslation()
   const { busy, error, run } = useSaver(onSaved)
   const dayInitials = weekdayLabels(useLocale(), 'narrow')
 

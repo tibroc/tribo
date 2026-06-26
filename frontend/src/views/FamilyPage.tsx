@@ -124,7 +124,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <button onClick={() => setWsModal(s)} className="flex items-center gap-2 mb-2 w-full text-left">
                     <PersonAvatar name={m?.name} color={m?.color} index={mi >= 0 ? mi : undefined} size={28} />
                     <div className="text-sm font-semibold">{m?.name}</div>
-                    <div className="text-xs ml-auto" style={{ color: 'var(--t-text-soft)' }}>{s.label} · {s.startTime} – {s.endTime}</div>
+                    <div className="text-xs ml-auto" style={{ color: 'var(--t-text-soft)' }}>{scheduleLabel(s.label, t)} · {s.startTime} – {s.endTime}</div>
                     <ChevronRight size={14} style={{ color: 'var(--t-text-soft)' }} />
                   </button>
                   <div className="flex gap-1 mb-2">
@@ -193,7 +193,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate flex items-center gap-1.5">
-                        {c.displayName}
+                        {calendarName(c, t)}
                         {c.managed && <Lock size={11} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} aria-label={t('family.calendars.managed')} />}
                       </div>
                       <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
@@ -401,6 +401,21 @@ function ConnectCalendarModal({ members, onClose, onConnected }: { members: Fami
 function appearanceSub(p: ThemePreference, t: TFunction): string {
   if (p === 'system') return t('settings.appearanceSystem')
   return p === 'dark' ? t('settings.appearanceDark') : t('settings.appearanceLight')
+}
+
+// The default "Work" label is stored in English by seed/onboarding; localize it.
+// A custom label the user typed is shown verbatim.
+function scheduleLabel(label: string, t: TFunction): string {
+  return label === 'Work' ? t('family.workLabel') : label
+}
+
+// Managed birthdays/chores/family calendars carry English display names; show a
+// localized label instead. Person calendars keep the member's name.
+function calendarName(c: CalendarSource, t: TFunction): string {
+  if (c.managed && (c.kind === 'birthdays' || c.kind === 'chores' || c.kind === 'family')) {
+    return t(`family.calendars.kind.${c.kind}`)
+  }
+  return c.displayName
 }
 
 function timeFormatSub(p: TimeFormatPreference, t: TFunction): string {

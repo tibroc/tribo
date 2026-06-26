@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check } from 'lucide-react'
+import { Check, UserPlus } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
 import { recurrenceLabel } from '../lib/chores'
 import { useLocale } from '../lib/i18n'
@@ -325,7 +325,7 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, tit
   )
 }
 
-// Per-todo assignee control: avatar (or a dashed "+" when unassigned) that opens
+// Per-todo assignee control: avatar (or a dashed add-person icon when unassigned) that opens
 // a small member picker. Lives in its own component to keep its open-state and
 // the `t` translation fn out of the TodosPanel row map (which shadows `t`).
 function TodoAssign({ todo, members, onAssign }: {
@@ -343,7 +343,7 @@ function TodoAssign({ todo, members, onAssign }: {
       <button onClick={() => setOpen((o) => !o)} aria-label={t('todos.assign')} className="flex items-center justify-center">
         {member
           ? <PersonAvatar name={member.name} color={member.color} index={idx} size={20} />
-          : <span className="flex items-center justify-center rounded-full" style={{ width: 20, height: 20, border: '1.5px dashed var(--t-line)', color: 'var(--t-text-soft)' }}><Icon name="plus" size={11} strokeWidth={2.4} /></span>}
+          : <span className="flex items-center justify-center rounded-full" style={{ width: 20, height: 20, border: '1.5px dashed var(--t-line)', color: 'var(--t-text-soft)' }}><UserPlus size={11} strokeWidth={2.2} /></span>}
       </button>
       {open && (
         <>

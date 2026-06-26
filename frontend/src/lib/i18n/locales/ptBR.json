@@ -191,6 +191,7 @@
     "roleGuardian": "Responsável",
     "roleChild": "Criança · Responsável padrão: {{name}}",
     "workSchedulesTitle": "Horários de trabalho",
+    "workLabel": "Trabalho",
     "showBusy": "Mostrar como \"ocupado\" no calendário",
     "addChore": "Adicionar tarefa",
     "banner": {
@@ -221,7 +222,12 @@
       "googleForWhom": "Adicionar Google Agenda para…",
       "forWhom": "De quem é este calendário?",
       "memberRequired": "Escolha a qual pessoa este calendário pertence.",
-      "overlayHint": "Adicionado como sobreposição somente leitura, exibido na cor desta pessoa."
+      "overlayHint": "Adicionado como sobreposição somente leitura, exibido na cor desta pessoa.",
+      "kind": {
+        "birthdays": "Aniversários",
+        "chores": "Tarefas",
+        "family": "Família"
+      }
     },
     "location": {
       "title": "Local do clima",

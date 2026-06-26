@@ -191,6 +191,7 @@
     "roleGuardian": "Erziehungsberechtigt",
     "roleChild": "Kind · Standard-Erziehungsberechtigte/r: {{name}}",
     "workSchedulesTitle": "Arbeitszeiten",
+    "workLabel": "Arbeit",
     "showBusy": "Als „beschäftigt“ im Kalender anzeigen",
     "addChore": "Aufgabe hinzufügen",
     "banner": {
@@ -221,7 +222,12 @@
       "googleForWhom": "Google-Kalender hinzufügen für…",
       "forWhom": "Wessen Kalender ist das?",
       "memberRequired": "Wähle, zu welcher Person dieser Kalender gehört.",
-      "overlayHint": "Wird als schreibgeschützte Überlagerung in der Farbe dieser Person hinzugefügt."
+      "overlayHint": "Wird als schreibgeschützte Überlagerung in der Farbe dieser Person hinzugefügt.",
+      "kind": {
+        "birthdays": "Geburtstage",
+        "chores": "Aufgaben",
+        "family": "Familie"
+      }
     },
     "location": {
       "title": "Wetterort",

@@ -191,6 +191,7 @@
     "roleGuardian": "Guardian",
     "roleChild": "Child · Default guardian: {{name}}",
     "workSchedulesTitle": "Work schedules",
+    "workLabel": "Work",
     "showBusy": "Show as \"busy\" on calendar",
     "addChore": "Add chore",
     "banner": {
@@ -221,7 +222,12 @@
       "googleForWhom": "Add Google calendar for…",
       "forWhom": "Whose calendar is this?",
       "memberRequired": "Pick which person this calendar belongs to.",
-      "overlayHint": "Added as a read-only overlay, shown in this person's colour."
+      "overlayHint": "Added as a read-only overlay, shown in this person's colour.",
+      "kind": {
+        "birthdays": "Birthdays",
+        "chores": "Chores",
+        "family": "Family"
+      }
     },
     "location": {
       "title": "Weather location",
