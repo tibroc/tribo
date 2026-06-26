@@ -28,7 +28,6 @@ const (
 //
 // Events are anchored to the Monday of the current week, so the Week view's
 // default (current) week always shows data with correct "today" highlighting.
-// Recurring-event generation arrives in a later milestone.
 func seed(db *sql.DB) error {
 	// A fresh instance starts empty so the onboarding wizard runs. Set
 	// TRIBO_SEED=true to load the Silva family example data instead.
@@ -172,8 +171,8 @@ func seed(db *sql.DB) error {
 
 	// Year-spanning milestones (birthdays + holidays) so the Month/Year views
 	// demonstrate the milestone-dot behavior. All-day, visibility=milestone.
-	// (Recurrence is modeled as one concrete dated event per year until the
-	// recurrence engine lands in a later milestone.)
+	// Recurring milestones are modeled as one concrete dated event per year
+	// (the calendar deliberately stores discrete dated events, not RRULEs).
 	year := monday.Year()
 	allDay := func(month time.Month, day int) (time.Time, time.Time) {
 		s := time.Date(year, month, day, 0, 0, 0, 0, loc)

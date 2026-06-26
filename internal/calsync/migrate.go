@@ -11,8 +11,9 @@ import (
 // MigrateInternalToRadicale moves events still on legacy 'internal' calendar
 // sources onto the managed Radicale collections — a single-attendee event to
 // that person's calendar, anything else to the family calendar — then removes
-// the internal sources. Runs once at startup; a no-op when no internal sources
-// remain (or Radicale is unconfigured).
+// the internal sources. Called at startup and after onboarding/seed (both of
+// which create internal sources to migrate); it is idempotent and a no-op once
+// no internal sources remain (or when Radicale is unconfigured).
 func (e *Engine) MigrateInternalToRadicale(ctx context.Context) error {
 	if !e.radicale.Enabled() {
 		return nil

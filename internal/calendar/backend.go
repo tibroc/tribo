@@ -7,11 +7,11 @@ import "context"
 // read/recompute-only services (seed, the sync engine's own recompute pass).
 type EventBackend interface {
 	// PutEvent writes the event to its owning source's collection and returns the
-	// external id (CalDAV UID). For non-CalDAV / legacy "internal" sources it
-	// returns ("", nil) so the event is kept cache-only.
+	// external id (CalDAV UID). For a source with no CalDAV collection it returns
+	// ("", nil) so the event is kept cache-only.
 	PutEvent(ctx context.Context, in BackendEvent) (externalID string, err error)
-	// DeleteEvent removes the object from its source's collection. No-op for
-	// non-CalDAV sources or an empty externalID.
+	// DeleteEvent removes the object from its source's collection. No-op for a
+	// non-CalDAV source or an empty externalID.
 	DeleteEvent(ctx context.Context, sourceID, externalID string) error
 }
 

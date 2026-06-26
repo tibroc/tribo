@@ -101,24 +101,24 @@ export default function DayView({ members, events, cursor, today, header, workSc
       {/* Tablet: per-person columns — fills the island height */}
       <div className="hidden lg:grid lg:flex-1 lg:min-h-0" style={{ gridTemplateColumns: `64px repeat(${columns.length}, 1fr)`, gridTemplateRows: `auto minmax(${TOTAL_HEIGHT}px, 1fr)` }}>
         <div style={{ borderBottom: '1px solid var(--t-line)' }} />
-        {columns.map((c, i) => <ColumnHeader key={c.key} person={c} isLast={i === columns.length - 1} />)}
+        {columns.map((c) => <ColumnHeader key={c.key} person={c} />)}
 
         <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} />
-        {columns.map((c, i) => (
-          <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} isLast={i === columns.length - 1} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} locale={locale} />
+        {columns.map((c) => (
+          <TimelineColumn key={c.key} blocks={c.blocks} busy={c.busy} showNow={showNow} nowFrac={nowFrac} withWho={false} onEditEvent={onEditEvent} locale={locale} />
         ))}
       </div>
 
       {/* Phone: single combined column */}
       <div className="lg:hidden grid" style={{ gridTemplateColumns: '64px 1fr', height: TOTAL_HEIGHT }}>
         <TimeAxis showNow={showNow} nowFrac={nowFrac} locale={locale} />
-        <TimelineColumn blocks={combined} busy={[]} isLast showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} locale={locale} />
+        <TimelineColumn blocks={combined} busy={[]} showNow={showNow} nowFrac={nowFrac} withWho onEditEvent={onEditEvent} locale={locale} />
       </div>
     </AppShell>
   )
 }
 
-function ColumnHeader({ person }: { person: { name: string; color: string; isFamily: boolean }; isLast: boolean }) {
+function ColumnHeader({ person }: { person: { name: string; color: string; isFamily: boolean } }) {
   return (
     <div className="flex items-center gap-2 px-3 py-3 min-w-0" style={{ borderBottom: '1px solid var(--t-line)', borderLeft: '1px solid var(--t-line)' }}>
       <PersonAvatar name={person.name} color={person.color} family={person.isFamily} size={30} />
@@ -141,7 +141,6 @@ function TimeAxis({ showNow, nowFrac, locale }: { showNow: boolean; nowFrac: num
 function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent, locale }: {
   blocks: Block[]
   busy: BusyBlock[]
-  isLast?: boolean
   showNow: boolean
   nowFrac: number
   withWho: boolean
