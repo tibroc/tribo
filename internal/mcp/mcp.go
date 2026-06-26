@@ -19,11 +19,28 @@ import (
 )
 
 type deps struct {
-	db     *sql.DB
-	events *calendar.Service
-	chores *chores.Service
-	todos  *todos.Service
-	family *family.Service
+	db        *sql.DB
+	events    *calendar.Service
+	chores    *chores.Service
+	todos     *todos.Service
+	family    *family.Service
+	choreProj choreProjector
+}
+
+// choreProjector refreshes the Radicale Chores collection after a status change.
+// Implemented by *calsync.Engine; the MCP path uses it to stay consistent with
+// the REST path (which calls Server.reprojectChores).
+type choreProjector interface {
+	RadicaleEnabled() bool
+	ProjectChores(ctx context.Context) error
+}
+
+// reprojectChores mirrors the just-changed chore status onto Radicale so external
+// subscribers see it, matching the REST handler. Best-effort, no-op without Radicale.
+func (d *deps) reprojectChores(ctx context.Context) {
+	if d.choreProj != nil && d.choreProj.RadicaleEnabled() {
+		_ = d.choreProj.ProjectChores(ctx)
+	}
 }
 
 // NewServer builds the MCP server with all of Tribo's tools registered. backend
@@ -36,6 +53,9 @@ func NewServer(db *sql.DB, backend calendar.EventBackend) *mcp.Server {
 		chores: chores.NewService(db),
 		todos:  todos.NewService(db),
 		family: family.NewService(db),
+	}
+	if cp, ok := backend.(choreProjector); ok {
+		d.choreProj = cp
 	}
 	server := mcp.NewServer(&mcp.Implementation{Name: "tribo", Version: "0.1.0"}, nil)
 	d.register(server)
@@ -184,6 +204,7 @@ func (d *deps) register(s *mcp.Server) {
 			if err := d.chores.SetStatus(in.InstanceID, "done", in.MemberID); err != nil {
 				return nil, statusOut{}, err
 			}
+			d.reprojectChores(ctx)
 			return nil, statusOut{Status: "done"}, nil
 		})
 

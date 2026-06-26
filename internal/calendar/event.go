@@ -13,6 +13,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// ValidationError marks an error as caused by bad client input rather than a
+// backend/server failure, so REST handlers can map it to 400 instead of 502.
+type ValidationError struct{ msg string }
+
+func (e ValidationError) Error() string { return e.msg }
+
+func invalid(msg string) error { return ValidationError{msg} }
+
+// ErrNotFound is returned when an event id doesn't exist in the cache.
+var ErrNotFound = errors.New("event not found")
+
 type Event struct {
 	ID                 string   `json:"id"`
 	CalendarSourceID   string   `json:"calendarSourceId"`
@@ -181,24 +192,24 @@ func (s *Service) attachAttendees(events []Event, byID map[string]int) error {
 // phantom cache row.
 func (s *Service) CreateEvent(ctx context.Context, in NewEvent) (*Event, error) {
 	if strings.TrimSpace(in.Title) == "" {
-		return nil, errors.New("title is required")
+		return nil, invalid("title is required")
 	}
 	start, err := time.Parse(time.RFC3339, in.StartAt)
 	if err != nil {
-		return nil, errors.New("startAt must be RFC3339")
+		return nil, invalid("startAt must be RFC3339")
 	}
 	end, err := time.Parse(time.RFC3339, in.EndAt)
 	if err != nil {
-		return nil, errors.New("endAt must be RFC3339")
+		return nil, invalid("endAt must be RFC3339")
 	}
 	if end.Before(start) {
-		return nil, errors.New("endAt must be after startAt")
+		return nil, invalid("endAt must be after startAt")
 	}
 	if in.VisibilityTag == "" {
 		in.VisibilityTag = "standard"
 	}
 	if in.CalendarSourceID == "" {
-		return nil, errors.New("calendarSourceId is required")
+		return nil, invalid("calendarSourceId is required")
 	}
 
 	id := uuid.NewString()
@@ -272,18 +283,18 @@ func (s *Service) UpdateEvent(ctx context.Context, id string, in NewEvent) (*Eve
 		return nil, err
 	}
 	if strings.TrimSpace(in.Title) == "" {
-		return nil, errors.New("title is required")
+		return nil, invalid("title is required")
 	}
 	start, err := time.Parse(time.RFC3339, in.StartAt)
 	if err != nil {
-		return nil, errors.New("startAt must be RFC3339")
+		return nil, invalid("startAt must be RFC3339")
 	}
 	end, err := time.Parse(time.RFC3339, in.EndAt)
 	if err != nil {
-		return nil, errors.New("endAt must be RFC3339")
+		return nil, invalid("endAt must be RFC3339")
 	}
 	if end.Before(start) {
-		return nil, errors.New("endAt must be after startAt")
+		return nil, invalid("endAt must be after startAt")
 	}
 	if in.VisibilityTag == "" {
 		in.VisibilityTag = "standard"
@@ -365,16 +376,47 @@ func (s *Service) sourceAndExternal(id string) (sourceID, externalID string) {
 
 // getByID returns a single event with attendees attached.
 func (s *Service) getByID(id string) (*Event, error) {
-	events, err := s.ListEvents(time.Time{}, time.Time{})
+	var e Event
+	var allDay, requiresGuardian, isShared int
+	err := s.db.QueryRow(
+		`SELECT e.id, e.calendar_source_id, e.title, e.description, e.location,
+		        e.start_at, e.end_at, e.all_day, e.icon, e.color_override,
+		        e.visibility_tag, e.requires_guardian, e.assigned_guardian_id, e.conflict_status,
+		        e.external_attendees, cs.is_shared
+		 FROM event e
+		 JOIN calendar_source cs ON cs.id = e.calendar_source_id
+		 WHERE e.id = ?`, id).
+		Scan(&e.ID, &e.CalendarSourceID, &e.Title, &e.Description, &e.Location,
+			&e.StartAt, &e.EndAt, &allDay, &e.Icon, &e.ColorOverride,
+			&e.VisibilityTag, &requiresGuardian, &e.AssignedGuardianID, &e.ConflictStatus,
+			&e.ExternalAttendees, &isShared)
+	if err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
-	for i := range events {
-		if events[i].ID == id {
-			return &events[i], nil
-		}
+	e.AllDay = allDay != 0
+	e.RequiresGuardian = requiresGuardian != 0
+	e.IsShared = isShared != 0
+	e.AttendeeIDs = []string{}
+
+	rows, err := s.db.Query(`SELECT member_id FROM event_attendee WHERE event_id = ?`, id)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("event not found")
+	defer rows.Close()
+	for rows.Next() {
+		var mid string
+		if err := rows.Scan(&mid); err != nil {
+			return nil, err
+		}
+		e.AttendeeIDs = append(e.AttendeeIDs, mid)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return &e, nil
 }
 
 func minTime(a, b time.Time) time.Time {

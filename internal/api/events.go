@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -14,6 +15,20 @@ import (
 
 const gcalStateCookie = "tribo_gcal_state"
 const gcalMemberCookie = "tribo_gcal_member"
+
+// eventErrorStatus maps calendar service errors to HTTP status codes: bad client
+// input → 400, a missing event → 404, anything else (CalDAV/backend) → 502.
+func eventErrorStatus(err error) int {
+	var ve calendar.ValidationError
+	switch {
+	case errors.As(err, &ve):
+		return http.StatusBadRequest
+	case errors.Is(err, calendar.ErrNotFound):
+		return http.StatusNotFound
+	default:
+		return http.StatusBadGateway
+	}
+}
 
 // GET /api/calendar-sources/google/connect?memberId=… — returns the Google
 // consent URL. A Google calendar is a read-only overlay for one member, so the
@@ -105,7 +120,7 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	ev, err := s.events.CreateEvent(r.Context(), in)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeError(w, eventErrorStatus(err), err.Error())
 		return
 	}
 	writeJSON(w, http.StatusCreated, ev)
@@ -174,7 +189,7 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	ev, err := s.events.UpdateEvent(r.Context(), r.PathValue("id"), in)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeError(w, eventErrorStatus(err), err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, ev)
