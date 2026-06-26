@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
-import { sameDay, startOfDay, colorForEvent, type ViewProps } from '../lib/calendar'
+import { sameDay, startOfDay, colorForEvent, eventDate, type ViewProps } from '../lib/calendar'
 import { fmtTime, fmtHour } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
@@ -77,7 +77,7 @@ export default function DayView({ members, events, cursor, today, header, workSc
   // All-day events (birthdays, holidays) — shown in a strip above the timeline,
   // since they have no place on the hour grid.
   const allDayEvents = useMemo(
-    () => events.filter((ev) => ev.allDay && sameDay(new Date(ev.startAt), day)),
+    () => events.filter((ev) => ev.allDay && sameDay(eventDate(ev), day)),
     [events, day],
   )
 

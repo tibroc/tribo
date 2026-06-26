@@ -276,25 +276,47 @@ func (s *Service) guardianFree(guardianID, excludeEventID string, start, end tim
 	}
 	defer rows.Close()
 
-	weekday := (int(start.Weekday()) + 6) % 7 // Mon=0
-	evStart := start.Hour()*60 + start.Minute()
-	evEnd := end.Hour()*60 + end.Minute()
+	type sched struct {
+		days         string
+		startM, endM int
+	}
+	var scheds []sched
 	for rows.Next() {
 		var days, ws, we string
 		if err := rows.Scan(&days, &ws, &we); err != nil {
 			return false, err
 		}
-		if weekday >= len(days) || days[weekday] != '1' {
-			continue
+		scheds = append(scheds, sched{days: days, startM: clockMinutes(ws), endM: clockMinutes(we)})
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+
+	// Walk every calendar day the event touches: a timed event can cross midnight
+	// or span several days, so checking only the start day's weekday would miss
+	// later days. On each day the event occupies [segStart, segEnd] minutes.
+	for day := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location()); day.Before(end); day = day.AddDate(0, 0, 1) {
+		weekday := (int(day.Weekday()) + 6) % 7 // Mon=0
+		segStart, segEnd := 0, 24*60
+		if start.After(day) {
+			segStart = start.Hour()*60 + start.Minute()
 		}
-		if allDay {
-			return false, nil // any work that day conflicts with an all-day event
+		if next := day.AddDate(0, 0, 1); end.Before(next) {
+			segEnd = end.Hour()*60 + end.Minute()
 		}
-		if minutesOverlap(evStart, evEnd, clockMinutes(ws), clockMinutes(we)) {
-			return false, nil
+		for _, sc := range scheds {
+			if weekday >= len(sc.days) || sc.days[weekday] != '1' {
+				continue
+			}
+			if allDay {
+				return false, nil // any work that day conflicts with an all-day event
+			}
+			if minutesOverlap(segStart, segEnd, sc.startM, sc.endM) {
+				return false, nil
+			}
 		}
 	}
-	return true, rows.Err()
+	return true, nil
 }
 
 // firstDefaultGuardianFree returns the first child's default guardian if it is

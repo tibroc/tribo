@@ -76,6 +76,20 @@ export function dayKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 }
 
+// The calendar day an event falls on. An all-day event carries a zoned timestamp
+// whose *date* is authoritative and offset-invariant (it survives the CalDAV
+// round-trip unchanged), so we read the date parts directly. Using new Date()
+// would reinterpret midnight in the browser's timezone and shift the event a day
+// for anyone whose timezone differs from the family's. Timed events keep using
+// the instant.
+export function eventDate(ev: TriboEvent): Date {
+  if (ev.allDay) {
+    const [y, m, d] = ev.startAt.slice(0, 10).split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+  return new Date(ev.startAt)
+}
+
 // ===== Color =====
 export function membersById(members: FamilyMember[]): Map<string, FamilyMember> {
   return new Map(members.map((m) => [m.id, m]))
@@ -101,7 +115,7 @@ export function colorForEvent(ev: TriboEvent, byId: Map<string, FamilyMember>): 
 export function groupByDay(events: TriboEvent[]): Map<string, TriboEvent[]> {
   const map = new Map<string, TriboEvent[]>()
   for (const ev of events) {
-    const k = dayKey(new Date(ev.startAt))
+    const k = dayKey(eventDate(ev))
     const arr = map.get(k)
     if (arr) arr.push(ev)
     else map.set(k, [ev])

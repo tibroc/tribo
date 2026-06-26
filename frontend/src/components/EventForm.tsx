@@ -44,7 +44,14 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
   const initialEnd = event ? new Date(event.endAt) : new Date(defaultDate.getTime() + 60 * 60 * 1000)
 
   const [title, setTitle] = useState(event?.title ?? '')
-  const [dateStr, setDateStr] = useState(`${initialStart.getFullYear()}-${pad(initialStart.getMonth() + 1)}-${pad(initialStart.getDate())}`)
+  // An all-day event's date is the authoritative, offset-invariant prefix of its
+  // timestamp; reading it via initialStart (new Date) would shift the day for a
+  // browser whose timezone differs from the family's.
+  const [dateStr, setDateStr] = useState(
+    event?.allDay
+      ? event.startAt.slice(0, 10)
+      : `${initialStart.getFullYear()}-${pad(initialStart.getMonth() + 1)}-${pad(initialStart.getDate())}`,
+  )
   const [allDay, setAllDay] = useState(event?.allDay ?? false)
   const [startTime, setStartTime] = useState(`${pad(initialStart.getHours())}:${pad(initialStart.getMinutes())}`)
   const [endTime, setEndTime] = useState(`${pad(initialEnd.getHours())}:${pad(initialEnd.getMinutes())}`)

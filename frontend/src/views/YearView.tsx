@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
-  buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey,
+  buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey, eventDate,
   type ViewProps,
 } from '../lib/calendar'
 import { fmtMonthDay, monthLabels } from '../lib/datetime'
@@ -28,8 +28,8 @@ export default function YearView({ members, events, cursor, today, header, onNav
   const progress = inThisYear ? Math.max(0, Math.min(100, Math.round((dayOfYear / daysInYear) * 100))) : 0
 
   const highlights = useMemo(() => events
-    .filter((e) => e.visibilityTag === 'milestone' && new Date(e.startAt).getFullYear() === year)
-    .map((e) => ({ e, d: new Date(e.startAt) }))
+    .filter((e) => e.visibilityTag === 'milestone' && eventDate(e).getFullYear() === year)
+    .map((e) => ({ e, d: eventDate(e) }))
     .sort((a, b) => +a.d - +b.d), [events, year])
 
   // Overview widget (right column): this year's milestones.
