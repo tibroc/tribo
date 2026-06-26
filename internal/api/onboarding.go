@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -215,10 +216,18 @@ func (s *Server) handleOnboarding(w http.ResponseWriter, r *http.Request) {
 	// internal sources. No-op when Radicale is unconfigured.
 	if s.sync.RadicaleEnabled() {
 		ctx := r.Context()
-		_ = s.sync.EnsureManagedCalendars(ctx)
-		_ = s.sync.RefreshBirthdays(ctx)
-		_ = s.sync.ProjectChores(ctx)
-		_ = s.sync.MigrateInternalToRadicale(ctx)
+		if err := s.sync.EnsureManagedCalendars(ctx); err != nil {
+			log.Printf("onboarding: provision managed calendars: %v", err)
+		}
+		if err := s.sync.RefreshBirthdays(ctx); err != nil {
+			log.Printf("onboarding: refresh birthdays: %v", err)
+		}
+		if err := s.sync.ProjectChores(ctx); err != nil {
+			log.Printf("onboarding: project chores: %v", err)
+		}
+		if err := s.sync.MigrateInternalToRadicale(ctx); err != nil {
+			log.Printf("onboarding: migrate internal events to Radicale: %v", err)
+		}
 	}
 	writeJSON(w, http.StatusCreated, map[string]string{"status": "ready"})
 }

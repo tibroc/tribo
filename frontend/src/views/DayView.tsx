@@ -49,6 +49,8 @@ export default function DayView({ members, events, cursor, today, header, workSc
   const nowFrac = fracHour(today)
   const showNow = isToday && nowFrac >= HOUR_START && nowFrac <= HOUR_END
 
+  const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
+
   // Timed events on this day, split per person + shared.
   const { perMember, shared } = useMemo(() => {
     const pm = new Map<string, Block[]>()
@@ -58,14 +60,14 @@ export default function DayView({ members, events, cursor, today, header, workSc
       const s = new Date(ev.startAt)
       if (ev.allDay || !sameDay(s, day)) continue
       const block: Omit<Block, 'color' | 'who'> = { ev, start: fracHour(s), end: fracHour(new Date(ev.endAt)) }
-      if (ev.isShared || ev.attendeeIds.length === 0) sh.push({ ...block, color: SHARED_COLOR, who: t('common.family') })
+      if (ev.isShared || ev.attendeeIds.length === 0) sh.push({ ...block, color: colorForEvent(ev, byId), who: t('common.family') })
       else ev.attendeeIds.forEach((mid) => {
         const m = members.find((x) => x.id === mid)
-        if (m) pm.get(mid)!.push({ ...block, color: m.color, who: m.name })
+        if (m) pm.get(mid)!.push({ ...block, color: ev.colorOverride || m.color, who: m.name })
       })
     }
     return { perMember: pm, shared: sh }
-  }, [events, members, day, t])
+  }, [events, members, day, t, byId])
 
   const combined = useMemo(() => {
     const all: Block[] = [...members.flatMap((m) => perMember.get(m.id) ?? []), ...shared]
@@ -74,7 +76,6 @@ export default function DayView({ members, events, cursor, today, header, workSc
 
   // All-day events (birthdays, holidays) — shown in a strip above the timeline,
   // since they have no place on the hour grid.
-  const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
   const allDayEvents = useMemo(
     () => events.filter((ev) => ev.allDay && sameDay(new Date(ev.startAt), day)),
     [events, day],

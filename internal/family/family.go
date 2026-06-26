@@ -98,7 +98,13 @@ func (s *Service) UpdateMember(id string, in MemberInput) (*Member, error) {
 // DeleteMember removes a member; fails clearly if they're still referenced.
 func (s *Service) DeleteMember(id string) error {
 	if _, err := s.db.Exec(`DELETE FROM family_member WHERE id = ?`, id); err != nil {
-		return errors.New("can't remove a member still linked to events or chores — reassign those first")
+		// A foreign-key violation means the member is still referenced (events,
+		// chores, or a child's default guardian); surface a friendly hint. Any
+		// other error is a genuine DB failure and must not be masked.
+		if strings.Contains(strings.ToLower(err.Error()), "constraint") {
+			return errors.New("can't remove a member still linked to events or chores — reassign those first")
+		}
+		return err
 	}
 	return nil
 }
