@@ -238,13 +238,15 @@ export function claimEvent(id: string, memberId: string, force = false): Promise
 export interface Chore {
   id: string
   title: string
+  description?: string
   recurrenceRule: 'daily' | 'weekly' | 'monthly'
   recurrenceInterval: number // multiplier: every N units (years = monthly × 12)
+  recurrenceWeekdays?: string // 7-char Mon..Sun bitstring; weekly-only, e.g. '0000001' = Sundays
   assignmentMode: 'fixed' | 'rotation'
   assignedMemberId?: string
   rotationMemberIds?: string[]
   color?: string
-  icon?: string
+  icon?: string // a curated Lucide icon name (see lib/choreIcons)
 }
 
 export interface ChoreInstance {
@@ -266,12 +268,15 @@ export function getChores(): Promise<Chore[]> {
 
 export interface ChoreInput {
   title: string
+  description?: string | null
   recurrenceRule: 'daily' | 'weekly' | 'monthly'
   recurrenceInterval: number
+  recurrenceWeekdays?: string | null
   assignmentMode: 'fixed' | 'rotation'
   assignedMemberId?: string | null
   rotationMemberIds?: string[]
   color?: string
+  icon?: string | null
 }
 export function createChore(in_: ChoreInput): Promise<Chore> {
   return fetch('/api/chores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<Chore>(r))

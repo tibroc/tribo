@@ -163,6 +163,7 @@
   "recurrence": {
     "everyPrefix": "Alle",
     "every": "Alle {{count}} {{unit}}",
+    "everyNWeeksOn": "Alle {{count}} Wochen · {{days}}",
     "adjective": { "day": "Täglich", "week": "Wöchentlich", "month": "Monatlich", "year": "Jährlich" },
     "unit": {
       "day_one": "Tag", "day_other": "Tage",
@@ -278,6 +279,12 @@
     "pinEdit": "PIN (leer lassen, um beizubehalten)",
     "pinPlaceholder": "PIN für Profilwechsel",
     "title": "Titel",
+    "choreIcon": "Symbol",
+    "iconNone": "Kein Symbol",
+    "choreDescription": "Beschreibung",
+    "choreDescriptionPlaceholder": "Notizen, Anleitung oder ein Link (https://…)",
+    "choreWeekdays": "An diesen Tagen",
+    "choreWeekdaysHint": "Alle aus lassen für eine Aufgabe pro Woche.",
     "repeats": "Wiederholung",
     "assignment": "Zuweisung",
     "assignedTo": "Zugewiesen an",

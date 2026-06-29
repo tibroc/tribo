@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check, UserPlus } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
-import { recurrenceLabel } from '../lib/chores'
+import { recurrenceLabel, linkifyDescription } from '../lib/chores'
+import { ChoreIcon } from '../lib/choreIcons'
 import { useLocale } from '../lib/i18n'
 import Icon from './Icon'
 import PersonAvatar from './PersonAvatar'
@@ -88,7 +89,19 @@ function GroupLabel({ children, flush }: { children: React.ReactNode; flush?: bo
 
 // A single chore row. `flush` = full-bleed dedicated-card row (11px 22px, edge
 // dividers); otherwise an inset aside row (11px 0).
-export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, last, dayLabel }: {
+// renderDescription turns a chore description into text with clickable links.
+function renderDescription(text: string) {
+  return linkifyDescription(text).map((seg, i) =>
+    seg.href ? (
+      <a key={i} href={seg.href} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
+        style={{ color: 'var(--t-brand)', textDecoration: 'underline' }}>{seg.text}</a>
+    ) : (
+      <span key={i}>{seg.text}</span>
+    ),
+  )
+}
+
+export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, last, dayLabel, detailed }: {
   inst: ChoreInstance
   chore?: Chore
   member?: FamilyMember
@@ -97,12 +110,17 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
   flush?: boolean
   last?: boolean
   dayLabel?: string
+  detailed?: boolean
 }) {
   const { t } = useTranslation()
+  const locale = useLocale()
   const done = inst.status === 'done'
   const rotation = chore?.assignmentMode === 'rotation'
-  const recur = chore ? recurrenceLabel(chore.recurrenceRule, chore.recurrenceInterval, t) : null
-  const subtitle = [dayLabel, rotation ? t('chores.rotation') : recur].filter(Boolean).join(' · ')
+  const recur = chore ? recurrenceLabel(chore.recurrenceRule, chore.recurrenceInterval, t, chore.recurrenceWeekdays, locale) : null
+  // For a single-weekday chore the day label and recurrence label coincide
+  // (both "Sun"); drop the duplicate so the subtitle reads cleanly.
+  const cadence = rotation ? t('chores.rotation') : recur
+  const subtitle = [dayLabel, cadence === dayLabel ? null : cadence].filter(Boolean).join(' · ')
   return (
     <div
       className="flex items-center gap-3"
@@ -112,6 +130,7 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
       }}
     >
       <CheckBox done={done} onToggle={onToggle} label={inst.title} />
+      {chore?.icon && <ChoreIcon name={chore.icon} size={18} style={{ color: done ? 'var(--t-text-soft)' : 'var(--t-text)', flexShrink: 0 }} />}
       <div className="flex-1 min-w-0">
         <div style={{
           fontFamily: 'var(--t-font-body)', fontSize: 14, fontWeight: 600,
@@ -126,6 +145,11 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
             {subtitle}
           </div>
         )}
+        {detailed && chore?.description && (
+          <div style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)', marginTop: 3, whiteSpace: 'pre-wrap' }}>
+            {renderDescription(chore.description)}
+          </div>
+        )}
       </div>
       {chore && <RecurrencePill label={rotation ? t('chores.rotation') : (recur ?? '')} rotation={rotation} />}
       {member && <PersonAvatar name={member.name} color={member.color} index={memberIndex} size={26} />}
@@ -133,7 +157,7 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
   )
 }
 
-export function ChoresPanel({ instances, members, chores, onToggle, title, flush, grouped, emptyLabel }: {
+export function ChoresPanel({ instances, members, chores, onToggle, title, flush, grouped, emptyLabel, detailed }: {
   instances: ChoreInstance[]
   members: FamilyMember[]
   chores?: Chore[]
@@ -142,6 +166,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
   flush?: boolean
   grouped?: boolean
   emptyLabel?: string
+  detailed?: boolean
 }) {
   const { t } = useTranslation()
   const locale = useLocale()
@@ -151,7 +176,12 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
   }
   const memberOf = (id?: string) => members.find((m) => m.id === id)
   const choreOf = (instCid: string) => chores?.find((c) => c.id === instCid)
-  const isDaily = (i: ChoreInstance) => choreOf(i.choreId)?.recurrenceRule === 'daily'
+  // "Per-day" chores have one instance per calendar day: daily chores, and weekly
+  // chores pinned to specific weekdays. They're bucketed/labeled by their date.
+  const isDaily = (i: ChoreInstance) => {
+    const c = choreOf(i.choreId)
+    return c?.recurrenceRule === 'daily' || !!c?.recurrenceWeekdays?.includes('1')
+  }
   const today = todayISO()
   const weekdayOf = (iso: string) => {
     const [y, m, d] = iso.split('-').map(Number)
@@ -171,6 +201,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
       onToggle={() => onToggle(i)}
       flush={flush}
       last={last}
+      detailed={detailed}
     />
   )
 

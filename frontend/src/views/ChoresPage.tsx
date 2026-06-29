@@ -164,7 +164,7 @@ export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; 
             action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Icon name="plus" size={14} strokeWidth={2.6} /> {t('chores.addChore')}</Button>}
             padded={false}
           >
-            <ChoresPanel instances={instances} members={members} chores={chores} onToggle={toggleChore} flush grouped={period === 'week'} emptyLabel={t('chores.nonePeriod', { period: periodWord })} />
+            <ChoresPanel instances={instances} members={members} chores={chores} onToggle={toggleChore} flush grouped={period === 'week'} emptyLabel={t('chores.nonePeriod', { period: periodWord })} detailed />
           </Card>
           <div className="flex flex-col gap-4">
             <ByPerson instances={instances} members={members} periodLabel={periodWordCap} />

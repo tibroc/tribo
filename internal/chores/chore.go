@@ -24,6 +24,9 @@ type Chore struct {
 	RotationMemberIDs  []string `json:"rotationMemberIds,omitempty"`
 	Color              *string  `json:"color,omitempty"`
 	Icon               *string  `json:"icon,omitempty"`
+	// RecurrenceWeekdays is a 7-char Mon..Sun bitstring (e.g. '0000001' = Sundays).
+	// Only meaningful when RecurrenceRule == "weekly"; nil/empty = every week bucket.
+	RecurrenceWeekdays *string `json:"recurrenceWeekdays,omitempty"`
 }
 
 type Instance struct {
@@ -41,6 +44,7 @@ type Instance struct {
 
 type NewChore struct {
 	Title              string   `json:"title"`
+	Description        *string  `json:"description"`
 	RecurrenceRule     string   `json:"recurrenceRule"`
 	RecurrenceInterval int      `json:"recurrenceInterval"`
 	AssignmentMode     string   `json:"assignmentMode"`
@@ -48,6 +52,7 @@ type NewChore struct {
 	RotationMemberIDs  []string `json:"rotationMemberIds"`
 	Color              *string  `json:"color"`
 	Icon               *string  `json:"icon"`
+	RecurrenceWeekdays *string  `json:"recurrenceWeekdays"`
 }
 
 const maxInterval = 120 // sanity cap (e.g. monthly × 120 = every 10 years)
@@ -66,6 +71,45 @@ func normalizeRecurrence(rule string, interval int) (string, int) {
 		interval = maxInterval
 	}
 	return rule, interval
+}
+
+// normalizeWeekdays returns a clean 7-char Mon..Sun bitstring, or nil when the
+// chore isn't weekly or no weekday is selected (in which case generation falls
+// back to one instance per week bucket). Any non-'1' char is treated as off.
+func normalizeWeekdays(rule string, mask *string) *string {
+	if rule != "weekly" || mask == nil {
+		return nil
+	}
+	var b strings.Builder
+	any := false
+	for i := 0; i < 7; i++ {
+		if i < len(*mask) && (*mask)[i] == '1' {
+			b.WriteByte('1')
+			any = true
+		} else {
+			b.WriteByte('0')
+		}
+	}
+	if !any {
+		return nil
+	}
+	s := b.String()
+	return &s
+}
+
+// weekdayOffsets returns the day offsets (0=Mon..6=Sun) for the set bits of a
+// normalized weekday mask.
+func weekdayOffsets(mask *string) []int {
+	if mask == nil {
+		return nil
+	}
+	out := []int{}
+	for i := 0; i < 7 && i < len(*mask); i++ {
+		if (*mask)[i] == '1' {
+			out = append(out, i)
+		}
+	}
+	return out
 }
 
 type Service struct {
@@ -181,22 +225,41 @@ func (s *Service) Generate(from, to time.Time) (int, error) {
 	defer tx.Rollback()
 
 	created := 0
+	insert := func(choreID, ps, pe string, assignee *string) error {
+		res, err := tx.Exec(
+			`INSERT OR IGNORE INTO chore_instance (id, chore_id, period_start, period_end, assigned_member_id, status)
+			 VALUES (?, ?, ?, ?, ?, 'pending')`,
+			uuid.NewString(), choreID, ps, pe, assignee)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			created++
+		}
+		return nil
+	}
+
 	for _, c := range chores {
+		offsets := weekdayOffsets(normalizeWeekdays(c.RecurrenceRule, c.RecurrenceWeekdays))
 		start, _ := periodOf(c.RecurrenceRule, c.RecurrenceInterval, from)
 		for !start.After(to) {
 			end := nextPeriod(c.RecurrenceRule, c.RecurrenceInterval, start)
 			// Use the absolute bucket index so rotation assignment is the same
 			// regardless of which window this period was first generated in.
 			assignee := resolveAssignee(c, periodIndex(c.RecurrenceRule, c.RecurrenceInterval, start))
-			res, err := tx.Exec(
-				`INSERT OR IGNORE INTO chore_instance (id, chore_id, period_start, period_end, assigned_member_id, status)
-				 VALUES (?, ?, ?, ?, ?, 'pending')`,
-				uuid.NewString(), c.ID, start.Format(dateFmt), end.Format(dateFmt), assignee)
-			if err != nil {
-				return 0, err
-			}
-			if n, _ := res.RowsAffected(); n > 0 {
-				created++
+			if len(offsets) > 0 {
+				// Weekly chore pinned to weekdays: one single-day instance per
+				// selected weekday within this week bucket. `start` is a Monday.
+				for _, off := range offsets {
+					day := start.AddDate(0, 0, off)
+					if err := insert(c.ID, day.Format(dateFmt), day.AddDate(0, 0, 1).Format(dateFmt), assignee); err != nil {
+						return 0, err
+					}
+				}
+			} else {
+				if err := insert(c.ID, start.Format(dateFmt), end.Format(dateFmt), assignee); err != nil {
+					return 0, err
+				}
 			}
 			start = end
 		}
@@ -219,7 +282,7 @@ func resolveAssignee(c Chore, periodIdx int) *string {
 func (s *Service) ListChores() ([]Chore, error) {
 	rows, err := s.db.Query(
 		`SELECT id, title, description, recurrence_rule, recurrence_interval, assignment_mode,
-		        assigned_member_id, rotation_member_ids, color, icon
+		        assigned_member_id, rotation_member_ids, color, icon, recurrence_weekdays
 		 FROM chore ORDER BY sort_order, title`)
 	if err != nil {
 		return nil, err
@@ -231,7 +294,7 @@ func (s *Service) ListChores() ([]Chore, error) {
 		var c Chore
 		var rotation *string
 		if err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.RecurrenceRule, &c.RecurrenceInterval, &c.AssignmentMode,
-			&c.AssignedMemberID, &rotation, &c.Color, &c.Icon); err != nil {
+			&c.AssignedMemberID, &rotation, &c.Color, &c.Icon, &c.RecurrenceWeekdays); err != nil {
 			return nil, err
 		}
 		if rotation != nil && *rotation != "" {
@@ -247,6 +310,7 @@ func (s *Service) CreateChore(in NewChore) (*Chore, error) {
 		return nil, errors.New("title is required")
 	}
 	rule, interval := normalizeRecurrence(in.RecurrenceRule, in.RecurrenceInterval)
+	weekdays := normalizeWeekdays(rule, in.RecurrenceWeekdays)
 	if in.AssignmentMode == "" {
 		in.AssignmentMode = "fixed"
 	}
@@ -257,9 +321,9 @@ func (s *Service) CreateChore(in NewChore) (*Chore, error) {
 		rotation = &joined
 	}
 	if _, err := s.db.Exec(
-		`INSERT INTO chore (id, title, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, icon)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, in.Title, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon); err != nil {
+		`INSERT INTO chore (id, title, description, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, icon, recurrence_weekdays)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, in.Title, in.Description, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, weekdays); err != nil {
 		return nil, err
 	}
 	// Generate this period's instance immediately so it appears right away.
@@ -284,6 +348,7 @@ func (s *Service) UpdateChore(id string, in NewChore) (*Chore, error) {
 		return nil, errors.New("title is required")
 	}
 	rule, interval := normalizeRecurrence(in.RecurrenceRule, in.RecurrenceInterval)
+	weekdays := normalizeWeekdays(rule, in.RecurrenceWeekdays)
 	if in.AssignmentMode == "" {
 		in.AssignmentMode = "fixed"
 	}
@@ -292,13 +357,24 @@ func (s *Service) UpdateChore(id string, in NewChore) (*Chore, error) {
 		rotation = strings.Join(in.RotationMemberIDs, ",")
 	}
 	res, err := s.db.Exec(
-		`UPDATE chore SET title=?, recurrence_rule=?, recurrence_interval=?, assignment_mode=?, assigned_member_id=?, rotation_member_ids=?, color=?, icon=? WHERE id=?`,
-		in.Title, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, id)
+		`UPDATE chore SET title=?, description=?, recurrence_rule=?, recurrence_interval=?, assignment_mode=?, assigned_member_id=?, rotation_member_ids=?, color=?, icon=?, recurrence_weekdays=? WHERE id=?`,
+		in.Title, in.Description, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, weekdays, id)
 	if err != nil {
 		return nil, err
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, errors.New("chore not found")
+	}
+	// The schedule may have changed (recurrence/weekdays/assignment). Drop stale
+	// future pending instances and regenerate the current period so the new
+	// schedule takes effect; completed/skipped history is preserved.
+	today := time.Now().Format(dateFmt)
+	if _, err := s.db.Exec(
+		`DELETE FROM chore_instance WHERE chore_id=? AND status='pending' AND period_start >= ?`, id, today); err != nil {
+		return nil, err
+	}
+	if _, err := s.Generate(time.Now(), time.Now()); err != nil {
+		return nil, err
 	}
 	chores, err := s.ListChores()
 	if err != nil {

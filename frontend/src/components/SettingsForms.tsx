@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Ban } from 'lucide-react'
 import { markerColor } from '../lib/tokens'
+import { ChoreIcon, CHORE_ICON_NAMES } from '../lib/choreIcons'
 import {
   createMember, updateMember, deleteMember,
   createChore, updateChore, deleteChore,
@@ -140,19 +141,30 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
 }) {
   const initialRecur = toUnitInterval(chore?.recurrenceRule ?? 'weekly', chore?.recurrenceInterval ?? 1)
   const [title, setTitle] = useState(chore?.title ?? '')
+  const [description, setDescription] = useState(chore?.description ?? '')
+  const [icon, setIcon] = useState(chore?.icon ?? '')
   const [unit, setUnit] = useState<RecurrenceUnit>(initialRecur.unit)
   const [count, setCount] = useState(initialRecur.count)
+  const [weekdays, setWeekdays] = useState(chore?.recurrenceWeekdays ?? '')
   const [mode, setMode] = useState<'fixed' | 'rotation'>(chore?.assignmentMode ?? 'fixed')
   const [assignee, setAssignee] = useState(chore?.assignedMemberId ?? '')
   const [rotation, setRotation] = useState<string[]>(chore?.rotationMemberIds ?? [])
   const { t } = useTranslation()
   const { busy, error, run } = useSaver(onSaved)
+  const dayInitials = weekdayLabels(useLocale(), 'narrow')
+
+  // weekdays is a 7-char Mon..Sun mask; default to all-off until a day is picked.
+  const mask = weekdays.length === 7 ? weekdays : '0000000'
+  const toggleDay = (i: number) => setWeekdays(mask.substring(0, i) + (mask[i] === '1' ? '0' : '1') + mask.substring(i + 1))
 
   const colorFor = () => members.find((m) => m.id === (mode === 'fixed' ? assignee : rotation[0]))?.color ?? '#3E6259'
   const save = () => run(() => {
     const { rule, interval } = fromUnitInterval(unit, count)
+    // Weekday pinning only applies to weekly chores; send null otherwise / when none picked.
+    const wd = unit === 'week' && mask.includes('1') ? mask : null
     const payload = {
-      title, recurrenceRule: rule, recurrenceInterval: interval, assignmentMode: mode,
+      title, description: description.trim() || null, icon: icon || null,
+      recurrenceRule: rule, recurrenceInterval: interval, recurrenceWeekdays: wd, assignmentMode: mode,
       assignedMemberId: mode === 'fixed' && assignee ? assignee : null,
       rotationMemberIds: mode === 'rotation' ? rotation : [],
       color: colorFor(),
@@ -164,6 +176,24 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
     <Modal title={chore ? t('forms.editChore') : t('forms.addChore')} onClose={onClose} onSave={save} busy={busy} error={error}
       onDelete={chore ? () => run(() => deleteChore(chore.id)) : undefined}>
       <Labeled label={t('forms.title')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={title} onChange={(e) => setTitle(e.target.value)} /></Labeled>
+      <Labeled label={t('forms.choreIcon')}>
+        <div className="flex flex-wrap gap-1.5">
+          <button type="button" onClick={() => setIcon('')} title={t('forms.iconNone')}
+            className="flex items-center justify-center rounded-lg" style={{ width: 34, height: 34, ...(icon === '' ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { ...field, color: 'var(--t-text-soft)' }) }}>
+            <Ban size={16} />
+          </button>
+          {CHORE_ICON_NAMES.map((n) => (
+            <button key={n} type="button" onClick={() => setIcon(n)}
+              className="flex items-center justify-center rounded-lg" style={{ width: 34, height: 34, ...(icon === n ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { ...field, color: 'var(--t-text)' }) }}>
+              <ChoreIcon name={n} size={16} />
+            </button>
+          ))}
+        </div>
+      </Labeled>
+      <Labeled label={t('forms.choreDescription')}>
+        <textarea className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={{ ...field, minHeight: 60, resize: 'vertical' }}
+          value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('forms.choreDescriptionPlaceholder')} />
+      </Labeled>
       <Labeled label={t('forms.repeats')}>
         <div className="flex items-center gap-2">
           <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('recurrence.everyPrefix')}</span>
@@ -176,6 +206,17 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
           </select>
         </div>
       </Labeled>
+      {unit === 'week' && (
+        <Labeled label={t('forms.choreWeekdays')}>
+          <div className="flex gap-1">
+            {dayInitials.map((d, i) => (
+              <button key={i} type="button" onClick={() => toggleDay(i)} className="flex-1 rounded-md text-center text-xs font-semibold py-1.5"
+                style={mask[i] === '1' ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { background: 'var(--t-bg)', color: 'var(--t-text-soft)' }}>{d}</button>
+            ))}
+          </div>
+          <div className="text-xs mt-1" style={{ color: 'var(--t-text-soft)' }}>{t('forms.choreWeekdaysHint')}</div>
+        </Labeled>
+      )}
       <Labeled label={t('forms.assignment')}>
         <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
           <option value="fixed">{t('forms.assignmentMode.fixed')}</option>
