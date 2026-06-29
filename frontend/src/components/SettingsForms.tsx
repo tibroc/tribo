@@ -85,6 +85,7 @@ export function MemberForm({ member, members, onClose, onSaved }: {
   const { t } = useTranslation()
   const { busy, error, run } = useSaver(onSaved)
   const guardians = members.filter((m) => m.role === 'guardian' && m.id !== member?.id)
+  const locale = useLocale()
 
   const save = () => run(() => {
     const payload = {
@@ -123,7 +124,7 @@ export function MemberForm({ member, members, onClose, onSaved }: {
         </Labeled>
       )}
       <Labeled label={t('forms.dateOfBirth')}>
-        <input type="date" className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+        <input type="date" lang={locale} className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
       </Labeled>
       <Labeled label={member ? t('forms.pinEdit') : t('forms.pinNew')}>
         <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={pin} onChange={(e) => setPin(e.target.value)} placeholder={t('forms.pinPlaceholder')} />

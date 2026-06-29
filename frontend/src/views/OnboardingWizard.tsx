@@ -34,7 +34,8 @@ const STEPS = ['welcome', 'family', 'members', 'calendar', 'chores', 'typicalWee
 
 export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) {
   const { t } = useTranslation()
-  const weekdays = weekdayLabels(useLocale(), 'short')
+  const locale = useLocale()
+  const weekdays = weekdayLabels(locale, 'short')
   const [step, setStep] = useState(0)
   const [familyName, setFamilyName] = useState('')
   const [timezone, setTimezone] = useState(() => {
@@ -70,12 +71,15 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
         defaultGuardianIndex: m.role === 'child' ? m.defaultGuardianIndex : null,
         dateOfBirth: m.dob.trim() || null,
       })),
+      // Persist the localized title so wizard-created items appear in the
+      // language they were created in (the English `title` is only a stable key
+      // for the i18n lookup, not what we store).
       chores: chores.filter((c) => c.enabled && c.assignee != null).map((c) => ({
-        title: c.title, recurrence: c.recurrence, mode: 'fixed',
+        title: t(`onboarding.choreTemplates.${c.labelKey}`), recurrence: c.recurrence, mode: 'fixed',
         assignedMemberIndex: c.assignee!, color: markerColor(c.assignee!),
       })),
       typicalWeek: patterns.filter((p) => p.enabled && p.member != null).map((p) => ({
-        memberIndex: p.member!, title: p.title, startTime: p.startTime, durationMin: p.durationMin, weekdays: p.weekdays,
+        memberIndex: p.member!, title: t(`onboarding.patternTemplates.${p.labelKey}`), startTime: p.startTime, durationMin: p.durationMin, weekdays: p.weekdays,
       })),
     }
     try { await onboard(req); onDone() } catch (e) { setError(String(e)); setBusy(false) }
@@ -208,7 +212,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
                   <div className="flex items-center gap-2 flex-wrap" style={{ paddingLeft: 54 }}>
                     <label className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--t-text-soft)' }}>
                       {t('onboarding.members.dob')}
-                      <input type="date" className="bg-transparent outline-hidden text-xs rounded-lg px-2 py-1" style={field} value={m.dob}
+                      <input type="date" lang={locale} className="bg-transparent outline-hidden text-xs rounded-lg px-2 py-1" style={field} value={m.dob}
                         onChange={(e) => updateMember(setMembers, i, { dob: e.target.value })} />
                     </label>
                     {m.role === 'child' && guardians.length > 0 && (

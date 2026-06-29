@@ -2,6 +2,24 @@
 // used across all five calendar views.
 import { SHARED_COLOR, UNASSIGNED_COLOR } from './tokens'
 import type { FamilyMember, TriboEvent, WorkSchedule } from './api'
+import type { TFunction } from 'i18next'
+
+// localizeTitle localizes server-generated birthday titles at render time.
+// Birthdays are generated server-side as "<name>'s birthday" (always English,
+// since the server has no UI language) with a stable `bday-<memberId>-<year>`
+// id; we re-render the phrase in the active language, keeping the name verbatim.
+// Works off the (id, title) pair so it serves both TriboEvents and the
+// id-tagged briefing items on the Home screen.
+export function localizeTitle(id: string | undefined, title: string, t: TFunction): string {
+  if (id?.startsWith('bday-')) {
+    return t('event.birthday', { name: title.replace(/'s birthday$/, '') })
+  }
+  return title
+}
+
+export function eventDisplayTitle(ev: TriboEvent, t: TFunction): string {
+  return localizeTitle(ev.id, ev.title, t)
+}
 
 export type ViewName = 'Day' | 'Week' | 'Month' | 'Year'
 export const VIEWS: ViewName[] = ['Day', 'Week', 'Month', 'Year']

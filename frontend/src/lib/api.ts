@@ -397,8 +397,8 @@ export function deleteWorkSchedule(id: string): Promise<void> {
 export interface Briefing {
   rangeStart: string // RFC3339; formatted client-side per locale
   rangeEnd: string
-  countdown?: { days: number; title: string }
-  today: { startAt: string; title: string; color: string; person: string }[]
+  countdown?: { days: number; title: string; eventId?: string }
+  today: { eventId?: string; startAt: string; title: string; color: string; person: string }[]
   personWeeks: {
     memberId: string
     name: string
@@ -406,7 +406,7 @@ export interface Briefing {
     highlights: { label: string; weekdays: number[]; time?: string; special: boolean }[]
     chores: string[]
   }[]
-  familyHighlights: { title: string; date: string; color: string; icon?: string }[]
+  familyHighlights: { eventId?: string; title: string; date: string; color: string; icon?: string }[]
   lastWeek: { choresDone: number; choresTotal: number; todosDone: number; todosTotal: number }
 }
 

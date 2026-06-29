@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
 import {
-  addDays, mondayOf, sameDay, groupByDay, colorForEvent, membersById, type ViewProps,
+  addDays, mondayOf, sameDay, groupByDay, colorForEvent, membersById, eventDisplayTitle, type ViewProps,
 } from '../lib/calendar'
 import { fmtTime, weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
@@ -121,7 +121,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
             </div>
             {days.map((d, di) => (
               <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderBottom: line, borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
-                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={p.ev.colorOverride || person.color} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
+                {(grid[di] ?? []).map((p) => <EventChip key={p.ev.id} title={eventDisplayTitle(p.ev, t)} color={p.ev.colorOverride || person.color} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
                 {busyAt(person.id, di) && <div style={{ fontSize: '10.5px', fontWeight: 600, fontStyle: 'italic', color: 'var(--t-text-soft)', opacity: 0.55 }}>{t('calendar.busy')}</div>}
               </div>
             ))}
@@ -136,7 +136,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
       </div>
       {days.map((d, di) => (
         <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
-          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={p.ev.title} color={colorForEvent(p.ev, byId)} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} onClick={() => onEditEvent(p.ev)} />)}
+          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={eventDisplayTitle(p.ev, t)} color={colorForEvent(p.ev, byId)} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} onClick={() => onEditEvent(p.ev)} />)}
         </div>
       ))}
     </div>
@@ -175,7 +175,7 @@ function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEdit
             <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
               {time && <span className="text-xs w-16 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{time}</span>}
-              <span className="text-sm truncate flex-1">{ev.title}</span>
+              <span className="text-sm truncate flex-1">{eventDisplayTitle(ev, t)}</span>
               <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
             </div>
           ))}

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SHARED_COLOR } from '../lib/tokens'
-import { sameDay, startOfDay, colorForEvent, eventDate, type ViewProps } from '../lib/calendar'
+import { sameDay, startOfDay, colorForEvent, eventDate, eventDisplayTitle, type ViewProps } from '../lib/calendar'
 import { fmtTime, fmtHour } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
 import type { FamilyMember, TriboEvent } from '../lib/api'
@@ -128,7 +128,7 @@ export default function DayView({ members, events, cursor, today, header, workSc
           <span className="text-xs font-bold uppercase tracking-wider shrink-0" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
           {allDayEvents.map((ev) => (
             <div key={ev.id} className="min-w-[120px]">
-              <EventChip dense title={ev.title} color={colorForEvent(ev, byId)} icon={ev.icon} onClick={() => onEditEvent(ev)} />
+              <EventChip dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} onClick={() => onEditEvent(ev)} />
             </div>
           ))}
         </div>
@@ -183,6 +183,7 @@ function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent, 
   onEditEvent: (e: TriboEvent) => void
   locale: string
 }) {
+  const { t } = useTranslation()
   return (
     <div
       className="relative h-full"
@@ -216,7 +217,7 @@ function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent, 
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t-text-soft)' }}>
             {fmtTime(new Date(b.ev.startAt), locale)} – {fmtTime(new Date(b.ev.endAt), locale)}{withWho && b.who ? ` · ${b.who}` : ''}
           </div>
-          <div className="truncate" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 1 }}>{b.ev.title}</div>
+          <div className="truncate" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 1 }}>{eventDisplayTitle(b.ev, t)}</div>
         </div>
       ))}
       {showNow && (

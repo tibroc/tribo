@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
   buildMonthCells, colorForEvent, groupByDay, membersById, sameDay,
-  dayKey, eventDate, type ViewProps, type MonthCell,
+  dayKey, eventDate, eventDisplayTitle, type ViewProps, type MonthCell,
 } from '../lib/calendar'
 import { fmtTime, fmtMonthDay, fmtWeekdayLongDay, weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
@@ -136,7 +136,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
 
       {/* Tablet: up to 2 chips + "+N more" */}
       <div className="hidden lg:block space-y-1">
-        {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={ev.title} color={colorForEvent(ev, byId)} icon={ev.icon} />)}
+        {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} />)}
         {extra > 0 && <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--t-text-soft)', paddingLeft: 3 }}>{t('calendar.moreCount', { count: extra })}</div>}
       </div>
 
@@ -177,7 +177,7 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
               <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 {!ev.allDay && <span className="text-xs w-20 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>}
-                <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.icon === 'cake' && <Cake size={12} />}{ev.title}</span>
+                <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.icon === 'cake' && <Cake size={12} />}{eventDisplayTitle(ev, t)}</span>
                 <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
               </div>
             )
@@ -205,7 +205,7 @@ function MonthHighlights({ events, byId, locale }: { events: TriboEvent[]; byId:
             return (
               <div key={h.id} className="flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorForEvent(h, byId) }} />
-                <span className="flex-1 truncate">{h.title}</span>
+                <span className="flex-1 truncate">{eventDisplayTitle(h, t)}</span>
                 <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
               </div>
             )

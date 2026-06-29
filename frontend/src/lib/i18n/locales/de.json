@@ -240,6 +240,7 @@
     }
   },
   "event": {
+    "birthday": "{{name}}s Geburtstag",
     "newTitle": "Neuer Termin",
     "editTitle": "Termin bearbeiten",
     "titlePlaceholder": "Titel des Termins",

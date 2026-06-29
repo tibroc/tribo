@@ -240,6 +240,7 @@
     }
   },
   "event": {
+    "birthday": "Aniversário de {{name}}",
     "newTitle": "Novo evento",
     "editTitle": "Editar evento",
     "titlePlaceholder": "Título do evento",

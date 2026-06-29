@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Sparkles, Star, Cake, CheckSquare } from 'lucide-react'
-import type { Section, Intent } from '../lib/calendar'
+import { localizeTitle, type Section, type Intent } from '../lib/calendar'
 import { getBriefing, type Briefing } from '../lib/api'
 import { fmtTime, fmtRange, fmtWeekdayLong, daysLabel } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
@@ -40,7 +40,7 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
             {b.countdown && (
               <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5" style={{ backgroundColor: 'var(--t-surface)' }}>
                 <Sparkles size={14} style={{ color: 'var(--t-accent)' }} />
-                <span className="text-sm font-semibold">{t('home.countdown', { count: b.countdown.days, title: b.countdown.title })}</span>
+                <span className="text-sm font-semibold">{t('home.countdown', { count: b.countdown.days, title: localizeTitle(b.countdown.eventId, b.countdown.title, t) })}</span>
               </div>
             )}
           </div>
@@ -56,7 +56,7 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
                   <div key={i} className="flex items-center gap-2 text-sm">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
                     <span className="text-xs w-16 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>
-                    <span className="flex-1 truncate">{ev.title}</span>
+                    <span className="flex-1 truncate">{localizeTitle(ev.eventId, ev.title, t)}</span>
                     <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{ev.person || t('common.family')}</span>
                   </div>
                 ))}
@@ -112,7 +112,7 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
                       {h.icon === 'cake'
                         ? <Cake size={14} style={{ color: h.color, flexShrink: 0 }} />
                         : <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: h.color }} />}
-                      <span className="flex-1 truncate">{h.title}</span>
+                      <span className="flex-1 truncate">{localizeTitle(h.eventId, h.title, t)}</span>
                       <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtWeekdayLong(new Date(h.date), locale)}</span>
                     </div>
                   ))}

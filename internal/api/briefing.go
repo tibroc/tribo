@@ -11,7 +11,8 @@ import (
 // Date/label fields are emitted as raw data (RFC3339 timestamps, Mon=0 weekday
 // indices) so the frontend can format them per the active locale.
 type agendaItem struct {
-	StartAt string `json:"startAt"` // RFC3339; frontend formats the clock
+	EventID string `json:"eventId,omitempty"` // lets the frontend localize generated titles (e.g. birthdays)
+	StartAt string `json:"startAt"`           // RFC3339; frontend formats the clock
 	Title   string `json:"title"`
 	Color   string `json:"color"`
 	Person  string `json:"person"` // "" = family-wide
@@ -33,10 +34,11 @@ type personWeek struct {
 }
 
 type familyHighlight struct {
-	Title string `json:"title"`
-	Date  string `json:"date"` // RFC3339; frontend formats the weekday
-	Color string `json:"color"`
-	Icon  string `json:"icon,omitempty"`
+	EventID string `json:"eventId,omitempty"`
+	Title   string `json:"title"`
+	Date    string `json:"date"` // RFC3339; frontend formats the weekday
+	Color   string `json:"color"`
+	Icon    string `json:"icon,omitempty"`
 }
 
 type briefing struct {
@@ -50,8 +52,9 @@ type briefing struct {
 }
 
 type countdown struct {
-	Days  int    `json:"days"`
-	Title string `json:"title"`
+	Days    int    `json:"days"`
+	Title   string `json:"title"`
+	EventID string `json:"eventId,omitempty"`
 }
 
 type tally struct {
@@ -93,7 +96,7 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 			continue
 		}
 		out.Today = append(out.Today, agendaItem{
-			StartAt: ev.StartAt, Title: ev.Title,
+			EventID: ev.ID, StartAt: ev.StartAt, Title: ev.Title,
 			Color: eventColor(ev, byID), Person: eventPerson(ev, byID),
 		})
 	}
@@ -126,7 +129,7 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 			icon = *ev.Icon
 		}
 		out.FamilyHighlights = append(out.FamilyHighlights, familyHighlight{
-			Title: ev.Title, Date: start.Format(time.RFC3339), Color: eventColor(ev, byID), Icon: icon,
+			EventID: ev.ID, Title: ev.Title, Date: start.Format(time.RFC3339), Color: eventColor(ev, byID), Icon: icon,
 		})
 	}
 
@@ -145,7 +148,7 @@ func (s *Server) getBriefing(w http.ResponseWriter, _ *http.Request) {
 		if days < 0 {
 			continue
 		}
-		out.Countdown = &countdown{Days: days, Title: ev.Title}
+		out.Countdown = &countdown{Days: days, Title: ev.Title, EventID: ev.ID}
 		break
 	}
 
