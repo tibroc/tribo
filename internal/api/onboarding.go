@@ -43,6 +43,9 @@ type onboardRequest struct {
 	Members     []onboardMember  `json:"members"`
 	Chores      []onboardChore   `json:"chores"`
 	TypicalWeek []onboardPattern `json:"typicalWeek"`
+	// SelfMemberIndex identifies which member the logged-in OIDC user is, so we
+	// can link their subject to it. Optional; only meaningful when auth is on.
+	SelfMemberIndex *int `json:"selfMemberIndex"`
 }
 
 // POST /api/onboarding — one-shot setup from the wizard. Creates the family,
@@ -206,6 +209,18 @@ func (s *Server) handleOnboarding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Link the logged-in OIDC user to the member they identified as themselves
+	// (or the first guardian) so they're recognized without a second mapping
+	// step. No-op when auth is disabled or unauthenticated. Best-effort: a
+	// failure here shouldn't undo a successful onboarding.
+	if s.auth != nil {
+		if selfID := selfMemberID(in.SelfMemberIndex, in.Members, memberIDs); selfID != "" {
+			if err := s.auth.AdoptMember(w, r, selfID); err != nil {
+				log.Printf("onboarding: adopt member: %v", err)
+			}
+		}
+	}
+
 	// Generate this period's chore instances so Home/Chores are populated.
 	if _, err := s.chores.Generate(time.Now(), time.Now()); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -246,6 +261,24 @@ func ensureSource(tx *sql.Tx, name string, shared bool) (string, error) {
 	id = uuid.NewString()
 	_, err := tx.Exec(`INSERT INTO calendar_source (id, type, display_name, is_shared) VALUES (?, 'internal', ?, ?)`, id, name, b)
 	return id, err
+}
+
+// selfMemberID resolves the member id for the logged-in user: the explicit
+// SelfMemberIndex if in range, otherwise the first guardian, otherwise "".
+func selfMemberID(idx *int, members []onboardMember, ids []string) string {
+	if idx != nil && *idx >= 0 && *idx < len(ids) {
+		return ids[*idx]
+	}
+	// First guardian (role is normalized to "guardian" unless explicitly "child").
+	for i, m := range members {
+		if i < len(ids) && m.Role != "child" {
+			return ids[i]
+		}
+	}
+	if len(ids) > 0 {
+		return ids[0]
+	}
+	return ""
 }
 
 func orDefault(v, fallback string) string {

@@ -508,6 +508,7 @@ export interface OnboardRequest {
   members: OnboardMember[]
   chores: OnboardChore[]
   typicalWeek: OnboardPattern[]
+  selfMemberIndex?: number | null // which member is the logged-in OIDC user
 }
 
 export function onboard(req: OnboardRequest): Promise<{ status: string }> {

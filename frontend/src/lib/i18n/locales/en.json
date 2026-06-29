@@ -397,7 +397,9 @@
       "memberN": "Member {{n}}",
       "addMember": "Add member",
       "paletteHint": "<0>The next member</0> is automatically given this colour — every family keeps a balanced, harmonious palette.",
-      "dob": "Birthday"
+      "dob": "Birthday",
+      "whoAmILabel": "Which one is you?",
+      "whoAmIHint": "We'll link your login to this person."
     },
     "calendar": {
       "note": "Tribo sets up a calendar for <1>each person</1>, plus shared <3>family</3> and <5>birthdays</5> calendars automatically. You can connect a read-only Google calendar to any person later from <7>Family → Calendars</7>."

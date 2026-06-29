@@ -210,6 +210,27 @@ func (s *Service) handleMapProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"activeMemberId": body.MemberID})
 }
 
+// AdoptMember links the current session's subject to memberID and refreshes the
+// session cookie so the user is recognized as that member. It's a no-op when
+// auth is disabled or the request has no authenticated subject (e.g. the
+// dev/disabled onboarding path). Mirrors handleMapProfile, minus the
+// already-linked-to-another-account guard (onboarding just created the member).
+func (s *Service) AdoptMember(w http.ResponseWriter, r *http.Request, memberID string) error {
+	if !s.enabled {
+		return nil
+	}
+	sess, _ := s.readSession(r)
+	if sess.Sub == "" {
+		return nil
+	}
+	if _, err := s.db.Exec(`UPDATE family_member SET oidc_subject = ? WHERE id = ?`, sess.Sub, memberID); err != nil {
+		return err
+	}
+	sess.Member = memberID
+	s.writeSession(w, sess)
+	return nil
+}
+
 // ===== DB helpers =====
 
 func (s *Service) memberForSubject(sub string) string {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2, CalendarDays } from 'lucide-react'
 import { markerColor } from '../lib/tokens'
 import { onboard, type OnboardRequest } from '../lib/api'
+import { useSession } from '../lib/session'
 import Icon from '../components/Icon'
 import Button from '../components/Button'
 import { weekdayLabels } from '../lib/datetime'
@@ -44,6 +45,11 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
   const [patterns, setPatterns] = useState<PatternTemplate[]>(PATTERN_TEMPLATES.map((p) => ({ ...p, enabled: false, member: null })))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // When auth is on, the logged-in user identifies which member is them so we
+  // can link their OIDC subject during onboarding. selfIdx is a draft index.
+  const { session } = useSession()
+  const authEnabled = !!session?.authEnabled
+  const [selfIdx, setSelfIdx] = useState<number | null>(null)
 
   const guardians = members.map((m, i) => ({ m, i })).filter((x) => x.m.role === 'guardian')
   const validMembers = members.filter((m) => m.name.trim())
@@ -51,8 +57,14 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
 
   const finish = async () => {
     setBusy(true); setError(null)
+    // Translate the chosen draft index into the filtered-list index the backend
+    // sees (it only receives named members). -1 → omit, backend falls back to
+    // the first guardian.
+    const namedDraftIdxs = members.map((m, i) => ({ m, i })).filter((x) => x.m.name.trim()).map((x) => x.i)
+    const selfFiltered = selfIdx != null ? namedDraftIdxs.indexOf(selfIdx) : -1
     const req: OnboardRequest = {
       familyName, timezone,
+      selfMemberIndex: authEnabled && selfFiltered >= 0 ? selfFiltered : null,
       members: members.filter((m) => m.name.trim()).map((m, i) => ({
         name: m.name.trim(), color: markerColor(i), role: m.role,
         defaultGuardianIndex: m.role === 'child' ? m.defaultGuardianIndex : null,
@@ -220,6 +232,19 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
                   <Trans i18nKey="onboarding.members.paletteHint"><b style={{ color: 'var(--t-text)' }}>The next member</b> is automatically given this colour — every family keeps a balanced, harmonious palette.</Trans>
                 </div>
               </div>
+              {authEnabled && validMembers.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-3 p-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)', background: 'var(--t-surface)' }}>
+                  <label className="text-sm font-semibold">{t('onboarding.members.whoAmILabel')}</label>
+                  <select className="text-sm rounded-lg px-2 py-1.5 outline-hidden" style={field}
+                    value={selfIdx ?? ''}
+                    onChange={(e) => setSelfIdx(e.target.value === '' ? null : Number(e.target.value))}>
+                    {members.map((m, i) => m.name.trim() ? (
+                      <option key={i} value={i}>{m.name.trim()}</option>
+                    ) : null)}
+                  </select>
+                  <span className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('onboarding.members.whoAmIHint')}</span>
+                </div>
+              )}
             </div>
           )}
 

@@ -397,7 +397,9 @@
       "memberN": "Mitglied {{n}}",
       "addMember": "Mitglied hinzufügen",
       "paletteHint": "<0>Das nächste Mitglied</0> erhält automatisch diese Farbe — so behält jede Familie eine ausgewogene, harmonische Palette.",
-      "dob": "Geburtstag"
+      "dob": "Geburtstag",
+      "whoAmILabel": "Wer von ihnen bist du?",
+      "whoAmIHint": "Wir verknüpfen deinen Login mit dieser Person."
     },
     "calendar": {
       "note": "Tribo legt automatisch einen Kalender für <1>jede Person</1> sowie gemeinsame <3>Familien-</3> und <5>Geburtstags-</5>Kalender an. Einen schreibgeschützten Google-Kalender kannst du jeder Person später unter <7>Familie → Kalender</7> hinzufügen."

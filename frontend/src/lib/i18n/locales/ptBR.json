@@ -397,7 +397,9 @@
       "memberN": "Membro {{n}}",
       "addMember": "Adicionar membro",
       "paletteHint": "<0>O próximo membro</0> recebe automaticamente esta cor — assim cada família mantém uma paleta equilibrada e harmoniosa.",
-      "dob": "Aniversário"
+      "dob": "Aniversário",
+      "whoAmILabel": "Qual deles é você?",
+      "whoAmIHint": "Vamos vincular seu login a esta pessoa."
     },
     "calendar": {
       "note": "O Tribo cria automaticamente um calendário para <1>cada pessoa</1>, além de calendários compartilhados de <3>família</3> e <5>aniversários</5>. Você pode conectar um calendário Google somente leitura a qualquer pessoa depois em <7>Família → Calendários</7>."

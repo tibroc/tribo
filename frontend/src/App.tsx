@@ -35,10 +35,12 @@ function Gate() {
     return <div className="min-h-screen flex items-center justify-center font-body" style={{ backgroundColor: palette.mist, color: palette.inkSoft }}>Loading…</div>
   }
   if (session.authEnabled && !session.authenticated) return <LoginScreen />
-  // Fresh dev instance (no OIDC): no members yet → run the onboarding wizard.
-  // With auth enabled, members are auto-provisioned from OIDC groups on login,
-  // so logged-in users fall through to mapping/app instead of the wizard.
-  if (!session.authEnabled && session.members.length === 0) return <OnboardingWizard onDone={refresh} />
+  // A fresh instance (zero members) always runs the onboarding wizard, in any
+  // auth mode. With OIDC enabled this also covers the first user who wasn't
+  // auto-provisioned from groups — onboarding links them via selfMemberIndex,
+  // so it must come before the mapping check (which would otherwise show an
+  // empty member list and trap them).
+  if (session.members.length === 0) return <OnboardingWizard onDone={refresh} />
   if (session.needsMapping) return <MapProfileScreen />
   return <Router />
 }

@@ -112,8 +112,10 @@ weather pill.
     `OIDC_GROUPS_CLAIM` (default `groups`), `OIDC_GUARDIAN_GROUPS` (default
     `guardian`), `OIDC_CHILD_GROUPS` (default `children,child`), and optional
     `OIDC_GROUPS_SCOPE` (extra scope to request the claim). Users in no
-    configured group are not auto-created — they fall through to the manual
-    map-profile screen. The wizard still runs in dev/disabled mode (no OIDC).
+    configured group are not auto-created (logged as such in `provision.go`).
+    On a fresh DB (zero members) such a user runs the onboarding wizard like any
+    first user; once members exist they fall through to the manual map-profile
+    screen.
 
 - **M6** — `internal/calsync`: CalDAV sync (pull via REPORT + push via PUT,
   emersion/go-webdav + go-ical), credentials AES-GCM-encrypted at rest
@@ -132,9 +134,14 @@ weather pill.
   family basics → members → calendar → starter chores → typical week → done),
   one-shot `POST /api/onboarding` creating family, members (+ default guardians),
   internal calendar sources, starter chores (+ instances), and a typical week of
-  recurring events. Shown automatically when no members exist (gated in `App`);
-  re-runnable from Family → Settings. A fresh instance starts empty so the
-  wizard runs; set `TRIBO_SEED=true` to load the Silva family example data.
+  recurring events. Shown automatically when no members exist (gated in `App`,
+  **before** the OIDC map-profile check) — so a fresh install runs it in any auth
+  mode, including for an authenticated OIDC user who wasn't group-provisioned.
+  When auth is on, the wizard's members step asks "which one is you" and posts
+  `selfMemberIndex`; onboarding then links that member to the caller's OIDC
+  subject (`auth.Service.AdoptMember`) so they're recognized without a separate
+  mapping step. Re-runnable from Family → Settings. A fresh instance starts empty
+  so the wizard runs; set `TRIBO_SEED=true` to load the Silva family example data.
 
 **Post-roadmap follow-ups (done):** unclaimed-event claim action
 (`/api/events/{id}/claim` + free-guardian buttons); work-schedule busy stripes

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -32,7 +33,11 @@ func (s *Service) provisionMember(idToken *oidc.IDToken) (string, error) {
 	groups := stringSlice(raw[s.groupsClaim])
 	role := s.roleForGroups(groups)
 	if role == "" {
-		return "", nil // not in a configured group → manual claim
+		// Not in a configured guardian/child group → fall back to manual
+		// onboarding/mapping. Log so an admin can see why, since otherwise this
+		// path is silent.
+		log.Printf("auth: subject %q in no configured group (claim %q=%v); falling back to manual mapping", idToken.Subject, s.groupsClaim, groups)
+		return "", nil
 	}
 
 	name := firstNonEmpty(

@@ -26,6 +26,7 @@ type Server struct {
 	family  *family.Service
 	weather *weather.Service
 	sync    *calsync.Engine
+	auth    *auth.Service
 }
 
 // NewHandler builds the full HTTP handler: open auth/session routes, the
@@ -40,6 +41,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 		family:  family.NewService(db),
 		weather: weather.NewService(db),
 		sync:    syncEngine,
+		auth:    authSvc,
 	}
 
 	// Protected API surface.
