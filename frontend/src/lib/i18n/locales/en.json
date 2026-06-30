@@ -227,7 +227,8 @@
       "kind": {
         "birthdays": "Birthdays",
         "chores": "Chores",
-        "family": "Family"
+        "family": "Family",
+        "personal": "Personal"
       }
     },
     "location": {
@@ -252,6 +253,8 @@
     "important": "Important",
     "importantHint": "Always show, even in the Year view",
     "calendar": "Calendar",
+    "calendarLabel": "Calendar",
+    "calendarHint": "Which calendar this event is saved to",
     "noCalendar": "No calendar available",
     "deleteEvent": "Delete event",
     "requiresGuardian": "Requires guardian",
@@ -395,7 +398,8 @@
     "familyStep": {
       "nameLabel": "Family name",
       "namePlaceholder": "The Silva Family",
-      "timezoneLabel": "Timezone"
+      "timezoneLabel": "Timezone",
+      "tzPlaceholder": "Region/City"
     },
     "members": {
       "namePlaceholder": "Name",

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Trash2, Ban } from 'lucide-react'
 import { markerColor } from '../lib/tokens'
 import { ChoreIcon, CHORE_ICON_NAMES } from '../lib/choreIcons'
+import DatePicker from './DatePicker'
+import TimePicker from './TimePicker'
 import {
   createMember, updateMember, deleteMember,
   createChore, updateChore, deleteChore,
@@ -124,7 +126,9 @@ export function MemberForm({ member, members, onClose, onSaved }: {
         </Labeled>
       )}
       <Labeled label={t('forms.dateOfBirth')}>
-        <input type="date" lang={locale} className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+        <div className="w-full text-sm rounded-xl px-3 py-2" style={field}>
+          <DatePicker value={dateOfBirth} onChange={setDateOfBirth} locale={locale} placeholder={t('forms.dateOfBirth')} />
+        </div>
       </Labeled>
       <Labeled label={member ? t('forms.pinEdit') : t('forms.pinNew')}>
         <input type="password" className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={pin} onChange={(e) => setPin(e.target.value)} placeholder={t('forms.pinPlaceholder')} />
@@ -263,7 +267,8 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
   const [label, setLabel] = useState(schedule?.label ?? t('family.workLabel'))
   const [show, setShow] = useState(schedule?.showOnCalendar ?? false)
   const { busy, error, run } = useSaver(onSaved)
-  const dayInitials = weekdayLabels(useLocale(), 'narrow')
+  const locale = useLocale()
+  const dayInitials = weekdayLabels(locale, 'narrow')
 
   const toggleDay = (i: number) => setDays((cur) => cur.substring(0, i) + (cur[i] === '1' ? '0' : '1') + cur.substring(i + 1))
   const save = () => run(() => {
@@ -288,8 +293,8 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
         </div>
       </Labeled>
       <div className="flex gap-3">
-        <Labeled label={t('forms.start')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={start} onChange={(e) => setStart(e.target.value)} /></Labeled>
-        <Labeled label={t('forms.end')}><input type="time" className="text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={end} onChange={(e) => setEnd(e.target.value)} /></Labeled>
+        <Labeled label={t('forms.start')}><div className="text-sm rounded-xl px-3 py-2" style={field}><TimePicker value={start} onChange={setStart} locale={locale} /></div></Labeled>
+        <Labeled label={t('forms.end')}><div className="text-sm rounded-xl px-3 py-2" style={field}><TimePicker value={end} onChange={setEnd} locale={locale} /></div></Labeled>
       </div>
       <Labeled label={t('forms.label')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={label} onChange={(e) => setLabel(e.target.value)} /></Labeled>
       <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>

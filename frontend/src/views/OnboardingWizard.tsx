@@ -5,6 +5,7 @@ import { onboard, type OnboardRequest } from '../lib/api'
 import { useSession } from '../lib/session'
 import Icon from '../components/Icon'
 import Button from '../components/Button'
+import DatePicker from '../components/DatePicker'
 import { weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
 import { recurrenceLabel } from '../lib/chores'
@@ -187,7 +188,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
               </Labeled>
               <Labeled label={t('onboarding.familyStep.timezoneLabel')}>
                 <div style={inputBox(false)}>
-                  <input className="w-full bg-transparent outline-hidden" style={{ fontSize: 16 }} value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Europe/Lisbon" />
+                  <input className="w-full bg-transparent outline-hidden" style={{ fontSize: 16 }} value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder={t('onboarding.familyStep.tzPlaceholder')} />
                 </div>
               </Labeled>
             </div>
@@ -210,11 +211,12 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap" style={{ paddingLeft: 54 }}>
-                    <label className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--t-text-soft)' }}>
+                    <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--t-text-soft)' }}>
                       {t('onboarding.members.dob')}
-                      <input type="date" lang={locale} className="bg-transparent outline-hidden text-xs rounded-lg px-2 py-1" style={field} value={m.dob}
-                        onChange={(e) => updateMember(setMembers, i, { dob: e.target.value })} />
-                    </label>
+                      <div className="rounded-lg px-2 py-1" style={field}>
+                        <DatePicker value={m.dob} onChange={(v) => updateMember(setMembers, i, { dob: v })} locale={locale} placeholder={t('onboarding.members.dob')} />
+                      </div>
+                    </div>
                     {m.role === 'child' && guardians.length > 0 && (
                       <select className="text-sm rounded-lg px-2 py-1.5 outline-hidden" style={field} value={m.defaultGuardianIndex ?? ''}
                         onChange={(e) => updateMember(setMembers, i, { defaultGuardianIndex: e.target.value === '' ? null : Number(e.target.value) })}>

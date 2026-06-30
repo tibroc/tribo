@@ -227,7 +227,8 @@
       "kind": {
         "birthdays": "Aniversários",
         "chores": "Tarefas",
-        "family": "Família"
+        "family": "Família",
+        "personal": "Pessoal"
       }
     },
     "location": {
@@ -252,6 +253,8 @@
     "important": "Importante",
     "importantHint": "Sempre mostrar, mesmo na visão Ano",
     "calendar": "Calendário",
+    "calendarLabel": "Calendário",
+    "calendarHint": "Em qual calendário este evento é salvo",
     "noCalendar": "Nenhum calendário disponível",
     "deleteEvent": "Excluir evento",
     "requiresGuardian": "Requer responsável",
@@ -395,7 +398,8 @@
     "familyStep": {
       "nameLabel": "Nome da família",
       "namePlaceholder": "Família Silva",
-      "timezoneLabel": "Fuso horário"
+      "timezoneLabel": "Fuso horário",
+      "tzPlaceholder": "Região/Cidade"
     },
     "members": {
       "namePlaceholder": "Nome",

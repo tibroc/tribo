@@ -7,6 +7,9 @@ import {
 } from '../lib/api'
 import PersonAvatar from './PersonAvatar'
 import Button from './Button'
+import DatePicker from './DatePicker'
+import TimePicker from './TimePicker'
+import { calendarLabel } from '../lib/calendar'
 import { useLocale } from '../lib/i18n'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -166,7 +169,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
           <div className="px-3" style={{ border: '1px solid var(--t-line)', borderRadius: 'var(--t-radius-md)' }}>
             <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: '1px solid var(--t-line)' }}>
               <Calendar size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
-              <input type="date" lang={locale} value={dateStr} onChange={(e) => setDateStr(e.target.value)} className="flex-1 bg-transparent outline-hidden text-sm font-medium" />
+              <div className="flex-1"><DatePicker value={dateStr} onChange={setDateStr} locale={locale} /></div>
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Clock size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
@@ -175,9 +178,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                   <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <input type="time" lang={locale} value={startTime} onChange={(e) => setStartTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
+                    <TimePicker value={startTime} onChange={setStartTime} locale={locale} />
                     <span style={{ color: 'var(--t-text-soft)' }}>–</span>
-                    <input type="time" lang={locale} value={endTime} onChange={(e) => setEndTime(e.target.value)} className="text-sm rounded-lg px-2 py-1 outline-hidden" style={{ background: 'var(--t-bg)' }} />
+                    <TimePicker value={endTime} onChange={setEndTime} locale={locale} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -249,21 +252,24 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
             </div>
             <div className="flex items-center gap-3 py-2.5">
               <Layers size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">{t('event.calendarLabel')}</div>
+                <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('event.calendarHint')}</div>
+              </div>
               {editing ? (
                 <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>
                   <Lock size={13} style={{ flexShrink: 0 }} />
-                  <span>{sources.find((s) => s.id === sourceId)?.displayName ?? '—'}</span>
-                  <span className="text-xs">· {t('event.calendarFixed')}</span>
+                  <span>{(() => { const s = sources.find((s) => s.id === sourceId); return s ? calendarLabel(s, t) : '—' })()}</span>
                 </div>
               ) : (
                 <select
-                  aria-label={t('event.calendar')}
-                  className="flex-1 bg-transparent outline-hidden text-sm font-medium"
+                  aria-label={t('event.calendarLabel')}
+                  className="bg-transparent outline-hidden text-sm font-medium text-right"
                   value={sourceId}
                   onChange={(e) => { setSourceId(e.target.value); setPickedSource(true) }}
                 >
                   {targetable.length === 0 && <option value="">{t('event.noCalendar')}</option>}
-                  {targetable.map((s) => <option key={s.id} value={s.id}>{s.displayName}</option>)}
+                  {targetable.map((s) => <option key={s.id} value={s.id}>{calendarLabel(s, t)}</option>)}
                 </select>
               )}
             </div>

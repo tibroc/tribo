@@ -3,7 +3,7 @@ import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
   RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle, Clock,
 } from 'lucide-react'
-import type { Section } from '../lib/calendar'
+import { calendarLabel, type Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
   addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility, googleConnectUrl,
@@ -193,7 +193,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate flex items-center gap-1.5">
-                        {calendarName(c, t)}
+                        {calendarLabel(c, t)}
                         {c.managed && <Lock size={11} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} aria-label={t('family.calendars.managed')} />}
                       </div>
                       <div className="text-xs truncate capitalize" style={{ color: 'var(--t-text-soft)' }}>{sub}</div>
@@ -409,14 +409,6 @@ function scheduleLabel(label: string, t: TFunction): string {
   return label === 'Work' ? t('family.workLabel') : label
 }
 
-// Managed birthdays/chores/family calendars carry English display names; show a
-// localized label instead. Person calendars keep the member's name.
-function calendarName(c: CalendarSource, t: TFunction): string {
-  if (c.managed && (c.kind === 'birthdays' || c.kind === 'chores' || c.kind === 'family')) {
-    return t(`family.calendars.kind.${c.kind}`)
-  }
-  return c.displayName
-}
 
 function timeFormatSub(p: TimeFormatPreference, t: TFunction): string {
   if (p === '24h') return t('settings.timeFormat24')

@@ -1,8 +1,23 @@
 // Shared calendar primitives: date math, labels, and event grouping/coloring
 // used across all five calendar views.
 import { SHARED_COLOR, UNASSIGNED_COLOR } from './tokens'
-import type { FamilyMember, TriboEvent, WorkSchedule } from './api'
+import type { CalendarSource, FamilyMember, TriboEvent, WorkSchedule } from './api'
 import type { TFunction } from 'i18next'
+
+// calendarLabel localizes a calendar source's name. Managed/built-in calendars
+// have English display_name data ("Family"/"Personal"/…) baked in by the
+// backend; we render a translated label by kind/flags instead. Per-person
+// calendars keep their displayName (the member's name). Shared across the event
+// form's calendar picker and the Family settings calendar list.
+export function calendarLabel(c: CalendarSource, t: TFunction): string {
+  if (c.kind === 'family' || (!c.managed && c.type === 'internal' && c.isShared)) {
+    return t('family.calendars.kind.family')
+  }
+  if (c.kind === 'birthdays' || c.kind === 'chores') return t(`family.calendars.kind.${c.kind}`)
+  if (c.kind === 'person') return c.displayName
+  if (!c.managed && c.type === 'internal' && !c.isShared) return t('family.calendars.kind.personal')
+  return c.displayName
+}
 
 // localizeTitle localizes server-generated birthday titles at render time.
 // Birthdays are generated server-side as "<name>'s birthday" (always English,
