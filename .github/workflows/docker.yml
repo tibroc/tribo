@@ -67,7 +67,20 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Detect version type
+        id: version
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          MINOR=$(echo "$VER" | cut -d. -f2)
+          PATCH=$(echo "$VER" | cut -d. -f3)
+          if [ "$MINOR" = "0" ] && [ "$PATCH" = "0" ]; then
+            echo "is_major=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_major=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create release
+        if: steps.version.outputs.is_major == 'false'
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true

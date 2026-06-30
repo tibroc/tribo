@@ -6,6 +6,9 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 14
 
   # React frontend (npm)
   - package-ecosystem: npm
@@ -13,6 +16,9 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 14
 
   # Dockerfile base images
   - package-ecosystem: docker
