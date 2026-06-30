@@ -13,7 +13,6 @@ export default function TodosPage({ go, openNew }: { go: (s: Section) => void; o
   const [members, setMembers] = useState<FamilyMember[]>([])
   const { todos, toggleTodo, addTodo, assignTodo } = useChoresTodos()
   const addRef = useRef<HTMLInputElement>(null)
-  const focusAdd = () => addRef.current?.focus()
   useEffect(() => { getFamilyMembers().then(setMembers).catch(() => {}) }, [])
   // Arriving via Home's quick-add chooser drops the cursor in the add field.
   useEffect(() => { if (openNew) addRef.current?.focus() }, [openNew])
@@ -22,7 +21,7 @@ export default function TodosPage({ go, openNew }: { go: (s: Section) => void; o
   const doneItems = todos.filter((t) => t.status === 'done')
 
   return (
-    <AppShell active="todos" onNavigate={go} header={<SimpleHeader title={t('nav.todos')} />} onFabClick={focusAdd}>
+    <AppShell active="todos" onNavigate={go} header={<SimpleHeader title={t('nav.todos')} />} showFab={false}>
       <div style={{ padding: '22px 26px' }}>
         {/* Hero */}
         <Card padded={false} className="mb-4" style={{ padding: '18px 26px' }}>

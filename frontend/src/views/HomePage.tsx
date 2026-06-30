@@ -17,16 +17,10 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
   const [error, setError] = useState<string | null>(null)
   useEffect(() => { getBriefing().then(setB).catch((e) => setError(String(e))) }, [])
 
-  // Home is a cross-section briefing, so its FAB offers a quick-add chooser that
-  // routes to the relevant screen and opens that screen's add form on arrival.
-  const fabMenu = [
-    { label: t('home.newEvent'), icon: 'calendar', onClick: () => go('calendar', 'new-event') },
-    { label: t('home.newChore'), icon: 'chores', onClick: () => go('chores', 'new-chore') },
-    { label: t('home.newTodo'), icon: 'todos', onClick: () => go('todos', 'new-todo') },
-  ]
-
+  // Home's FAB is a quick "new event" shortcut — it routes to the calendar and
+  // opens the add-event modal on arrival.
   return (
-    <AppShell active="home" onNavigate={go} header={<SimpleHeader />} fabMenu={fabMenu}>
+    <AppShell active="home" onNavigate={go} header={<SimpleHeader />} onFabClick={() => go('calendar', 'new-event')}>
       <div style={{ padding: '22px 26px' }}>
       {error && <div className="rounded-xl p-3 mb-3 text-sm" style={{ background: 'color-mix(in oklab, var(--t-danger) 16%, var(--t-shell))', color: 'var(--t-danger)' }}>{error}</div>}
       {!b ? (
