@@ -125,8 +125,8 @@ export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; 
   }, [period])
 
   const { instances, toggleChore, reload } = useChoresTodos(range)
-  // Add-chore modal: undefined = closed; null = add. (Editing happens in Family.)
-  const [choreModal, setChoreModal] = useState<null | undefined>(openNew ? null : undefined)
+  // Chore modal: undefined = closed; null = add; a Chore = edit that chore.
+  const [choreModal, setChoreModal] = useState<Chore | null | undefined>(openNew ? null : undefined)
   const reloadChores = () => getChores().then(setChores).catch(() => {})
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch(() => {})
@@ -164,7 +164,7 @@ export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; 
             action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setChoreModal(null)}><Icon name="plus" size={14} strokeWidth={2.6} /> {t('chores.addChore')}</Button>}
             padded={false}
           >
-            <ChoresPanel instances={instances} members={members} chores={chores} onToggle={toggleChore} flush grouped={period === 'week'} emptyLabel={t('chores.nonePeriod', { period: periodWord })} detailed />
+            <ChoresPanel instances={instances} members={members} chores={chores} onToggle={toggleChore} onEdit={(c) => setChoreModal(c)} flush grouped={period === 'week'} emptyLabel={t('chores.nonePeriod', { period: periodWord })} detailed />
           </Card>
           <div className="flex flex-col gap-4">
             <ByPerson instances={instances} members={members} periodLabel={periodWordCap} />
@@ -173,7 +173,7 @@ export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; 
         </div>
       </div>
       {choreModal !== undefined && (
-        <ChoreForm members={members}
+        <ChoreForm chore={choreModal ?? undefined} members={members}
           onClose={() => setChoreModal(undefined)}
           onSaved={() => { setChoreModal(undefined); reloadChores(); reload() }} />
       )}

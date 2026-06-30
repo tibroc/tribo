@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, UserPlus } from 'lucide-react'
+import { Check, UserPlus, Pencil } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
 import { recurrenceLabel, linkifyDescription } from '../lib/chores'
 import { ChoreIcon } from '../lib/choreIcons'
@@ -101,12 +101,13 @@ function renderDescription(text: string) {
   )
 }
 
-export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, last, dayLabel, detailed }: {
+export function ChoreRow({ inst, chore, member, memberIndex, onToggle, onEdit, flush, last, dayLabel, detailed }: {
   inst: ChoreInstance
   chore?: Chore
   member?: FamilyMember
   memberIndex?: number
   onToggle: () => void
+  onEdit?: (c: Chore) => void
   flush?: boolean
   last?: boolean
   dayLabel?: string
@@ -151,17 +152,24 @@ export function ChoreRow({ inst, chore, member, memberIndex, onToggle, flush, la
           </div>
         )}
       </div>
+      {onEdit && chore && (
+        <button type="button" onClick={() => onEdit(chore)} aria-label={t('forms.editChore')}
+          className="shrink-0 p-1 rounded-md" style={{ color: 'var(--t-text-soft)' }}>
+          <Pencil size={15} />
+        </button>
+      )}
       {chore && <RecurrencePill label={rotation ? t('chores.rotation') : (recur ?? '')} rotation={rotation} />}
       {member && <PersonAvatar name={member.name} color={member.color} index={memberIndex} size={26} />}
     </div>
   )
 }
 
-export function ChoresPanel({ instances, members, chores, onToggle, title, flush, grouped, emptyLabel, detailed }: {
+export function ChoresPanel({ instances, members, chores, onToggle, onEdit, title, flush, grouped, emptyLabel, detailed }: {
   instances: ChoreInstance[]
   members: FamilyMember[]
   chores?: Chore[]
   onToggle: (i: ChoreInstance) => void
+  onEdit?: (c: Chore) => void
   title?: string
   flush?: boolean
   grouped?: boolean
@@ -199,6 +207,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, title, flush
       // their weekday so a week of them is readable instead of identical rows.
       dayLabel={grouped && isDaily(i) && i.periodStart !== today ? weekdayOf(i.periodStart) : undefined}
       onToggle={() => onToggle(i)}
+      onEdit={onEdit}
       flush={flush}
       last={last}
       detailed={detailed}
