@@ -30,14 +30,6 @@ export function markerColor(i: number | null | undefined): string {
     : `oklch(66% 0.097 ${MARKER_HUES[i % MARKER_HUES.length]})`
 }
 
-// Per-person marker colors (index-matched to API FamilyMember order).
-export const PEOPLE = {
-  alberto:   MARKER_CURATED[0],  // azulejo teal-blue
-  hilda:     MARKER_CURATED[1],  // dusty rose
-  marie:     MARKER_CURATED[2],  // olive-leaf
-  guilherme: MARKER_CURATED[3],  // muted plum
-} as const
-
 export const SHARED_COLOR = FAMILY_COLOR
 // A muted slate for events with no owner/attendee — visually distinct from the
 // gold "family" color so an unassigned event doesn't read as a family event.
@@ -47,12 +39,3 @@ export const fonts = {
   display: 'Spectral, Georgia, serif',
   body: 'Figtree, system-ui, sans-serif',
 } as const
-
-// Legacy chip helper — superseded by color-mix() in the new EventChip,
-// but kept for any inline usages that haven't been ported yet.
-export function chipStyle(color: string) {
-  return {
-    backgroundColor: color + '20',
-    borderLeft: `3px solid ${color}`,
-  }
-}

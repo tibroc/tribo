@@ -1,15 +1,15 @@
 flowchart LR
   subgraph clients["Clients"]
-    phone["Phone / Tablet (browser)"]
+    phone["Phone / Tablet (browser / PWA)"]
     assistant["AI Assistant (MCP client)"]
     calapp["Native Calendar App"]
   end
 
-  subgraph host["Roost host — docker compose"]
+  subgraph host["Tribo host — docker compose"]
     caddy["Caddy<br/>reverse proxy + TLS"]
-    roost["Roost (Go)<br/>API + MCP + embedded frontend"]
-    db[("SQLite")]
-    radicale["Radicale<br/>(optional, bundled CalDAV)"]
+    tribo["Tribo (Go)<br/>API + MCP + embedded frontend"]
+    db[("SQLite<br/>(source of truth for all<br/>non-event data; event table<br/>is a disposable cache)")]
+    radicale["Radicale<br/>(CalDAV — system of record<br/>for all calendars)"]
   end
 
   subgraph external["External services"]
@@ -19,13 +19,11 @@ flowchart LR
   end
 
   phone --> caddy
-  assistant -->|"MCP over HTTP"| caddy
-  calapp -->|"CalDAV"| caddy
-  caddy --> roost
-  caddy --> radicale
-  roost --> db
-  roost <-->|"sync"| radicale
-  roost <-->|"sync"| google
-  roost <-->|"sync"| caldav
-  roost -->|"OIDC login"| authentik
-  calapp -.->|"optional: subscribe directly"| radicale
+  assistant -->|"MCP over HTTP (/mcp)"| caddy
+  caddy --> tribo
+  tribo --> db
+  tribo -->|"write CalDAV-first + pull/rebuild cache"| radicale
+  tribo -->|"pull (read-only, per-person)"| google
+  tribo -->|"pull/push (external sources)"| caldav
+  tribo -->|"OIDC login"| authentik
+  calapp -.->|"subscribe directly (internal network)"| radicale

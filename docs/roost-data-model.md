@@ -1,11 +1,26 @@
-# Roost — Data Model (Draft v1)
+# Tribo — Data Model
+
+> This reflects the SQLite schema after the calendar refactor. Migrations live in
+> `internal/store/migrations/` (0001–0006); this doc is the human-readable
+> summary. The app was renamed roost → tribo; this doc keeps its `roost-`
+> filename.
 
 ## Design principles
 
 - Single-family instance — no multi-tenancy needed.
-- SQLite-friendly: flat relational tables, simple types, no exotic features. Keeps the production stack to "Roost backend + Caddy (+ optional Radicale)".
-- `assigned_guardian_id` and `conflict_status` on `Event` are **computed and cached**, recalculated when the event or an overlapping guardian commitment changes — not derived live on every page load.
-- `visibility_tag` on `Event` is the per-item "show at this zoom level?" control discussed for Quarter/Year decluttering.
+- SQLite-friendly: flat relational tables, simple types, no exotic features.
+- **Radicale (CalDAV) is the system of record for events.** The `event` table is
+  a **disposable cache** rebuilt from sync (stable id = CalDAV UID); Tribo-only
+  fields ride on the iCal as `X-TRIBO-*` props. SQLite is the source of truth for
+  everything else.
+- `assigned_guardian_id` and `conflict_status` on `Event` are **computed and
+  cached**, recalculated when the event or an overlapping guardian commitment
+  changes — not derived live on every page load.
+- `visibility_tag` on `Event` is the per-item "show at this zoom level?" control
+  for Quarter/Year decluttering.
+- Times are RFC3339; `days_of_week`/`recurrence_weekdays` are 7-char Mon..Sun
+  bitstrings; comma-separated lists (attendees, rotation members) are stored as
+  plain `TEXT`, not arrays.
 
 ---
 
@@ -15,7 +30,10 @@
 |---|---|---|
 | id | uuid | |
 | name | text | e.g. "The Silva Family" |
-| timezone | text | IANA tz, e.g. `Europe/Lisbon` |
+| timezone | text | IANA tz, e.g. `Europe/Lisbon`; used to interpret floating iCal times |
+| weather_latitude / weather_longitude | real, nullable | drives the header weather widget |
+| weather_location_name | text, nullable | e.g. "Lisbon, Portugal" |
+| weather_units | text | `celsius` (default) \| `fahrenheit` |
 
 ## FamilyMember
 
@@ -29,6 +47,8 @@
 | oidc_subject | text, nullable | maps to Authentik login |
 | pin | text, nullable | optional profile-switch PIN for kids |
 | default_guardian_id | fk → FamilyMember, nullable | **only set on `child` rows** — used as tiebreaker when multiple guardians are free |
+| date_of_birth | text (`YYYY-MM-DD`), nullable | drives the auto-generated Birthdays calendar |
+| sort_order | int | display order |
 
 ## WorkSchedule
 
@@ -38,43 +58,49 @@ Recurring availability blocks for guardians. Used only for conflict-checking —
 |---|---|---|
 | id | uuid | |
 | member_id | fk → FamilyMember (`guardian`) | |
-| days_of_week | set | Mon–Sun |
-| start_time / end_time | time | |
+| days_of_week | text | 7-char Mon..Sun bitstring, e.g. `1111100` |
+| start_time / end_time | text (`HH:MM`) | |
 | label | text | "Work", "Commute" |
 | show_on_calendar | bool, default `false` | opt-in to show as a faint "busy" stripe |
 
 ## CalendarSource
 
-Represents the internal calendar plus any synced external calendars.
+One row per managed Radicale collection plus any synced external calendars.
 
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid | |
-| type | enum | `internal` \| `caldav` \| `google` |
+| type | enum | `caldav` \| `google` (\| legacy `internal`, migrated away at startup) |
+| kind | enum | `person` \| `family` \| `birthdays` \| `chores` \| `external` — classifies managed collections |
+| member_id | fk → FamilyMember, nullable | binds `person`/Google calendars to a member |
+| managed | bool | 1 = auto-provisioned; the UI must not let users add/remove it |
+| is_shared | bool | 1 = family/shared (no per-member attendees) |
 | display_name | text | |
-| url / credentials | text, encrypted | for caldav/google |
-| read_only | bool | |
+| url / credentials | text, credentials AES-GCM-encrypted | for caldav/google |
+| read_only | bool | Google is always read-only |
 | last_synced_at | timestamp | |
 
-## Event
+## Event  *(disposable cache — Radicale is the source of truth)*
+
+The stable id is the CalDAV UID; the row is rebuilt from sync. Non-standard
+fields below travel on the iCal as `X-TRIBO-*` props so they survive a round-trip.
 
 | Field | Type | Notes |
 |---|---|---|
-| id | uuid | |
-| calendar_source_id | fk | |
+| id | text (CalDAV UID) | |
+| calendar_source_id | fk | owning collection |
 | title / description / location | text | |
-| start_at / end_at | timestamp | |
-| all_day | bool | |
-| recurrence_rule | text, nullable | RRULE |
-| recurrence_exceptions | text[], nullable | for edited/cancelled single instances |
+| start_at / end_at | text (RFC3339) | |
+| all_day | bool | all-day events never count toward guardian "busy" |
+| recurrence_rule | text, nullable | RRULE (stored/round-tripped; occurrence expansion is **not** yet implemented — a recurring event shows as one cache row) |
 | external_id | text, nullable | maps back to CalDAV/Google for sync |
 | icon | text, nullable | e.g. `cake` |
 | color_override | hex, nullable | else derived from the attendee(s) |
-| visibility_tag | enum | `routine` \| `standard` \| `milestone` |
+| visibility_tag | enum | `routine` \| `standard` \| `milestone` (coerced to `standard` on sync if out-of-set) |
 | requires_guardian | bool, default `false` | only meaningful if a `child` is an attendee |
 | assigned_guardian_id | fk → FamilyMember, nullable | **computed** |
 | conflict_status | enum | `none` \| `needs_guardian` — **computed** |
-| external_attendees | text[], nullable | people outside the family, e.g. "Grandma" |
+| external_attendees | text, nullable | comma-separated names outside the family, e.g. "Grandma" |
 
 ## EventAttendee (join table)
 
@@ -86,11 +112,14 @@ Represents the internal calendar plus any synced external calendars.
 |---|---|---|
 | id | uuid | |
 | title / description | text | |
-| recurrence_rule | text | RRULE, e.g. weekly |
+| recurrence_rule | enum | `daily` \| `weekly` \| `monthly` |
+| recurrence_interval | int, default 1 | multiplier on the unit (2 = every 2 weeks; 12 monthly = yearly) |
+| recurrence_weekdays | text, nullable | 7-char Mon..Sun bitstring; only honored for `weekly` (empty = one instance per week bucket) |
 | assignment_mode | enum | `fixed` \| `rotation` |
 | assigned_member_id | fk, nullable | if `fixed` |
-| rotation_member_ids | uuid[], nullable | ordered, if `rotation` |
-| color / icon | | usually derived from assignee |
+| rotation_member_ids | text, nullable | comma-separated member ids, ordered, if `rotation` |
+| color / icon | text, nullable | usually derived from assignee |
+| sort_order | int | display order |
 
 ## ChoreInstance
 
@@ -112,9 +141,13 @@ One row per occurrence — this is what the Review heatmap and streaks read from
 | id | uuid | |
 | title / description | text | |
 | assigned_member_id | fk, nullable | `null` = family-wide |
-| due_date | date, nullable | |
+| due_date | date, nullable | present in schema; not currently set by the UI |
 | status | enum | `open` \| `done` |
 | completed_at | timestamp, nullable | |
+| sort_order | int | display order |
+
+> Note: `todo.description` exists in the schema but is not written by the API or
+> surfaced in the UI (dead field, kept to avoid a migration).
 
 ---
 
@@ -141,21 +174,35 @@ Defaults: recurring patterns (school, work, gym, lessons) → `routine`; one-off
 
 ## Birthdays & people outside the family
 
-Birthdays are just `Event` rows: `recurrence_rule` = yearly, `all_day = true`, `icon = cake`, `visibility_tag = milestone`. For people who aren't login-enabled family members (grandparents, etc.), `external_attendees` holds their name; they get the shared/gold color unless a future "relatives" list adds per-person colors.
+Birthdays are **projected into the event cache as discrete all-day events** (one
+per year in the sync window, no RRULE) from `family_member.date_of_birth`, with
+`icon = cake`, `visibility_tag = milestone`, living on the managed `birthdays`
+collection. Chore instances are projected the same way onto the `chores`
+collection. For people who aren't login-enabled family members (grandparents,
+etc.), `external_attendees` holds their name; they get the shared/gold color.
 
 ## API surface (stable — for MCP + integrations)
 
-- `GET/POST /api/events`, `PATCH /api/events/{id}`
-- `GET /api/availability?member_id=&from=&to=` — free/busy including work schedules
-- `POST /api/chores/{instance_id}/complete`, `/skip`
-- `GET/POST /api/todos`, `PATCH /api/todos/{id}` (toggle done)
+- `GET/POST /api/events`, `PATCH/DELETE /api/events/{id}`, `GET /api/events/{id}/guardians`, `POST /api/events/{id}/claim`
+- `GET /api/calendar-status`, `GET/POST /api/calendar-sources`, `DELETE /api/calendar-sources/{id}`, `POST /api/calendar-sources/{id}/sync`, `GET /api/calendar-sources/google/connect`
+- `GET/POST /api/chores`, `GET /api/chore-instances`, `POST /api/chores/{id}/complete`, `/skip`, `PATCH /api/chore-instances/{id}`
+- `GET/POST /api/todos`, `PATCH /api/todos/{id}`
+- `GET /api/work-schedules`
 - `GET /api/briefing` — powers the Home screen
 - `GET /api/review?period=week|month|year`
+- `POST /api/onboarding` — one-shot wizard submit
 
-MCP tools wrap these directly: `add_todo`, `complete_chore`, `get_today`, `check_availability`, etc.
+MCP tools (`/mcp`) wrap the service layer: `get_today`, `get_briefing`,
+`add_event`, `add_todo`, `complete_todo`, `complete_chore`, `check_availability`.
 
 ## Storage & services
 
-- **SQLite** is plenty for a single-family instance — avoids a separate DB container and keeps docker-compose minimal.
-- **Radicale** (small Python CalDAV server) as the bundled "set up your own calendar" option — Roost just treats it as another `CalendarSource`.
-- **Authentik** (OIDC) — Go backend validates tokens and maps `oidc_subject` → `FamilyMember`. An in-app profile switcher (optional PIN) lets someone choose which family member's view they're using without a separate login per person.
+- **SQLite** — source of truth for all non-event data; the `event` table is a
+  rebuildable cache of what lives in Radicale.
+- **Radicale** (CalDAV) — the system of record for calendars. Tribo provisions
+  managed collections (person/family/birthdays/chores) and writes events
+  CalDAV-first. Required for calendar features.
+- **Authentik** (OIDC) — Go backend validates tokens and maps `oidc_subject` →
+  `FamilyMember` (or auto-provisions from group claims). An in-app profile
+  switcher (optional PIN) lets someone choose which member's view they're using
+  without a separate login per person.

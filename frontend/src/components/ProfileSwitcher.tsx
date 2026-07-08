@@ -7,7 +7,7 @@ import PersonAvatar from './PersonAvatar'
 
 // The active-profile avatar + dropdown. Switching is PIN-gated when the target
 // member has a PIN. Shown in the nav rail (desktop) and bottom bar (mobile).
-export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; header?: boolean }) {
+export default function ProfileSwitcher({ mobile }: { mobile?: boolean }) {
   const { t } = useTranslation()
   const { session, activeMember, switchProfile, logout } = useSession()
   const [open, setOpen] = useState(false)
@@ -29,13 +29,11 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
     catch { setError(t('profile.incorrectPin')) }
   }
 
-  const avatarSize = mobile ? 24 : header ? 38 : 32
-  // Dropdown anchor: rail opens up-right, header opens down-right, mobile floats.
+  const avatarSize = mobile ? 24 : 32
+  // Dropdown anchor: rail opens up-right, mobile floats.
   const dropdownPos = mobile
     ? 'fixed bottom-20 left-1/2 -translate-x-1/2 w-64'
-    : header
-      ? 'absolute right-0 top-12 w-60'
-      : 'absolute left-14 bottom-0 w-60'
+    : 'absolute left-14 bottom-0 w-60'
 
   return (
     <div className={mobile ? '' : 'relative'}>
@@ -45,7 +43,7 @@ export default function ProfileSwitcher({ mobile, header }: { mobile?: boolean; 
         aria-label={t('profile.switch')}
       >
         {activeMember
-          ? <PersonAvatar name={activeMember.name} color={activeMember.color} size={avatarSize} ring={header} />
+          ? <PersonAvatar name={activeMember.name} color={activeMember.color} size={avatarSize} />
           : <div className="rounded-full" style={{ width: avatarSize, height: avatarSize, backgroundColor: palette.line }} />}
         {mobile && <span className="text-xs font-medium" style={{ color: palette.inkSoft }}>{t('profile.you')}</span>}
       </button>

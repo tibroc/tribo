@@ -2,19 +2,18 @@ import { useTranslation } from 'react-i18next'
 
 // Marker-pen event block: tinted fill + colored left edge.
 // `dense` is the compact month-grid variant; default is the week/agenda chip.
-export default function EventChip({ title, color = 'var(--t-brand)', time, icon, dense, allday, warn, conflict, onClick }: {
+export default function EventChip({ title, color = 'var(--t-brand)', time, icon, dense, allday, conflict, onClick }: {
   title: string
   color?: string
   time?: string
   icon?: string
   dense?: boolean
   allday?: boolean
-  warn?: boolean
   conflict?: boolean
   onClick?: () => void
 }) {
   const { t } = useTranslation()
-  const hasWarn = warn || conflict
+  const hasWarn = conflict
   const wrap: React.CSSProperties = {
     borderLeft: `${dense ? 3 : 4}px solid ${color}`,
     borderRadius: dense ? '3px 7px 7px 3px' : 'var(--t-squircle-chip, 4px 11px 11px 4px)',

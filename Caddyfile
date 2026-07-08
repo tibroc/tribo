@@ -7,8 +7,10 @@
 :80 {
 	reverse_proxy tribo:8080
 
-	# A second route to Radicale is added here once the with-radicale profile
-	# is enabled (Milestone 6), e.g.:
+	# Radicale is intentionally NOT proxied here — it stays on the internal
+	# compose network (Tribo talks to it directly via RADICALE_URL). Only expose
+	# it through Caddy if you want native calendar apps to reach it from outside,
+	# e.g.:
 	# handle_path /radicale/* {
 	#     reverse_proxy radicale:5232
 	# }

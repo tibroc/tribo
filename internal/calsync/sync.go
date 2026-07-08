@@ -1,6 +1,7 @@
-// Package calsync keeps SQLite consistent with external CalDAV calendars
-// (pull + push). Radicale is treated as just another CalDAV source. Google sync
-// is scaffolded but not yet implemented.
+// Package calsync keeps the SQLite event cache consistent with CalDAV calendars
+// (pull + push), with Radicale as the system of record reached over the CalDAV
+// client. Google sync is implemented as a read-only, per-person pull (see
+// google.go).
 package calsync
 
 import (
