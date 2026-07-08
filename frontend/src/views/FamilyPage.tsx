@@ -16,6 +16,7 @@ import AppShell from '../components/AppShell'
 import { SimpleHeader, WEATHER_CHANGED_EVENT } from '../components/chrome'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import ErrorBanner from '../components/ErrorBanner'
 import PersonAvatar from '../components/PersonAvatar'
 import OnboardingWizard from './OnboardingWizard'
 import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
@@ -24,7 +25,7 @@ import { recurrenceLabel } from '../lib/chores'
 import { useSession } from '../lib/session'
 import { useTheme, type ThemePreference } from '../lib/theme'
 import { useTimeFormat, type TimeFormatPreference } from '../lib/timeformat'
-import { weekdayLabels } from '../lib/datetime'
+import { weekdayLabels, fmtClock } from '../lib/datetime'
 import { useLocale, LANGUAGES } from '../lib/i18n'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
@@ -51,8 +52,10 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [choreModal, setChoreModal] = useState<Chore | null | undefined>(undefined)
   const [wsModal, setWsModal] = useState<WorkSchedule | null | undefined>(undefined)
   const guardians = members.filter((m) => m.role === 'guardian')
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
-    getFamilyMembers().then(setMembers).catch(() => {})
+    getFamilyMembers().then(setMembers).catch((e) => setLoadError(String(e))).finally(() => setLoading(false))
     getWorkSchedules().then(setSchedules).catch(() => {})
     getChores().then(setChores).catch(() => {})
     reloadSources()
@@ -70,7 +73,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const timeFormat = useTimeFormat()
   const { t, i18n } = useTranslation()
   const currentLang = LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES.find((l) => i18n.language.startsWith(l.code.slice(0, 2))) ?? LANGUAGES[0]
-  const dayInitials = weekdayLabels(useLocale(), 'narrow')
+  const locale = useLocale()
+  const dayInitials = weekdayLabels(locale, 'narrow')
   const nameOf = (id?: string) => members.find((m) => m.id === id)?.name ?? ''
 
   if (showWizard) {
@@ -90,6 +94,10 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   return (
     <AppShell active="family" onNavigate={go} showFab={false} header={<SimpleHeader title={t('nav.family')} />}>
       <div style={{ padding: '22px 26px' }} className="space-y-4">
+        {loadError && <ErrorBanner>{loadError}</ErrorBanner>}
+        {loading && members.length === 0 && !loadError && (
+          <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>
+        )}
         {/* Banner */}
         <FamilyBanner members={members} guardians={guardians} sources={sources} />
 
@@ -124,7 +132,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <button onClick={() => setWsModal(s)} className="flex items-center gap-2 mb-2 w-full text-left">
                     <PersonAvatar name={m?.name} color={m?.color} index={mi >= 0 ? mi : undefined} size={28} />
                     <div className="text-sm font-semibold">{m?.name}</div>
-                    <div className="text-xs ml-auto" style={{ color: 'var(--t-text-soft)' }}>{scheduleLabel(s.label, t)} · {s.startTime} – {s.endTime}</div>
+                    <div className="text-xs ml-auto" style={{ color: 'var(--t-text-soft)' }}>{scheduleLabel(s.label, t)} · {fmtClock(s.startTime, locale)} – {fmtClock(s.endTime, locale)}</div>
                     <ChevronRight size={14} style={{ color: 'var(--t-text-soft)' }} />
                   </button>
                   <div className="flex gap-1 mb-2">
@@ -161,7 +169,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   <div className="text-sm truncate font-medium">{c.title}</div>
                   <div className="text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{choreWho(c)}</div>
                 </div>
-                <RecurrencePill label={c.assignmentMode === 'rotation' ? t('chores.rotation') : recurrenceLabel(c.recurrenceRule, c.recurrenceInterval, t)} rotation={c.assignmentMode === 'rotation'} />
+                <RecurrencePill label={c.assignmentMode === 'rotation' ? t('chores.rotation') : recurrenceLabel(c.recurrenceRule, c.recurrenceInterval, t, c.recurrenceWeekdays, locale)} rotation={c.assignmentMode === 'rotation'} />
               </button>
             ))}
           </Section>
@@ -224,7 +232,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                 googleConnectUrl(googleMember).then((r) => { window.location.href = r.authUrl }).catch((e) => setCalError(String(e)))
               }}>{t('family.calendars.connectGoogle')}</Button>
             </div>
-            {calError && <div className="text-xs mt-2" style={{ color: '#9b1c1c' }}>{calError}</div>}
+            {calError && <div className="text-xs mt-2" style={{ color: 'var(--t-danger)' }}>{calError}</div>}
           </Section>
         </div>
 
@@ -382,7 +390,7 @@ function ConnectCalendarModal({ members, onClose, onConnected }: { members: Fami
           <button onClick={connect} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.connect')}</button>
         </div>
         <div className="p-5 space-y-3">
-          {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          {error && <ErrorBanner>{error}</ErrorBanner>}
           <select className="w-full text-sm px-3 py-2 outline-hidden" style={field} value={memberId} onChange={(e) => setMemberId(e.target.value)}>
             <option value="">{t('family.calendars.forWhom')}</option>
             {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -607,7 +615,7 @@ function LocationModal({ settings, onClose, onSaved }: { settings: WeatherSettin
           <button onClick={save} disabled={busy || !picked} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.save')}</button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto">
-          {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          {error && <ErrorBanner>{error}</ErrorBanner>}
           {settings?.locationName && !picked && (
             <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('family.location.current', { name: settings.locationName })}</div>
           )}

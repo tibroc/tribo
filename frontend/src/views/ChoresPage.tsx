@@ -7,6 +7,7 @@ import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
 import Button from '../components/Button'
+import ErrorBanner from '../components/ErrorBanner'
 import Icon from '../components/Icon'
 import PersonAvatar from '../components/PersonAvatar'
 import { ChoresPanel, RecurrencePill } from '../components/panels'
@@ -124,7 +125,7 @@ export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; 
     const from = mondayOf(today); return { from, to: addDays(from, 7) }
   }, [period])
 
-  const { instances, toggleChore, reload } = useChoresTodos(range)
+  const { instances, error, loading, toggleChore, reload } = useChoresTodos(range)
   // Chore modal: undefined = closed; null = add; a Chore = edit that chore.
   const [choreModal, setChoreModal] = useState<Chore | null | undefined>(openNew ? null : undefined)
   const reloadChores = () => getChores().then(setChores).catch(() => {})
@@ -147,6 +148,10 @@ export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; 
   return (
     <AppShell active="chores" onNavigate={go} header={<SimpleHeader title={t('nav.chores')} />} onFabClick={() => setChoreModal(null)}>
       <div style={{ padding: '22px 26px' }}>
+        {error && <ErrorBanner className="mb-3">{error}</ErrorBanner>}
+        {loading && instances.length === 0 && !error && (
+          <div className="text-sm mb-3" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>
+        )}
         <div className="flex justify-end mb-3">
           <div className="flex gap-1 rounded-full p-1" style={{ background: 'var(--t-shell)', border: '1px solid var(--t-line)' }}>
             {periods.map((p) => (

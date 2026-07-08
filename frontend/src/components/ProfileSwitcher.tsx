@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LogOut, Check } from 'lucide-react'
-import { palette } from '../lib/tokens'
 import { useSession } from '../lib/session'
 import PersonAvatar from './PersonAvatar'
 
@@ -44,8 +43,8 @@ export default function ProfileSwitcher({ mobile }: { mobile?: boolean }) {
       >
         {activeMember
           ? <PersonAvatar name={activeMember.name} color={activeMember.color} size={avatarSize} />
-          : <div className="rounded-full" style={{ width: avatarSize, height: avatarSize, backgroundColor: palette.line }} />}
-        {mobile && <span className="text-xs font-medium" style={{ color: palette.inkSoft }}>{t('profile.you')}</span>}
+          : <div className="rounded-full" style={{ width: avatarSize, height: avatarSize, backgroundColor: 'var(--t-line)' }} />}
+        {mobile && <span className="text-xs font-medium" style={{ color: 'var(--t-text-soft)' }}>{t('profile.you')}</span>}
       </button>
 
       {open && (
@@ -54,9 +53,9 @@ export default function ProfileSwitcher({ mobile }: { mobile?: boolean }) {
           <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setPinFor(null) }} />
           <div
             className={`z-50 rounded-2xl p-2 shadow-xl ${dropdownPos}`}
-            style={{ backgroundColor: palette.surface, border: `1px solid ${palette.line}` }}
+            style={{ backgroundColor: 'var(--t-surface)', border: '1px solid var(--t-line)' }}
           >
-            <div className="text-xs font-semibold uppercase px-2 py-1" style={{ color: palette.inkSoft }}>{t('profile.viewingAs')}</div>
+            <div className="text-xs font-semibold uppercase px-2 py-1" style={{ color: 'var(--t-text-soft)' }}>{t('profile.viewingAs')}</div>
             {session.members.map((m) => {
               const active = m.id === session.activeMemberId
               if (pinFor === m.id) {
@@ -68,10 +67,10 @@ export default function ProfileSwitcher({ mobile }: { mobile?: boolean }) {
                       onChange={(e) => setPin(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && submitPin()}
                       className="w-full text-sm rounded-lg px-2 py-1.5 outline-hidden"
-                      style={{ border: `1px solid ${palette.line}` }}
+                      style={{ border: '1px solid var(--t-line)', background: 'var(--t-surface)', color: 'var(--t-text)' }}
                     />
-                    {error && <div className="text-xs mt-1" style={{ color: '#9b1c1c' }}>{error}</div>}
-                    <button onClick={submitPin} className="w-full mt-2 rounded-lg py-1.5 text-sm font-semibold" style={{ backgroundColor: palette.brand, color: '#fff' }}>{t('profile.unlock')}</button>
+                    {error && <div className="text-xs mt-1" style={{ color: 'var(--t-danger)' }}>{error}</div>}
+                    <button onClick={submitPin} className="w-full mt-2 rounded-lg py-1.5 text-sm font-semibold" style={{ backgroundColor: 'var(--t-brand)', color: 'var(--t-on-brand)' }}>{t('profile.unlock')}</button>
                   </div>
                 )
               }
@@ -79,12 +78,12 @@ export default function ProfileSwitcher({ mobile }: { mobile?: boolean }) {
                 <button key={m.id} onClick={() => choose(m.id, m.hasPin)} className="w-full flex items-center gap-2 rounded-xl p-2 text-left hover:opacity-80">
                   <PersonAvatar name={m.name} color={m.color} size={28} />
                   <span className="text-sm flex-1">{m.name}</span>
-                  {active && <Check size={16} style={{ color: palette.brand }} />}
+                  {active && <Check size={16} style={{ color: 'var(--t-brand)' }} />}
                 </button>
               )
             })}
             {session.authEnabled && (
-              <button onClick={logout} className="w-full flex items-center gap-2 rounded-xl p-2 text-left mt-1" style={{ borderTop: `1px solid ${palette.line}`, color: palette.inkSoft }}>
+              <button onClick={logout} className="w-full flex items-center gap-2 rounded-xl p-2 text-left mt-1" style={{ borderTop: '1px solid var(--t-line)', color: 'var(--t-text-soft)' }}>
                 <LogOut size={16} /> <span className="text-sm">{t('profile.signOut')}</span>
               </button>
             )}

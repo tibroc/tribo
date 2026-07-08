@@ -54,7 +54,7 @@ export function MapProfileScreen() {
               <PersonAvatar name={m.name} color={m.color} index={i} size={36} />
               <div className="flex-1">
                 <div className="text-sm font-semibold">{m.name}</div>
-                <div className="text-xs capitalize" style={{ color: 'var(--t-text-soft)' }}>{claimed ? t('auth.alreadyLinked') : m.role}</div>
+                <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{claimed ? t('auth.alreadyLinked') : t(`forms.role.${m.role}`)}</div>
               </div>
             </button>
           )

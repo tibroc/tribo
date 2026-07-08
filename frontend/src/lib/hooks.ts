@@ -14,6 +14,7 @@ export function useChoresTodos(range?: { from: Date; to: Date }) {
   const [instances, setInstances] = useState<ChoreInstance[]>([])
   const [todos, setTodos] = useState<Todo[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   // Depend on the numeric timestamps so reload stays stable across renders that
   // pass a fresh-but-equal range object.
@@ -22,8 +23,15 @@ export function useChoresTodos(range?: { from: Date; to: Date }) {
   const reload = useCallback(() => {
     const from = fromMs != null ? new Date(fromMs) : mondayOf(new Date())
     const to = toMs != null ? new Date(toMs) : addDays(mondayOf(new Date()), 7)
-    getChoreInstances(from, to).then(setInstances).catch((e) => setError(String(e)))
-    getTodos().then(setTodos).catch((e) => setError(String(e)))
+    setLoading(true)
+    Promise.allSettled([
+      getChoreInstances(from, to).then(setInstances),
+      getTodos().then(setTodos),
+    ]).then((results) => {
+      const failed = results.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined
+      setError(failed ? String(failed.reason) : null)
+      setLoading(false)
+    })
   }, [fromMs, toMs])
 
   useEffect(reload, [reload])
@@ -49,5 +57,5 @@ export function useChoresTodos(range?: { from: Date; to: Date }) {
     setTodoAssignee(t.id, memberId).catch(() => reload())
   }, [reload])
 
-  return { instances, todos, error, toggleChore, toggleTodo, addTodo, assignTodo, reload }
+  return { instances, todos, error, loading, toggleChore, toggleTodo, addTodo, assignTodo, reload }
 }

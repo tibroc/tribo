@@ -33,7 +33,7 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
           display: 'flex', alignItems: 'center', gap: 3,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {hasWarn && <WarnGlyph />}
+          {hasWarn && <ConflictGlyph />}
           {icon === 'cake' && <CakeGlyph />}
           {title}
         </div>
@@ -49,7 +49,7 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
         <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--t-text-soft)', textTransform: 'uppercase' }}>{t('event.allDay')}</div>
       )}
       <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.25, display: 'flex', alignItems: 'center', marginTop: 2 }}>
-        {hasWarn && <WarnGlyph />}
+        {hasWarn && <ConflictGlyph />}
         {icon === 'cake' && <CakeGlyph />}
         {title}
       </div>
@@ -57,7 +57,9 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
   )
 }
 
-function WarnGlyph() {
+// Exported so non-EventChip event rows (Day timeline, Month/Week agenda lists)
+// can render the same needs-guardian cue for a consistent conflict signal.
+export function ConflictGlyph() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--t-danger)"
       strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"

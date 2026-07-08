@@ -6,12 +6,13 @@ import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
+import ErrorBanner from '../components/ErrorBanner'
 import { TodosPanel } from '../components/panels'
 
 export default function TodosPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
   const { t } = useTranslation()
   const [members, setMembers] = useState<FamilyMember[]>([])
-  const { todos, toggleTodo, addTodo, assignTodo } = useChoresTodos()
+  const { todos, error, loading, toggleTodo, addTodo, assignTodo } = useChoresTodos()
   const addRef = useRef<HTMLInputElement>(null)
   useEffect(() => { getFamilyMembers().then(setMembers).catch(() => {}) }, [])
   // Arriving via Home's quick-add chooser drops the cursor in the add field.
@@ -23,6 +24,10 @@ export default function TodosPage({ go, openNew }: { go: (s: Section) => void; o
   return (
     <AppShell active="todos" onNavigate={go} header={<SimpleHeader title={t('nav.todos')} />} showFab={false}>
       <div style={{ padding: '22px 26px' }}>
+        {error && <ErrorBanner className="mb-3">{error}</ErrorBanner>}
+        {loading && todos.length === 0 && !error && (
+          <div className="text-sm mb-3" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>
+        )}
         {/* Hero */}
         <Card padded={false} className="mb-4" style={{ padding: '18px 26px' }}>
           <div className="flex items-center justify-between gap-4">

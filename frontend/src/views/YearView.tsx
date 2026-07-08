@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Cake } from 'lucide-react'
 import {
-  buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey, eventDate,
+  buildMonthCells, colorForEvent, groupByDay, membersById, sameDay, dayKey, eventDate, eventDisplayTitle,
   type ViewProps,
 } from '../lib/calendar'
 import { fmtMonthDay, monthLabels } from '../lib/datetime'
@@ -43,7 +43,7 @@ export default function YearView({ members, events, cursor, today, header, onNav
           {highlights.map(({ e, d }) => (
             <div key={e.id} className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorForEvent(e, byId) }} />
-              <span className="flex-1 truncate">{e.title}</span>
+              <span className="flex-1 truncate">{eventDisplayTitle(e, t)}</span>
               <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtMonthDay(d, locale)}</span>
             </div>
           ))}

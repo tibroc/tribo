@@ -7,6 +7,7 @@ import {
 } from '../lib/api'
 import PersonAvatar from './PersonAvatar'
 import Button from './Button'
+import ErrorBanner from './ErrorBanner'
 import DatePicker from './DatePicker'
 import TimePicker from './TimePicker'
 import { calendarLabel } from '../lib/calendar'
@@ -158,7 +159,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
         </div>
 
         <div className="p-5 overflow-y-auto">
-          {error && <div className="rounded-xl p-2 mb-3 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          {error && <ErrorBanner className="mb-3">{error}</ErrorBanner>}
 
           <input
             className="w-full font-display text-2xl bg-transparent outline-hidden mb-3"

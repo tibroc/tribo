@@ -11,7 +11,7 @@ import type { FamilyMember, TriboEvent } from '../lib/api'
 import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
-import EventChip from '../components/EventChip'
+import EventChip, { ConflictGlyph } from '../components/EventChip'
 
 // Shared-first, then personal — matches the prototype's ordering in cells/agenda.
 function ordered(events: TriboEvent[]): TriboEvent[] {
@@ -136,7 +136,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
 
       {/* Tablet: up to 2 chips + "+N more" */}
       <div className="hidden lg:block space-y-1">
-        {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} />)}
+        {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} conflict={ev.conflictStatus === 'needs_guardian'} />)}
         {extra > 0 && <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--t-text-soft)', paddingLeft: 3 }}>{t('calendar.moreCount', { count: extra })}</div>}
       </div>
 
@@ -177,7 +177,7 @@ function SelectedDayPanel({ date, byDay, byId, today, onEditEvent, locale }: {
               <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 {!ev.allDay && <span className="text-xs w-20 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtTime(new Date(ev.startAt), locale)}</span>}
-                <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.icon === 'cake' && <Cake size={12} />}{eventDisplayTitle(ev, t)}</span>
+                <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.conflictStatus === 'needs_guardian' && <ConflictGlyph />}{ev.icon === 'cake' && <Cake size={12} />}{eventDisplayTitle(ev, t)}</span>
                 <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
               </div>
             )

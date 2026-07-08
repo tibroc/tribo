@@ -17,6 +17,14 @@ export function fmtTime(d: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(d)
 }
 
+// Format a stored "HH:MM" clock string (work schedules) per the locale's
+// 12h/24h preference — the string carries no date, so anchor it on a fixed day.
+export function fmtClock(hhmm: string, locale: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  if (Number.isNaN(h)) return hhmm
+  return fmtTime(new Date(2000, 0, 1, h, m || 0), locale)
+}
+
 // Hour-only axis label: "6 AM" in 12h locales, "06:00" in 24h ones. The minutes
 // are shown only for 24h (decided from the resolved hour cycle, so it's correct
 // regardless of language + the user's time-format preference).

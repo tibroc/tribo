@@ -5,6 +5,7 @@ import { markerColor } from '../lib/tokens'
 import { ChoreIcon, CHORE_ICON_NAMES } from '../lib/choreIcons'
 import DatePicker from './DatePicker'
 import TimePicker from './TimePicker'
+import ErrorBanner from './ErrorBanner'
 import {
   createMember, updateMember, deleteMember,
   createChore, updateChore, deleteChore,
@@ -41,7 +42,7 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
           <button onClick={onSave} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.save')}</button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto">
-          {error && <div className="rounded-xl p-2 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          {error && <ErrorBanner>{error}</ErrorBanner>}
           {children}
           {onDelete && (
             <div className="pt-1">

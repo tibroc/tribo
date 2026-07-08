@@ -11,7 +11,7 @@ import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
-import EventChip from '../components/EventChip'
+import EventChip, { ConflictGlyph } from '../components/EventChip'
 import PersonAvatar from '../components/PersonAvatar'
 import { ChoresPanel, TodosPanel } from '../components/panels'
 
@@ -136,7 +136,7 @@ function WeekGrid({ days, weekdays, members, perMember, shared, today, busyAt, s
       </div>
       {days.map((d, di) => (
         <div key={di} className="flex flex-col gap-1.5" style={{ padding: '10px 8px', borderLeft: line, backgroundColor: cellBg(d, di), minHeight: 104 }}>
-          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={eventDisplayTitle(p.ev, t)} color={colorForEvent(p.ev, byId)} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} onClick={() => onEditEvent(p.ev)} />)}
+          {(shared[di] ?? []).map((p) => <EventChip key={p.ev.id} title={eventDisplayTitle(p.ev, t)} color={colorForEvent(p.ev, byId)} time={p.time} icon={p.ev.icon} allday={p.ev.allDay} conflict={p.ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(p.ev)} />)}
         </div>
       ))}
     </div>
@@ -175,7 +175,7 @@ function AgendaDay({ day, di, weekday, members, perMember, shared, today, onEdit
             <div key={ev.id} className="flex items-center gap-2 cursor-pointer" onClick={() => onEditEvent(ev)}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
               {time && <span className="text-xs w-16 shrink-0" style={{ color: 'var(--t-text-soft)' }}>{time}</span>}
-              <span className="text-sm truncate flex-1">{eventDisplayTitle(ev, t)}</span>
+              <span className="text-sm truncate flex-1 flex items-center gap-1">{ev.conflictStatus === 'needs_guardian' && <ConflictGlyph />}{eventDisplayTitle(ev, t)}</span>
               <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{who}</span>
             </div>
           ))}

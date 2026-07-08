@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Section, Intent, EventFocus } from './lib/calendar'
 import { palette } from './lib/tokens'
 import { SessionProvider, useSession } from './lib/session'
@@ -30,9 +31,10 @@ export default function App() {
 // Gate decides between loading / login / onboarding / first-login mapping / app.
 function Gate() {
   const { session, refresh } = useSession()
+  const { t } = useTranslation()
 
   if (!session) {
-    return <div className="min-h-screen flex items-center justify-center font-body" style={{ backgroundColor: palette.mist, color: palette.inkSoft }}>Loading…</div>
+    return <div className="min-h-screen flex items-center justify-center font-body" style={{ backgroundColor: palette.mist, color: palette.inkSoft }}>{t('common.loading')}</div>
   }
   if (session.authEnabled && !session.authenticated) return <LoginScreen />
   // A fresh instance (zero members) always runs the onboarding wizard, in any

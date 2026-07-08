@@ -9,7 +9,7 @@ import { useChoresTodos } from '../lib/hooks'
 import AppShell from '../components/AppShell'
 import { CalendarHeader } from '../components/chrome'
 import Card from '../components/Card'
-import EventChip from '../components/EventChip'
+import EventChip, { ConflictGlyph } from '../components/EventChip'
 import PersonAvatar from '../components/PersonAvatar'
 import { ChoresPanel, TodosPanel } from '../components/panels'
 
@@ -128,7 +128,7 @@ export default function DayView({ members, events, cursor, today, header, workSc
           <span className="text-xs font-bold uppercase tracking-wider shrink-0" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
           {allDayEvents.map((ev) => (
             <div key={ev.id} className="min-w-[120px]">
-              <EventChip dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} onClick={() => onEditEvent(ev)} />
+              <EventChip dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} conflict={ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(ev)} />
             </div>
           ))}
         </div>
@@ -217,7 +217,7 @@ function TimelineColumn({ blocks, busy, showNow, nowFrac, withWho, onEditEvent, 
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t-text-soft)' }}>
             {fmtTime(new Date(b.ev.startAt), locale)} – {fmtTime(new Date(b.ev.endAt), locale)}{withWho && b.who ? ` · ${b.who}` : ''}
           </div>
-          <div className="truncate" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 1 }}>{eventDisplayTitle(b.ev, t)}</div>
+          <div className="truncate flex items-center gap-1" style={{ fontSize: 12.5, fontWeight: 600, marginTop: 1 }}>{b.ev.conflictStatus === 'needs_guardian' && <ConflictGlyph />}{eventDisplayTitle(b.ev, t)}</div>
         </div>
       ))}
       {showNow && (

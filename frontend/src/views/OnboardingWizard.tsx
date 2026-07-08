@@ -5,6 +5,7 @@ import { onboard, type OnboardRequest } from '../lib/api'
 import { useSession } from '../lib/session'
 import Icon from '../components/Icon'
 import Button from '../components/Button'
+import ErrorBanner from '../components/ErrorBanner'
 import DatePicker from '../components/DatePicker'
 import { weekdayLabels } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
@@ -176,7 +177,7 @@ export default function OnboardingWizard({ onDone, onCancel }: { onDone: () => v
         </div>
 
         <div className="mt-8 flex-1 min-h-0 overflow-y-auto">
-          {error && <div className="rounded-xl p-2 mb-3 text-sm" style={{ backgroundColor: '#fde8e8', color: '#9b1c1c' }}>{error}</div>}
+          {error && <ErrorBanner className="mb-3">{error}</ErrorBanner>}
 
           {step === 1 && (
             <div className="space-y-4" style={{ maxWidth: 440 }}>

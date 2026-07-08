@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Sparkles, Star, Cake, CheckSquare } from 'lucide-react'
-import { localizeTitle, type Section, type Intent } from '../lib/calendar'
-import { getBriefing, type Briefing } from '../lib/api'
-import { fmtTime, fmtRange, fmtWeekdayLong, daysLabel } from '../lib/datetime'
+import { Sparkles, Star, Cake, CheckSquare, AlertTriangle, UserPlus } from 'lucide-react'
+import { localizeTitle, type Section, type Intent, type EventFocus } from '../lib/calendar'
+import { getBriefing, getNotifications, type Briefing, type Notification } from '../lib/api'
+import { fmtTime, fmtRange, fmtWeekdayLong, fmtWeekdayDay, daysLabel } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
 import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
 
-export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => void }) {
+export default function HomePage({ go }: { go: (s: Section, intent?: Intent, focus?: EventFocus) => void }) {
   const { t } = useTranslation()
   const locale = useLocale()
   const [b, setB] = useState<Briefing | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [alerts, setAlerts] = useState<Notification[]>([])
   useEffect(() => { getBriefing().then(setB).catch((e) => setError(String(e))) }, [])
+  useEffect(() => { getNotifications().then(setAlerts).catch(() => setAlerts([])) }, [])
 
   // Home's FAB is a quick "new event" shortcut — it routes to the calendar and
   // opens the add-event modal on arrival.
@@ -38,6 +40,30 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent) => 
               </div>
             )}
           </div>
+
+          {/* Needs attention: unclaimed / needs-guardian events, deep-linked to the event */}
+          {alerts.length > 0 && (
+            <Card className="p-4 mb-4">
+              <div className="text-xs font-semibold uppercase mb-2 flex items-center gap-2" style={{ color: 'var(--t-text-soft)' }}>
+                <AlertTriangle size={13} style={{ color: 'var(--t-danger)' }} /> {t('notifications.heading')}
+              </div>
+              <div className="space-y-1.5">
+                {alerts.map((n) => {
+                  const warn = n.severity === 'warning'
+                  const NIcon = warn ? AlertTriangle : UserPlus
+                  const color = warn ? 'var(--t-danger)' : 'var(--t-brand)'
+                  return (
+                    <button key={n.id} onClick={() => go('calendar', 'open-event', { eventId: n.eventId, date: n.startAt })}
+                      className="flex items-center gap-2 w-full text-left text-sm">
+                      <NIcon size={14} style={{ color, flexShrink: 0 }} />
+                      <span className="flex-1 truncate">{localizeTitle(n.eventId, n.title, t)}</span>
+                      <span className="text-xs shrink-0" style={{ color: 'var(--t-text-soft)' }}>{fmtWeekdayDay(new Date(n.startAt), locale)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </Card>
+          )}
 
           {/* Today strip */}
           <Card className="p-4 mb-4">
