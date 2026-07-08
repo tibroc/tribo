@@ -1,6 +1,8 @@
 name: Dependabot auto-merge
 
-on: pull_request_target
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: write
@@ -18,16 +20,13 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve PR
+      # No explicit approval step: approving with GITHUB_TOKEN fails unless the
+      # org/repo enables "Allow GitHub Actions to create and approve pull
+      # requests". Enabling auto-merge is enough — it merges once required
+      # checks pass.
+      - name: Enable auto-merge for patch & minor updates
         if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Enable auto-merge
-        if: contains(fromJSON('["version-update:semver-patch","version-update:semver-minor"]'), steps.metadata.outputs.update-type)
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
