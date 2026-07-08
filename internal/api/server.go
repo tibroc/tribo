@@ -81,6 +81,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	mux.HandleFunc("GET /api/todos", s.listTodos)
 	mux.HandleFunc("POST /api/todos", s.createTodo)
 	mux.HandleFunc("PATCH /api/todos/{id}", s.patchTodo)
+	mux.HandleFunc("DELETE /api/todos/{id}", s.deleteTodo)
 
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)

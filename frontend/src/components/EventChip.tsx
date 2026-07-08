@@ -14,6 +14,9 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
 }) {
   const { t } = useTranslation()
   const hasWarn = conflict
+  // Stop propagation so a clickable chip nested in a clickable day cell (Month
+  // grid) edits the event rather than also selecting the day.
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   const wrap: React.CSSProperties = {
     borderLeft: `${dense ? 3 : 4}px solid ${color}`,
     borderRadius: dense ? '3px 7px 7px 3px' : 'var(--t-squircle-chip, 4px 11px 11px 4px)',
@@ -27,7 +30,7 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
   }
   if (dense) {
     return (
-      <div onClick={onClick} style={wrap} className={onClick ? 'sv-lift' : undefined}>
+      <div onClick={handleClick} style={wrap} className={onClick ? 'sv-lift' : undefined}>
         <div style={{
           fontSize: 11, fontWeight: 600, lineHeight: 1.25,
           display: 'flex', alignItems: 'center', gap: 3,
@@ -41,7 +44,7 @@ export default function EventChip({ title, color = 'var(--t-brand)', time, icon,
     )
   }
   return (
-    <div onClick={onClick} style={wrap} className={`mb-1 ${onClick ? 'sv-lift' : ''}`}>
+    <div onClick={handleClick} style={wrap} className={`mb-1 ${onClick ? 'sv-lift' : ''}`}>
       {time && (
         <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--t-text-soft)', letterSpacing: '.02em' }}>{time}</div>
       )}

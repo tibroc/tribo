@@ -6,6 +6,7 @@ import { ChoreIcon, CHORE_ICON_NAMES } from '../lib/choreIcons'
 import DatePicker from './DatePicker'
 import TimePicker from './TimePicker'
 import ErrorBanner from './ErrorBanner'
+import ConfirmDialog from './ConfirmDialog'
 import {
   createMember, updateMember, deleteMember,
   createChore, updateChore, deleteChore,
@@ -32,6 +33,7 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
   children: ReactNode
 }) {
   const { t } = useTranslation()
+  const [confirming, setConfirming] = useState(false)
   return (
     <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
       <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
@@ -46,13 +48,16 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
           {children}
           {onDelete && (
             <div className="pt-1">
-              <Button variant="danger" onClick={onDelete} disabled={busy} style={{ width: '100%' }}>
+              <Button variant="danger" onClick={() => setConfirming(true)} disabled={busy} style={{ width: '100%' }}>
                 <Trash2 size={16} /> {t('common.delete')}
               </Button>
             </div>
           )}
         </div>
       </div>
+      {confirming && onDelete && (
+        <ConfirmDialog busy={busy} onCancel={() => setConfirming(false)} onConfirm={() => { setConfirming(false); onDelete() }} />
+      )}
     </div>
   )
 }

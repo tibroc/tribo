@@ -17,6 +17,7 @@ import { SimpleHeader, WEATHER_CHANGED_EVENT } from '../components/chrome'
 import Card from '../components/Card'
 import Button from '../components/Button'
 import ErrorBanner from '../components/ErrorBanner'
+import ConfirmDialog from '../components/ConfirmDialog'
 import PersonAvatar from '../components/PersonAvatar'
 import OnboardingWizard from './OnboardingWizard'
 import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
@@ -66,6 +67,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [calError, setCalError] = useState<string | null>(null)
   const [calStatus, setCalStatus] = useState<CalendarStatus | null>(null)
   const [googleMember, setGoogleMember] = useState('') // member picked for a new Google overlay
+  const [pendingSource, setPendingSource] = useState<CalendarSource | null>(null)
   useEffect(() => { getCalendarStatus().then(setCalStatus).catch(() => {}) }, [])
   const [showWizard, setShowWizard] = useState(false)
   const { session, refresh: refreshSession } = useSession()
@@ -106,7 +108,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         <Section title={t('family.membersTitle')} icon={Users} flush
           action={<Button variant="ghost" size="sm" style={{ color: 'var(--t-brand)' }} onClick={() => setMemberModal(null)}><Plus size={14} /> {t('family.addMember')}</Button>}>
           {members.map((p, i) => (
-            <div key={p.id} className="flex items-center gap-3" style={{ padding: '12px 22px', borderBottom: i === members.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
+            <button key={p.id} onClick={() => setMemberModal(p)} className="flex items-center gap-3 w-full text-left" style={{ padding: '12px 22px', borderBottom: i === members.length - 1 ? 'none' : '1px solid var(--t-line)' }}>
               <PersonAvatar name={p.name} color={p.color} index={i} size={40} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate" style={{ fontFamily: 'var(--t-font-display)', fontWeight: 600 }}>{p.name}</div>
@@ -114,8 +116,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                   {p.role === 'guardian' ? t('family.roleGuardian') : t('family.roleChild', { name: nameOf(p.defaultGuardianId) || '—' })}
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setMemberModal(p)}>{t('common.edit')}</Button>
-            </div>
+              <ChevronRight size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
+            </button>
           ))}
         </Section>
 
@@ -212,7 +214,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
                         <button aria-label={t('family.calendars.syncNow')} onClick={() => syncCalendarSource(c.id).then(reloadSources)}>
                           <RefreshCw size={14} style={{ color: 'var(--t-text-soft)' }} />
                         </button>
-                        <button aria-label={t('family.calendars.remove')} onClick={() => deleteCalendarSource(c.id).then(reloadSources)}>
+                        <button aria-label={t('family.calendars.remove')} onClick={() => setPendingSource(c)}>
                           <Trash2 size={14} style={{ color: 'var(--t-text-soft)' }} />
                         </button>
                       </>
@@ -241,6 +243,14 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             members={members}
             onClose={() => setShowConnect(false)}
             onConnected={() => { setShowConnect(false); reloadSources() }}
+          />
+        )}
+        {pendingSource && (
+          <ConfirmDialog
+            message={t('family.calendars.removeConfirm', { name: calendarLabel(pendingSource, t) })}
+            confirmLabel={t('family.calendars.remove')}
+            onCancel={() => setPendingSource(null)}
+            onConfirm={() => { const id = pendingSource.id; setPendingSource(null); deleteCalendarSource(id).then(reloadSources).catch((e) => setCalError(String(e))) }}
           />
         )}
         {memberModal !== undefined && (

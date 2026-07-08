@@ -352,6 +352,19 @@ export function setTodoAssignee(id: string, memberId: string | null): Promise<To
   }).then((r) => json<Todo>(r))
 }
 
+// Rename a todo.
+export function updateTodoTitle(id: string, title: string): Promise<Todo> {
+  return fetch(`/api/todos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  }).then((r) => json<Todo>(r))
+}
+
+export function deleteTodo(id: string): Promise<void> {
+  return fetch(`/api/todos/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
+}
+
 // ===== Work schedules =====
 export interface WorkSchedule {
   id: string

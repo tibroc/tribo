@@ -8,6 +8,7 @@ import {
 import PersonAvatar from './PersonAvatar'
 import Button from './Button'
 import ErrorBanner from './ErrorBanner'
+import ConfirmDialog from './ConfirmDialog'
 import DatePicker from './DatePicker'
 import TimePicker from './TimePicker'
 import { calendarLabel } from '../lib/calendar'
@@ -141,6 +142,7 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
     }
   }
 
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const remove = async () => {
     if (!editing) return
     setBusy(true)
@@ -278,13 +280,16 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
 
           {editing && (
             <div className="mt-4">
-              <Button variant="danger" onClick={remove} disabled={busy} style={{ width: '100%' }}>
+              <Button variant="danger" onClick={() => setConfirmDelete(true)} disabled={busy} style={{ width: '100%' }}>
                 <Trash2 size={16} /> {t('event.deleteEvent')}
               </Button>
             </div>
           )}
         </div>
       </div>
+      {confirmDelete && (
+        <ConfirmDialog busy={busy} onCancel={() => setConfirmDelete(false)} onConfirm={() => { setConfirmDelete(false); remove() }} />
+      )}
     </div>
   )
 }

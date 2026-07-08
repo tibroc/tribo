@@ -20,7 +20,9 @@
     "today": "Today",
     "previous": "Previous",
     "next": "Next",
-    "family": "Family"
+    "family": "Family",
+    "confirmDeleteTitle": "Delete?",
+    "confirmDeleteBody": "This can't be undone."
   },
   "home": {
     "newEvent": "New event",
@@ -184,7 +186,9 @@
     "addPlaceholder": "Add a to-do…",
     "addAria": "Add to-do",
     "assign": "Assign",
-    "unassigned": "Unassigned"
+    "unassigned": "Unassigned",
+    "editAria": "Edit to-do",
+    "deleteAria": "Delete to-do"
   },
   "family": {
     "membersTitle": "Family members",
@@ -210,6 +214,7 @@
       "readOnly": "read-only",
       "syncNow": "Sync now",
       "remove": "Remove",
+      "removeConfirm": "Remove {{name}}? Its events will no longer sync.",
       "connectGoogle": "Connect Google Calendar",
       "addCaldav": "Add CalDAV calendar",
       "displayName": "Display name",

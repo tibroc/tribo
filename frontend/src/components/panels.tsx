@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, UserPlus, Pencil } from 'lucide-react'
+import { Check, UserPlus, Pencil, Trash2 } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
 import { recurrenceLabel, linkifyDescription } from '../lib/chores'
 import { ChoreIcon } from '../lib/choreIcons'
@@ -260,17 +260,30 @@ export function ChoresPanel({ instances, members, chores, onToggle, onEdit, titl
   )
 }
 
-export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, title, flush }: {
+export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, onEdit, onDelete, title, flush }: {
   todos: Todo[]
   members?: FamilyMember[]
   onToggle: (t: Todo) => void
   onAdd?: (title: string) => void
   onAssign?: (t: Todo, memberId: string | null) => void
+  onEdit?: (t: Todo, title: string) => void
+  onDelete?: (t: Todo) => void
   title?: string
   flush?: boolean
 }) {
   const { t } = useTranslation()
   const [draft, setDraft] = useState('')
+  // Inline rename state (kept here, not in the row map, which shadows `t`).
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
+  const editAria = t('todos.editAria')
+  const deleteAria = t('todos.deleteAria')
+  const startEdit = (todo: Todo) => { setEditingId(todo.id); setEditDraft(todo.title) }
+  const commitEdit = (todo: Todo) => {
+    const v = editDraft.trim()
+    if (v && v !== todo.title) onEdit?.(todo, v)
+    setEditingId(null)
+  }
   const indexOf = (id?: string) => {
     const i = members.findIndex((m) => m.id === id)
     return i < 0 ? undefined : i
@@ -303,21 +316,46 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, tit
             style={{ padding: rowPad, borderBottom: idx === todos.length - 1 ? 'none' : '1px solid var(--t-line)' }}
           >
             <CheckBox done={done} onToggle={() => onToggle(t)} size={20} label={t.title} />
-            <span
-              className="flex-1 min-w-0 truncate"
-              style={{
-                fontFamily: 'var(--t-font-body)',
-                fontSize: 13.5,
-                fontWeight: 500,
-                color: done ? 'var(--t-text-soft)' : 'var(--t-text)',
-                textDecoration: done ? 'line-through' : 'none',
-              }}
-            >
-              {t.title}
-            </span>
+            {editingId === t.id ? (
+              <input
+                autoFocus
+                className="flex-1 min-w-0 outline-hidden"
+                style={{
+                  fontFamily: 'var(--t-font-body)', fontSize: 13.5, fontWeight: 500,
+                  color: 'var(--t-text)', background: 'transparent', borderBottom: '1px solid var(--t-line)',
+                }}
+                value={editDraft}
+                onChange={(e) => setEditDraft(e.target.value)}
+                onBlur={() => commitEdit(t)}
+                onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(t); else if (e.key === 'Escape') setEditingId(null) }}
+              />
+            ) : (
+              <span
+                className="flex-1 min-w-0 truncate"
+                style={{
+                  fontFamily: 'var(--t-font-body)',
+                  fontSize: 13.5,
+                  fontWeight: 500,
+                  color: done ? 'var(--t-text-soft)' : 'var(--t-text)',
+                  textDecoration: done ? 'line-through' : 'none',
+                }}
+              >
+                {t.title}
+              </span>
+            )}
             {onAssign && members.length > 0
               ? <TodoAssign todo={t} members={members} onAssign={onAssign} />
               : member && <PersonAvatar name={member.name} color={member.color} index={indexOf(t.assignedMemberId)} size={20} />}
+            {onEdit && editingId !== t.id && (
+              <button aria-label={editAria} onClick={() => startEdit(t)} className="shrink-0" style={{ color: 'var(--t-text-soft)' }}>
+                <Pencil size={15} />
+              </button>
+            )}
+            {onDelete && (
+              <button aria-label={deleteAria} onClick={() => onDelete(t)} className="shrink-0" style={{ color: 'var(--t-text-soft)' }}>
+                <Trash2 size={15} />
+              </button>
+            )}
           </div>
         )
       })}

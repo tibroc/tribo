@@ -31,12 +31,13 @@ func (s *Server) createTodo(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, t)
 }
 
-// PATCH /api/todos/{id} — body may set {"status":"open"|"done"} and/or
-// {"assignedMemberId": "<id>"|""} (empty string clears the assignment).
-// A nil pointer means "leave unchanged", so status-only and assignee-only
-// patches both work.
+// PATCH /api/todos/{id} — body may set {"title": "…"}, {"status":"open"|"done"}
+// and/or {"assignedMemberId": "<id>"|""} (empty string clears the assignment).
+// A nil pointer means "leave unchanged", so title-only, status-only and
+// assignee-only patches all work.
 func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
 	var body struct {
+		Title            *string `json:"title"`
 		Status           *string `json:"status"`
 		AssignedMemberID *string `json:"assignedMemberId"`
 	}
@@ -44,12 +45,20 @@ func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	t, err := s.todos.Patch(r.PathValue("id"), body.Status, body.AssignedMemberID)
+	t, err := s.todos.Patch(r.PathValue("id"), body.Title, body.Status, body.AssignedMemberID)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, t)
+}
+
+func (s *Server) deleteTodo(w http.ResponseWriter, r *http.Request) {
+	if err := s.todos.Delete(r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func (s *Server) listWorkSchedules(w http.ResponseWriter, _ *http.Request) {

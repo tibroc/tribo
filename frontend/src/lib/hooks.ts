@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   getChoreInstances, getTodos, setChoreStatus, setTodoStatus, setTodoAssignee, createTodo,
+  updateTodoTitle, deleteTodo as apiDeleteTodo,
   type ChoreInstance, type Todo,
 } from './api'
 import { addDays, mondayOf } from './calendar'
@@ -57,5 +58,15 @@ export function useChoresTodos(range?: { from: Date; to: Date }) {
     setTodoAssignee(t.id, memberId).catch(() => reload())
   }, [reload])
 
-  return { instances, todos, error, loading, toggleChore, toggleTodo, addTodo, assignTodo, reload }
+  const editTodo = useCallback((t: Todo, title: string) => {
+    setTodos((cur) => cur.map((x) => (x.id === t.id ? { ...x, title } : x)))
+    updateTodoTitle(t.id, title).catch(() => reload())
+  }, [reload])
+
+  const deleteTodo = useCallback((t: Todo) => {
+    setTodos((cur) => cur.filter((x) => x.id !== t.id))
+    apiDeleteTodo(t.id).catch(() => reload())
+  }, [reload])
+
+  return { instances, todos, error, loading, toggleChore, toggleTodo, addTodo, assignTodo, editTodo, deleteTodo, reload }
 }

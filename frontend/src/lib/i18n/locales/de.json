@@ -20,7 +20,9 @@
     "today": "Heute",
     "previous": "Zurück",
     "next": "Weiter",
-    "family": "Familie"
+    "family": "Familie",
+    "confirmDeleteTitle": "Löschen?",
+    "confirmDeleteBody": "Das kann nicht rückgängig gemacht werden."
   },
   "home": {
     "newEvent": "Neuer Termin",
@@ -184,7 +186,9 @@
     "addPlaceholder": "To-do hinzufügen…",
     "addAria": "To-do hinzufügen",
     "assign": "Zuweisen",
-    "unassigned": "Nicht zugewiesen"
+    "unassigned": "Nicht zugewiesen",
+    "editAria": "To-do bearbeiten",
+    "deleteAria": "To-do löschen"
   },
   "family": {
     "membersTitle": "Familienmitglieder",
@@ -210,6 +214,7 @@
       "readOnly": "schreibgeschützt",
       "syncNow": "Jetzt synchronisieren",
       "remove": "Entfernen",
+      "removeConfirm": "{{name}} entfernen? Die Termine werden nicht mehr synchronisiert.",
       "connectGoogle": "Google Kalender verbinden",
       "addCaldav": "CalDAV-Kalender hinzufügen",
       "displayName": "Anzeigename",

@@ -20,7 +20,9 @@
     "today": "Hoje",
     "previous": "Anterior",
     "next": "Próximo",
-    "family": "Família"
+    "family": "Família",
+    "confirmDeleteTitle": "Excluir?",
+    "confirmDeleteBody": "Isso não pode ser desfeito."
   },
   "home": {
     "newEvent": "Novo evento",
@@ -184,7 +186,9 @@
     "addPlaceholder": "Adicionar tarefa…",
     "addAria": "Adicionar tarefa",
     "assign": "Atribuir",
-    "unassigned": "Não atribuído"
+    "unassigned": "Não atribuído",
+    "editAria": "Editar tarefa",
+    "deleteAria": "Excluir tarefa"
   },
   "family": {
     "membersTitle": "Membros da família",
@@ -210,6 +214,7 @@
       "readOnly": "somente leitura",
       "syncNow": "Sincronizar agora",
       "remove": "Remover",
+      "removeConfirm": "Remover {{name}}? Os eventos deixarão de sincronizar.",
       "connectGoogle": "Conectar Google Agenda",
       "addCaldav": "Adicionar calendário CalDAV",
       "displayName": "Nome de exibição",

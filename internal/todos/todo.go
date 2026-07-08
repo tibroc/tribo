@@ -85,12 +85,15 @@ func (s *Service) SetStatus(id, status string) (*Todo, error) {
 	return s.get(id)
 }
 
-// Patch applies an optional assignee change and/or status change in a single
+// Patch applies an optional title, assignee, and/or status change in a single
 // transaction. A nil pointer leaves that field unchanged. Validation runs before
-// any write, so an invalid status can't leave a half-applied assignee behind.
-func (s *Service) Patch(id string, status, assignedMemberID *string) (*Todo, error) {
-	if status == nil && assignedMemberID == nil {
+// any write, so an invalid value can't leave a half-applied field behind.
+func (s *Service) Patch(id string, title, status, assignedMemberID *string) (*Todo, error) {
+	if title == nil && status == nil && assignedMemberID == nil {
 		return nil, errors.New("nothing to update")
+	}
+	if title != nil && strings.TrimSpace(*title) == "" {
+		return nil, errors.New("title is required")
 	}
 	if status != nil && *status != "open" && *status != "done" {
 		return nil, errors.New("status must be open or done")
@@ -102,6 +105,15 @@ func (s *Service) Patch(id string, status, assignedMemberID *string) (*Todo, err
 	}
 	defer tx.Rollback()
 
+	if title != nil {
+		res, err := tx.Exec(`UPDATE todo SET title = ? WHERE id = ?`, strings.TrimSpace(*title), id)
+		if err != nil {
+			return nil, err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return nil, errors.New("todo not found")
+		}
+	}
 	if assignedMemberID != nil {
 		var v any
 		if strings.TrimSpace(*assignedMemberID) != "" {
@@ -132,6 +144,18 @@ func (s *Service) Patch(id string, status, assignedMemberID *string) (*Todo, err
 		return nil, err
 	}
 	return s.get(id)
+}
+
+// Delete removes a todo outright.
+func (s *Service) Delete(id string) error {
+	res, err := s.db.Exec(`DELETE FROM todo WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return errors.New("todo not found")
+	}
+	return nil
 }
 
 func (s *Service) get(id string) (*Todo, error) {

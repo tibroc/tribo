@@ -73,6 +73,7 @@ export default function MonthView({ members, events, cursor, today, header, onNa
                   isWeekend={i % 7 >= 5}
                   byId={byId}
                   onClick={() => cell.inMonth && setSelected(cell.dateObj)}
+                  onEditEvent={onEditEvent}
                 />
               </div>
             )
@@ -95,6 +96,7 @@ export default function MonthView({ members, events, cursor, today, header, onNa
                 isWeekend={i % 7 >= 5}
                 byId={byId}
                 onClick={() => cell.inMonth && setSelected(cell.dateObj)}
+                onEditEvent={onEditEvent}
               />
             </div>
           )
@@ -104,7 +106,7 @@ export default function MonthView({ members, events, cursor, today, header, onNa
   )
 }
 
-function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }: {
+function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick, onEditEvent }: {
   cell: MonthCell
   events: TriboEvent[]
   isToday: boolean
@@ -112,6 +114,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
   isWeekend?: boolean
   byId: Map<string, FamilyMember>
   onClick: () => void
+  onEditEvent: (e: TriboEvent) => void
 }) {
   const { t } = useTranslation()
   const extra = events.length - 2
@@ -136,7 +139,7 @@ function DayCell({ cell, events, isToday, isSelected, isWeekend, byId, onClick }
 
       {/* Tablet: up to 2 chips + "+N more" */}
       <div className="hidden lg:block space-y-1">
-        {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} conflict={ev.conflictStatus === 'needs_guardian'} />)}
+        {events.slice(0, 2).map((ev) => <EventChip key={ev.id} dense title={eventDisplayTitle(ev, t)} color={colorForEvent(ev, byId)} icon={ev.icon} conflict={ev.conflictStatus === 'needs_guardian'} onClick={() => onEditEvent(ev)} />)}
         {extra > 0 && <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--t-text-soft)', paddingLeft: 3 }}>{t('calendar.moreCount', { count: extra })}</div>}
       </div>
 
