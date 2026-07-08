@@ -1,12 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Trash2, Ban } from 'lucide-react'
+import { Trash2, Ban, X } from 'lucide-react'
 import { markerColor } from '../lib/tokens'
 import { ChoreIcon, CHORE_ICON_NAMES } from '../lib/choreIcons'
 import DatePicker from './DatePicker'
 import TimePicker from './TimePicker'
 import ErrorBanner from './ErrorBanner'
 import ConfirmDialog from './ConfirmDialog'
+import Portal from './Portal'
 import {
   createMember, updateMember, deleteMember,
   createChore, updateChore, deleteChore,
@@ -35,30 +36,32 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
   const { t } = useTranslation()
   const [confirming, setConfirming] = useState(false)
   return (
-    <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
-        style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
-        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--t-line)' }}>
-          <button onClick={onClose} className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.cancel')}</button>
-          <div className="font-display text-lg" style={{ fontWeight: 500 }}>{title}</div>
-          <button onClick={onSave} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.save')}</button>
+    <Portal>
+      <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+        <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
+          style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>
+          <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid var(--t-line)' }}>
+            <button aria-label={t('common.cancel')} onClick={onClose}><X size={20} style={{ color: 'var(--t-text-soft)' }} /></button>
+            <div className="font-display text-lg" style={{ fontWeight: 500 }}>{title}</div>
+            <button onClick={onSave} disabled={busy} className="text-sm font-semibold disabled:opacity-50" style={{ color: 'var(--t-brand)' }}>{t('common.save')}</button>
+          </div>
+          <div className="p-5 space-y-3 overflow-y-auto">
+            {error && <ErrorBanner>{error}</ErrorBanner>}
+            {children}
+            {onDelete && (
+              <div className="pt-1">
+                <Button variant="danger" onClick={() => setConfirming(true)} disabled={busy} style={{ width: '100%' }}>
+                  <Trash2 size={16} /> {t('common.delete')}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="p-5 space-y-3 overflow-y-auto">
-          {error && <ErrorBanner>{error}</ErrorBanner>}
-          {children}
-          {onDelete && (
-            <div className="pt-1">
-              <Button variant="danger" onClick={() => setConfirming(true)} disabled={busy} style={{ width: '100%' }}>
-                <Trash2 size={16} /> {t('common.delete')}
-              </Button>
-            </div>
-          )}
-        </div>
+        {confirming && onDelete && (
+          <ConfirmDialog busy={busy} onCancel={() => setConfirming(false)} onConfirm={() => { setConfirming(false); onDelete() }} />
+        )}
       </div>
-      {confirming && onDelete && (
-        <ConfirmDialog busy={busy} onCancel={() => setConfirming(false)} onConfirm={() => { setConfirming(false); onDelete() }} />
-      )}
-    </div>
+    </Portal>
   )
 }
 

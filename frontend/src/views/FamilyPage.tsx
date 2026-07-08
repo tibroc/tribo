@@ -18,6 +18,7 @@ import Card from '../components/Card'
 import Button from '../components/Button'
 import ErrorBanner from '../components/ErrorBanner'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Portal from '../components/Portal'
 import PersonAvatar from '../components/PersonAvatar'
 import OnboardingWizard from './OnboardingWizard'
 import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
@@ -239,11 +240,11 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         </div>
 
         {showConnect && (
-          <ConnectCalendarModal
+          <Portal><ConnectCalendarModal
             members={members}
             onClose={() => setShowConnect(false)}
             onConnected={() => { setShowConnect(false); reloadSources() }}
-          />
+          /></Portal>
         )}
         {pendingSource && (
           <ConfirmDialog
@@ -269,14 +270,14 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             onSaved={() => { setWsModal(undefined); reloadSchedules() }} />
         )}
         {showLocation && (
-          <LocationModal settings={weather}
+          <Portal><LocationModal settings={weather}
             onClose={() => setShowLocation(false)}
-            onSaved={() => { setShowLocation(false); reloadWeather(); window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)) }} />
+            onSaved={() => { setShowLocation(false); reloadWeather(); window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)) }} /></Portal>
         )}
-        {showAppearance && <AppearanceModal onClose={() => setShowAppearance(false)} />}
-        {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
-        {showLanguage && <LanguageModal onClose={() => setShowLanguage(false)} />}
-        {showTimeFormat && <TimeFormatModal onClose={() => setShowTimeFormat(false)} />}
+        {showAppearance && <Portal><AppearanceModal onClose={() => setShowAppearance(false)} /></Portal>}
+        {showAccount && <Portal><AccountModal onClose={() => setShowAccount(false)} /></Portal>}
+        {showLanguage && <Portal><LanguageModal onClose={() => setShowLanguage(false)} /></Portal>}
+        {showTimeFormat && <Portal><TimeFormatModal onClose={() => setShowTimeFormat(false)} /></Portal>}
 
         {/* App settings */}
         <Section title={t('settings.appSettings')}>
