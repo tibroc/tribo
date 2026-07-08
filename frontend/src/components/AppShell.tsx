@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { NavKey, Intent, EventFocus } from '../lib/calendar'
 import { useTheme } from '../lib/theme'
@@ -71,21 +71,17 @@ function TabNav({ name, label, active, onClick }: { name: string; label: string;
   )
 }
 
-export type FabMenuItem = { label: string; icon: string; onClick: () => void }
-
-export default function AppShell({ active, onNavigate, header, aside, showFab = true, onFabClick, fabMenu, children }: {
+export default function AppShell({ active, onNavigate, header, aside, showFab = true, onFabClick, children }: {
   active: NavKey
   onNavigate: (k: NavKey, intent?: Intent, focus?: EventFocus) => void
   header: ReactNode
   aside?: ReactNode
   showFab?: boolean
   onFabClick?: () => void
-  fabMenu?: FabMenuItem[]
   children: ReactNode
 }) {
   const { t } = useTranslation()
   const { theme, toggle } = useTheme()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   const themeBtn = (
     <button
@@ -191,51 +187,19 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
       </nav>
 
       {showFab && (
-        <>
-          {menuOpen && fabMenu && (
-            <>
-              <div className="fixed inset-0" style={{ zIndex: 29 }} onClick={() => setMenuOpen(false)} aria-hidden />
-              <div
-                className="fixed flex flex-col right-5 bottom-[156px] lg:right-8 lg:bottom-[80px]"
-                style={{
-                  background: 'var(--t-surface)', border: '1px solid var(--t-line)',
-                  borderRadius: 'var(--t-radius-lg)', boxShadow: 'var(--t-shadow-pop)',
-                  padding: 6, gap: 2, minWidth: 180, zIndex: 31,
-                }}
-                role="menu"
-              >
-                {fabMenu.map((item) => (
-                  <button
-                    key={item.label}
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); item.onClick() }}
-                    className="flex items-center gap-3 text-left rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-(--t-shell)"
-                    style={{ color: 'var(--t-text)' }}
-                  >
-                    <Icon name={item.icon} size={17} style={{ color: 'var(--t-brand)' }} />
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          <button
-            onClick={() => (fabMenu ? setMenuOpen((o) => !o) : onFabClick?.())}
-            className="fixed flex items-center justify-center transition-transform hover:-translate-y-1 hover:-rotate-6 right-5 bottom-[88px] lg:right-8 lg:bottom-8"
-            style={{
-              width: 60, height: 60,
-              borderRadius: '50% 50% 50% 18px',
-              background: 'var(--t-accent)', color: 'var(--t-on-accent)',
-              boxShadow: '0 10px 26px rgba(210,152,46,.4)', zIndex: 30,
-              transform: menuOpen ? 'rotate(45deg)' : undefined,
-            }}
-            aria-label={t('common.add')}
-            aria-haspopup={fabMenu ? 'menu' : undefined}
-            aria-expanded={fabMenu ? menuOpen : undefined}
-          >
-            <Icon name="plus" size={26} strokeWidth={2.4} />
-          </button>
-        </>
+        <button
+          onClick={() => onFabClick?.()}
+          className="fixed flex items-center justify-center transition-transform hover:-translate-y-1 hover:-rotate-6 right-5 bottom-[88px] lg:right-8 lg:bottom-8"
+          style={{
+            width: 60, height: 60,
+            borderRadius: '50% 50% 50% 18px',
+            background: 'var(--t-accent)', color: 'var(--t-on-accent)',
+            boxShadow: '0 10px 26px rgba(210,152,46,.4)', zIndex: 30,
+          }}
+          aria-label={t('common.add')}
+        >
+          <Icon name="plus" size={26} strokeWidth={2.4} />
+        </button>
       )}
     </div>
   )

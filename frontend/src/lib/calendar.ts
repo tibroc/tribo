@@ -44,9 +44,10 @@ export const VIEWS: ViewName[] = ['Day', 'Week', 'Month', 'Year']
 export type Section = 'home' | 'calendar' | 'chores' | 'todos' | 'family' | 'review'
 export type NavKey = 'home' | 'calendar' | 'chores' | 'todos' | 'family'
 
-// Optional add-intent carried alongside a navigation: opens the target
-// screen's add form on arrival (used by Home's quick-add chooser).
-export type Intent = 'new-event' | 'new-chore' | 'new-todo' | 'open-event'
+// Optional intent carried alongside a navigation: 'new-event' opens the
+// calendar's add-event form on arrival; 'open-event' focuses a specific event
+// (used by the notification bell + Home's needs-attention deep-links).
+export type Intent = 'new-event' | 'open-event'
 
 // A specific event to focus + open on arrival at the Calendar (used by the
 // notification bell's deep-links). `date` is the event's start (RFC3339) so the

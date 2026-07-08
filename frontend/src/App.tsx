@@ -49,8 +49,8 @@ function Gate() {
 
 // Top-level section router. `go` accepts any Section; the nav rail/bottom bar
 // only surface the five NavKeys, while Review is reached from Home. An optional
-// `intent` lets a navigation also open the target screen's add form on arrival
-// (used by Home's quick-add chooser).
+// `intent` opens the calendar's add-event form (new-event) or focuses a
+// specific event (open-event) on arrival.
 function Router() {
   const [section, setSection] = useState<Section>('home')
   const [intent, setIntent] = useState<Intent | undefined>(undefined)
@@ -61,9 +61,9 @@ function Router() {
     case 'calendar':
       return <CalendarPage onNavigate={go} openNew={intent === 'new-event'} focus={intent === 'open-event' ? focus : undefined} />
     case 'chores':
-      return <ChoresPage go={go} openNew={intent === 'new-chore'} />
+      return <ChoresPage go={go} />
     case 'todos':
-      return <TodosPage go={go} openNew={intent === 'new-todo'} />
+      return <TodosPage go={go} />
     case 'family':
       return <FamilyPage go={go} />
     case 'review':

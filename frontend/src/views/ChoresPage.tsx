@@ -109,7 +109,7 @@ function RotationCard({ chores, instances, members, periodLabelCap }: { chores: 
 
 type Period = 'week' | 'month' | 'year'
 
-export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
+export default function ChoresPage({ go }: { go: (s: Section) => void }) {
   const { t } = useTranslation()
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [chores, setChores] = useState<Chore[]>([])
@@ -127,7 +127,7 @@ export default function ChoresPage({ go, openNew }: { go: (s: Section) => void; 
 
   const { instances, error, loading, toggleChore, reload } = useChoresTodos(range)
   // Chore modal: undefined = closed; null = add; a Chore = edit that chore.
-  const [choreModal, setChoreModal] = useState<Chore | null | undefined>(openNew ? null : undefined)
+  const [choreModal, setChoreModal] = useState<Chore | null | undefined>(undefined)
   const reloadChores = () => getChores().then(setChores).catch(() => {})
   useEffect(() => {
     getFamilyMembers().then(setMembers).catch(() => {})

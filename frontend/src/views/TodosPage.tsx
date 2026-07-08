@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Section } from '../lib/calendar'
 import { getFamilyMembers, type FamilyMember } from '../lib/api'
@@ -9,14 +9,11 @@ import Card from '../components/Card'
 import ErrorBanner from '../components/ErrorBanner'
 import { TodosPanel } from '../components/panels'
 
-export default function TodosPage({ go, openNew }: { go: (s: Section) => void; openNew?: boolean }) {
+export default function TodosPage({ go }: { go: (s: Section) => void }) {
   const { t } = useTranslation()
   const [members, setMembers] = useState<FamilyMember[]>([])
   const { todos, error, loading, toggleTodo, addTodo, assignTodo } = useChoresTodos()
-  const addRef = useRef<HTMLInputElement>(null)
   useEffect(() => { getFamilyMembers().then(setMembers).catch(() => {}) }, [])
-  // Arriving via Home's quick-add chooser drops the cursor in the add field.
-  useEffect(() => { if (openNew) addRef.current?.focus() }, [openNew])
 
   const openItems = todos.filter((t) => t.status !== 'done')
   const doneItems = todos.filter((t) => t.status === 'done')
@@ -47,7 +44,7 @@ export default function TodosPage({ go, openNew }: { go: (s: Section) => void; o
             action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{t('todos.openCount', { count: openItems.length })}</span>}
             padded={false}
           >
-            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} onAssign={assignTodo} inputRef={addRef} flush />
+            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} onAssign={assignTodo} flush />
           </Card>
 
           <Card
