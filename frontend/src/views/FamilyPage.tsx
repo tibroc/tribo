@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
-  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle, Clock,
+  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle, Clock, Sparkles,
 } from 'lucide-react'
 import { calendarLabel, type Section } from '../lib/calendar'
 import {
   getFamilyMembers, getWorkSchedules, getChores, getCalendarSources,
   addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility, googleConnectUrl,
   getCalendarStatus,
-  getWeatherSettings, updateWeatherSettings, geocodeLocation,
+  getWeatherSettings, updateWeatherSettings, geocodeLocation, getAssistantStatus,
   type FamilyMember, type WorkSchedule, type Chore, type CalendarSource, type CalendarStatus,
-  type WeatherSettings, type WeatherUnits, type GeoResult,
+  type WeatherSettings, type WeatherUnits, type GeoResult, type AssistantStatus,
 } from '../lib/api'
 import AppShell from '../components/AppShell'
 import { SimpleHeader, WEATHER_CHANGED_EVENT } from '../components/chrome'
@@ -41,6 +41,8 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showLocation, setShowLocation] = useState(false)
   const [showAppearance, setShowAppearance] = useState(false)
   const [showAccount, setShowAccount] = useState(false)
+  const [showAssistant, setShowAssistant] = useState(false)
+  const [assistantStatus, setAssistantStatus] = useState<AssistantStatus | null>(null)
   const [showLanguage, setShowLanguage] = useState(false)
   const [showTimeFormat, setShowTimeFormat] = useState(false)
   const reloadWeather = () => getWeatherSettings().then(setWeather).catch(() => {})
@@ -70,6 +72,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [googleMember, setGoogleMember] = useState('') // member picked for a new Google overlay
   const [pendingSource, setPendingSource] = useState<CalendarSource | null>(null)
   useEffect(() => { getCalendarStatus().then(setCalStatus).catch(() => {}) }, [])
+  useEffect(() => { getAssistantStatus().then(setAssistantStatus).catch(() => {}) }, [])
   const [showWizard, setShowWizard] = useState(false)
   const { session, refresh: refreshSession } = useSession()
   const theme = useTheme()
@@ -276,6 +279,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         )}
         {showAppearance && <Portal><AppearanceModal onClose={() => setShowAppearance(false)} /></Portal>}
         {showAccount && <Portal><AccountModal onClose={() => setShowAccount(false)} /></Portal>}
+        {showAssistant && <Portal><AssistantModal status={assistantStatus} onClose={() => setShowAssistant(false)} /></Portal>}
         {showLanguage && <Portal><LanguageModal onClose={() => setShowLanguage(false)} /></Portal>}
         {showTimeFormat && <Portal><TimeFormatModal onClose={() => setShowTimeFormat(false)} /></Portal>}
 
@@ -288,6 +292,9 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             <SettingRow icon={Languages} title={t('language.title')} sub={currentLang.label} onClick={() => setShowLanguage(true)} />
             <SettingRow icon={Clock} title={t('settings.timeFormat')} sub={timeFormatSub(timeFormat.preference, t)} onClick={() => setShowTimeFormat(true)} />
             <SettingRow icon={Palette} title={t('settings.appearance')} sub={appearanceSub(theme.preference, t)} onClick={() => setShowAppearance(true)} />
+            <SettingRow icon={Sparkles} title={t('assistant.title')}
+              sub={assistantStatus?.enabled ? t('assistant.settingsOn', { model: assistantStatus.model }) : t('assistant.settingsOff')}
+              onClick={() => setShowAssistant(true)} />
             <SettingRow icon={LogIn} title={t('settings.account')} sub={accountSub(session, t)} onClick={() => setShowAccount(true)} />
             <button onClick={() => setShowWizard(true)} className="w-full flex items-center gap-3 text-left">
               <Plus size={16} style={{ color: 'var(--t-text-soft)', flexShrink: 0 }} />
@@ -542,6 +549,35 @@ function LanguageModal({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('language.hint')}</div>
+    </SettingsSheet>
+  )
+}
+
+// AI assistant status + privacy note. Configuration is env-only (server side),
+// so this sheet informs rather than edits.
+function AssistantModal({ status, onClose }: { status: AssistantStatus | null; onClose: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <SettingsSheet title={t('assistant.title')} onClose={onClose}>
+      {status?.enabled ? (
+        <>
+          <div className="flex items-center gap-3">
+            <Sparkles size={18} style={{ color: 'var(--t-accent)', flexShrink: 0 }} />
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">{t('assistant.settingsOn', { model: status.model })}</div>
+              <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('assistant.settingsOnSub')}</div>
+            </div>
+          </div>
+          <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}>
+            {t('assistant.privacyNote')}
+          </div>
+        </>
+      ) : (
+        <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}>
+          {t('assistant.settingsOffBody')}
+          <div className="mt-1.5 font-mono text-xs" style={{ color: 'var(--t-text)' }}>ASSISTANT_BASE_URL · ASSISTANT_MODEL · ASSISTANT_API_KEY</div>
+        </div>
+      )}
     </SettingsSheet>
   )
 }

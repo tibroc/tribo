@@ -62,6 +62,13 @@ services:
       # - GOOGLE_CLIENT_ID=...
       # - GOOGLE_CLIENT_SECRET=...
       # - GOOGLE_REDIRECT_URL=https://tribo.example.com/auth/google/callback
+      # AI assistant briefs (optional). Point at any OpenAI-compatible backend —
+      # Claude, Gemini, Ollama, vLLM. Unset = feature hidden. API key is optional
+      # for local backends; ASSISTANT_LANGUAGE sets the brief language (default en).
+      # - ASSISTANT_BASE_URL=http://ollama:11434/v1
+      # - ASSISTANT_MODEL=llama3.1
+      # - ASSISTANT_API_KEY=...
+      # - ASSISTANT_LANGUAGE=en
     depends_on:
       radicale:
         condition: service_healthy

@@ -43,6 +43,22 @@
     "lastWeekStats": "{{choresDone}}/{{choresTotal}} tarefas · {{todosDone}}/{{todosTotal}} a fazer concluídos",
     "viewReview": "Ver resumo completo →"
   },
+  "assistant": {
+    "title": "Assistente de IA",
+    "briefTitle": "Resumo do assistente",
+    "kind": { "day": "Hoje", "week": "Esta semana" },
+    "noBrief": "Ainda não há resumo para este período.",
+    "generate": "Gerar",
+    "generating": "Gerando…",
+    "refresh": "Atualizar",
+    "generatedAt": "Gerado {{time}} · {{model}}",
+    "markDone": "Marcar \"{{title}}\" como concluída",
+    "settingsOn": "Ativo · {{model}}",
+    "settingsOnSub": "Resumos diários e semanais na tela inicial",
+    "settingsOff": "Não configurado",
+    "settingsOffBody": "Os resumos de IA estão desativados. Para ativá-los, conecte o Tribo a um backend compatível com OpenAI (Claude, Gemini, Ollama, vLLM) no servidor:",
+    "privacyNote": "Para escrever o resumo, o Tribo envia os primeiros nomes da família, títulos e horários de eventos, títulos de tarefas e afazeres e os horários de trabalho dos responsáveis ao backend de IA configurado. PINs, logins e senhas nunca são enviados. Com um backend local (Ollama/vLLM), nada sai do seu servidor."
+  },
   "weather": {
     "clear": "Limpo",
     "partlyCloudy": "Parcialmente nublado",

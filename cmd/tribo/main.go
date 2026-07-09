@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"tribo/internal/api"
+	"tribo/internal/assistant"
 	"tribo/internal/auth"
 	"tribo/internal/calsync"
 	"tribo/internal/chores"
@@ -53,6 +54,9 @@ func main() {
 	// them onto the Chores calendar.
 	startChoreScheduler(db, syncEngine)
 
+	// AI briefs: nightly generation when an LLM backend is configured.
+	startAssistantScheduler(db)
+
 	handler := api.NewHandler(db, web.FS(), authSvc, syncEngine)
 
 	log.Printf("tribo listening on %s (db: %s)", addr, dbPath)
@@ -85,6 +89,39 @@ func startChoreScheduler(db *sql.DB, sync *calsync.Engine) {
 		defer ticker.Stop()
 		for range ticker.C {
 			gen()
+		}
+	}()
+}
+
+// startAssistantScheduler generates the day brief (and the week brief) once a
+// day. On startup it only fills gaps — a restart never burns an extra LLM call
+// when the current period's brief already exists.
+func startAssistantScheduler(db *sql.DB) {
+	svc := assistant.NewService(db, assistant.ConfigFromEnv())
+	if !svc.Enabled() {
+		log.Printf("assistant: ASSISTANT_BASE_URL/ASSISTANT_MODEL unset — AI briefs disabled")
+		return
+	}
+	gen := func(onlyMissing bool) {
+		for _, kind := range []string{"day", "week"} {
+			if onlyMissing && svc.HasCurrent(kind) {
+				continue
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			if _, err := svc.Generate(ctx, kind); err != nil {
+				log.Printf("assistant: %s brief: %v", kind, err)
+			} else {
+				log.Printf("assistant: generated %s brief", kind)
+			}
+			cancel()
+		}
+	}
+	go func() {
+		gen(true)
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			gen(false)
 		}
 	}()
 }

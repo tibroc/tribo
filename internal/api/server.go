@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"net/http"
 
+	"tribo/internal/assistant"
 	"tribo/internal/auth"
 	"tribo/internal/calendar"
 	"tribo/internal/calsync"
@@ -19,14 +20,15 @@ import (
 )
 
 type Server struct {
-	db      *sql.DB
-	events  *calendar.Service
-	chores  *chores.Service
-	todos   *todos.Service
-	family  *family.Service
-	weather *weather.Service
-	sync    *calsync.Engine
-	auth    *auth.Service
+	db        *sql.DB
+	events    *calendar.Service
+	chores    *chores.Service
+	todos     *todos.Service
+	family    *family.Service
+	weather   *weather.Service
+	sync      *calsync.Engine
+	auth      *auth.Service
+	assistant *assistant.Service
 }
 
 // NewHandler builds the full HTTP handler: open auth/session routes, the
@@ -34,14 +36,15 @@ type Server struct {
 // everything else. Pass a nil/empty webFS to serve the API only.
 func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *calsync.Engine) http.Handler {
 	s := &Server{
-		db:      db,
-		events:  calendar.NewService(db, syncEngine),
-		chores:  chores.NewService(db),
-		todos:   todos.NewService(db),
-		family:  family.NewService(db),
-		weather: weather.NewService(db),
-		sync:    syncEngine,
-		auth:    authSvc,
+		db:        db,
+		events:    calendar.NewService(db, syncEngine),
+		chores:    chores.NewService(db),
+		todos:     todos.NewService(db),
+		family:    family.NewService(db),
+		weather:   weather.NewService(db),
+		sync:      syncEngine,
+		auth:      authSvc,
+		assistant: assistant.NewService(db, assistant.ConfigFromEnv()),
 	}
 
 	// Protected API surface.
@@ -82,6 +85,10 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	mux.HandleFunc("POST /api/todos", s.createTodo)
 	mux.HandleFunc("PATCH /api/todos/{id}", s.patchTodo)
 	mux.HandleFunc("DELETE /api/todos/{id}", s.deleteTodo)
+
+	mux.HandleFunc("GET /api/assistant/status", s.assistantStatus)
+	mux.HandleFunc("GET /api/assistant/brief", s.assistantBrief)
+	mux.HandleFunc("POST /api/assistant/brief/refresh", s.assistantRefresh)
 
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)

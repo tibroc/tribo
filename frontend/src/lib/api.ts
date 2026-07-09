@@ -406,6 +406,52 @@ export function deleteWorkSchedule(id: string): Promise<void> {
   return fetch(`/api/work-schedules/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
 }
 
+// ===== AI assistant (briefs) =====
+export interface AssistantStatus {
+  enabled: boolean
+  model?: string
+}
+
+export interface BriefPriority {
+  title: string
+  why?: string
+  memberId?: string
+  choreInstanceId?: string
+  eventId?: string
+  todoId?: string
+  eventStartAt?: string
+}
+
+export interface AssistantBrief {
+  kind: 'day' | 'week'
+  periodStart: string
+  generatedAt: string
+  model: string
+  priorities: BriefPriority[]
+  watchOut?: string
+  praise?: string
+}
+
+export function getAssistantStatus(): Promise<AssistantStatus> {
+  return fetch('/api/assistant/status').then((r) => json<AssistantStatus>(r))
+}
+
+// Resolves to null when no brief exists for the current period yet.
+export function getAssistantBrief(kind: 'day' | 'week'): Promise<AssistantBrief | null> {
+  return fetch(`/api/assistant/brief?kind=${kind}`).then((r) => {
+    if (r.status === 404) return null
+    return json<AssistantBrief>(r)
+  })
+}
+
+export function refreshAssistantBrief(kind: 'day' | 'week'): Promise<AssistantBrief> {
+  return fetch('/api/assistant/brief/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind }),
+  }).then((r) => json<AssistantBrief>(r))
+}
+
 // ===== Briefing (Home) =====
 export interface Briefing {
   rangeStart: string // RFC3339; formatted client-side per locale

@@ -43,6 +43,22 @@
     "lastWeekStats": "{{choresDone}}/{{choresTotal}} chores · {{todosDone}}/{{todosTotal}} to-dos done",
     "viewReview": "View full review →"
   },
+  "assistant": {
+    "title": "AI assistant",
+    "briefTitle": "Assistant brief",
+    "kind": { "day": "Today", "week": "This week" },
+    "noBrief": "No brief for this period yet.",
+    "generate": "Generate",
+    "generating": "Generating…",
+    "refresh": "Refresh",
+    "generatedAt": "Generated {{time}} · {{model}}",
+    "markDone": "Mark \"{{title}}\" done",
+    "settingsOn": "On · {{model}}",
+    "settingsOnSub": "Daily and weekly briefs on the Home screen",
+    "settingsOff": "Not configured",
+    "settingsOffBody": "AI briefs are off. To enable them, point Tribo at any OpenAI-compatible backend (Claude, Gemini, Ollama, vLLM) on the server:",
+    "privacyNote": "To write the brief, Tribo sends this family's first names, event titles and times, chore and to-do titles, and guardians' work hours to the configured AI backend. PINs, logins, and passwords are never sent. With a local backend (Ollama/vLLM), nothing leaves your server."
+  },
   "weather": {
     "clear": "Clear",
     "partlyCloudy": "Partly cloudy",

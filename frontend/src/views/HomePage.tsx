@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Sparkles, Star, Cake, CheckSquare, AlertTriangle, UserPlus } from 'lucide-react'
 import { localizeTitle, type Section, type Intent, type EventFocus } from '../lib/calendar'
-import { getBriefing, getNotifications, type Briefing, type Notification } from '../lib/api'
+import {
+  getBriefing, getNotifications, getAssistantStatus, getFamilyMembers,
+  type Briefing, type Notification, type FamilyMember,
+} from '../lib/api'
 import { fmtTime, fmtRange, fmtWeekdayLong, fmtWeekdayDay, daysLabel } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
 import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
+import BriefCard from '../components/BriefCard'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
 
@@ -16,8 +20,16 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent, foc
   const [b, setB] = useState<Briefing | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [alerts, setAlerts] = useState<Notification[]>([])
+  const [assistantOn, setAssistantOn] = useState(false)
+  const [members, setMembers] = useState<FamilyMember[]>([])
   useEffect(() => { getBriefing().then(setB).catch((e) => setError(String(e))) }, [])
   useEffect(() => { getNotifications().then(setAlerts).catch(() => setAlerts([])) }, [])
+  useEffect(() => {
+    getAssistantStatus().then((s) => {
+      setAssistantOn(s.enabled)
+      if (s.enabled) getFamilyMembers().then(setMembers).catch(() => {})
+    }).catch(() => {})
+  }, [])
 
   // Home's FAB is a quick "new event" shortcut — it routes to the calendar and
   // opens the add-event modal on arrival.
@@ -40,6 +52,9 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent, foc
               </div>
             )}
           </div>
+
+          {/* AI assistant brief (only when an LLM backend is configured) */}
+          {assistantOn && <BriefCard members={members} go={go} />}
 
           {/* Needs attention: unclaimed / needs-guardian events, deep-linked to the event */}
           {alerts.length > 0 && (

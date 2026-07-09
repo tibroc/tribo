@@ -43,6 +43,22 @@
     "lastWeekStats": "{{choresDone}}/{{choresTotal}} Aufgaben · {{todosDone}}/{{todosTotal}} To-dos erledigt",
     "viewReview": "Ganzen Rückblick ansehen →"
   },
+  "assistant": {
+    "title": "KI-Assistent",
+    "briefTitle": "Assistenz-Briefing",
+    "kind": { "day": "Heute", "week": "Diese Woche" },
+    "noBrief": "Für diesen Zeitraum gibt es noch kein Briefing.",
+    "generate": "Erstellen",
+    "generating": "Wird erstellt…",
+    "refresh": "Aktualisieren",
+    "generatedAt": "Erstellt {{time}} · {{model}}",
+    "markDone": "„{{title}}“ als erledigt markieren",
+    "settingsOn": "An · {{model}}",
+    "settingsOnSub": "Tages- und Wochen-Briefings auf dem Startbildschirm",
+    "settingsOff": "Nicht konfiguriert",
+    "settingsOffBody": "KI-Briefings sind aus. Zum Aktivieren Tribo auf dem Server mit einem OpenAI-kompatiblen Backend verbinden (Claude, Gemini, Ollama, vLLM):",
+    "privacyNote": "Für das Briefing sendet Tribo Vornamen, Termintitel und -zeiten, Aufgaben- und To-do-Titel sowie die Arbeitszeiten der Eltern an das konfigurierte KI-Backend. PINs, Logins und Passwörter werden nie gesendet. Mit einem lokalen Backend (Ollama/vLLM) verlässt nichts euren Server."
+  },
   "weather": {
     "clear": "Klar",
     "partlyCloudy": "Teils bewölkt",
