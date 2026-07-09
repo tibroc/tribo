@@ -169,6 +169,22 @@ all-day events don't count toward guardian "busy". Verified end-to-end vs a live
 Radicale (podman) incl. create/edit/delete round-trip, cache rebuild, birthdays,
 and the Soccer→Hilda / Piano→conflict guardian demo.
 
+**AI assistant briefs (phase 1, done — see `docs/assistant-plan.md`):**
+`internal/assistant` generates structured day/week briefs (prioritized actions,
+watch-out, praise) grounded in real service data via any **OpenAI-compatible**
+LLM backend (Claude, Gemini, Ollama, vLLM). Config is env-only:
+`ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` /
+`ASSISTANT_LANGUAGE` (default `en`); unset = feature disabled and hidden.
+A grounding guard strips any id the model didn't copy from the snapshot; briefs
+are cached in `assistant_brief` (migration 0007), generated nightly (restart
+fills gaps only), refresh rate-limited to 1/min. API:
+`GET /api/assistant/status|brief`, `POST /api/assistant/brief/refresh`.
+Frontend: `BriefCard` on Home (Today/This-week toggle, chores/todos complete
+in place, event priorities deep-link to the claim flow) + an assistant status/
+privacy row in Family → App settings. Only first names, titles, and times are
+sent to the backend — never PINs/credentials. **Phase 2 (chat bottom sheet with
+tool use) is deferred**; the plan doc has the design.
+
 **Caveats:** OIDC login and Google Calendar sync aren't exercised in-repo (no
 Authentik / Google OAuth client here) — the configured/unconfigured and
 state-rejection paths are tested, but the live token round-trips need real
@@ -178,4 +194,6 @@ navigates further out (`Engine.EnsureWindow`, called from `GET /api/events`);
 birthdays are materialized for every year in the window. Projected chores are
 still only generated for the near term (≈-1mo..+3mo), so distant years show
 events/birthdays but not chores. `/mcp` is unauthenticated in dev — gate it
-behind a token/proxy in production.
+behind a token/proxy in production. The assistant is tested against a fake
+OpenAI-compatible server; real-model schema adherence (esp. small local models)
+hasn't been exercised in-repo.
