@@ -57,6 +57,25 @@
     "settingsOnSub": "Resumos diários e semanais na tela inicial",
     "settingsOff": "Não configurado",
     "settingsOffBody": "Os resumos de IA estão desativados. Para ativá-los, conecte o Tribo a um backend compatível com OpenAI (Claude, Gemini, Ollama, vLLM) no servidor:",
+    "chat": {
+      "open": "Perguntar ao assistente",
+      "hello": "Pergunte sobre a semana da família — posso consultar a agenda, tarefas e afazeres, e agir sobre eles.",
+      "starter1": "O que temos hoje?",
+      "starter2": "Quem está livre amanhã à noite?",
+      "starter3": "Quais tarefas ainda estão abertas?",
+      "placeholder": "Pergunte sobre a semana…",
+      "send": "Enviar",
+      "thinking": "Pensando…"
+    },
+    "tools": {
+      "get_today": "consultou o dia",
+      "get_briefing": "leu o resumo",
+      "check_availability": "verificou disponibilidade",
+      "add_event": "criou evento",
+      "add_todo": "criou tarefa",
+      "complete_todo": "concluiu tarefa",
+      "complete_chore": "concluiu afazer"
+    },
     "privacyNote": "Para escrever o resumo, o Tribo envia os primeiros nomes da família, títulos e horários de eventos, títulos de tarefas e afazeres e os horários de trabalho dos responsáveis ao backend de IA configurado. PINs, logins e senhas nunca são enviados. Com um backend local (Ollama/vLLM), nada sai do seu servidor."
   },
   "weather": {

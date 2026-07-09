@@ -150,6 +150,14 @@ func (s *Service) mac(payload string) string {
 	return base64.RawURLEncoding.EncodeToString(m.Sum(nil))
 }
 
+// ActiveMemberID returns the active profile's family-member id from the
+// session cookie ("" when no profile is active). Used by handlers that need
+// per-profile behavior (e.g. the chat assistant's child guardrails).
+func (s *Service) ActiveMemberID(r *http.Request) string {
+	sess, _ := s.readSession(r)
+	return sess.Member
+}
+
 func (s *Service) readSession(r *http.Request) (session, bool) {
 	c, err := r.Cookie(cookieName)
 	if err != nil {

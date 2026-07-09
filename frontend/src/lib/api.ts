@@ -452,6 +452,51 @@ export function refreshAssistantBrief(kind: 'day' | 'week'): Promise<AssistantBr
   }).then((r) => json<AssistantBrief>(r))
 }
 
+// ===== AI assistant (chat) =====
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatEvent {
+  type: 'tool' | 'message' | 'error' | 'done'
+  name?: string
+  status?: 'start' | 'ok' | 'error'
+  content?: string
+}
+
+// One chat turn, streamed as SSE. Calls onEvent for each tool-trace/message
+// event; resolves when the stream ends.
+export async function streamAssistantChat(messages: ChatMessage[], onEvent: (e: ChatEvent) => void): Promise<void> {
+  const res = await fetch('/api/assistant/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+  })
+  if (!res.ok || !res.body) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`)
+  }
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    let idx
+    while ((idx = buf.indexOf('\n\n')) >= 0) {
+      const chunk = buf.slice(0, idx)
+      buf = buf.slice(idx + 2)
+      for (const line of chunk.split('\n')) {
+        if (line.startsWith('data: ')) {
+          try { onEvent(JSON.parse(line.slice(6)) as ChatEvent) } catch { /* skip malformed */ }
+        }
+      }
+    }
+  }
+}
+
 // ===== Briefing (Home) =====
 export interface Briefing {
   rangeStart: string // RFC3339; formatted client-side per locale

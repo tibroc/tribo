@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"tribo/internal/assistant"
@@ -36,6 +37,49 @@ func (s *Server) assistantBrief(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeJSON(w, http.StatusOK, b)
 	}
+}
+
+// POST /api/assistant/chat {"messages":[{"role","content"},…]} — one chat turn
+// streamed as SSE: tool-trace events while the assistant acts, then the reply.
+// Stateless; the client sends the whole (ephemeral) history each turn. The
+// active profile's role drives the guardrails (child = read + own completions).
+func (s *Server) assistantChat(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Messages []assistant.ChatMessage `json:"messages"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if len(body.Messages) == 0 {
+		writeError(w, http.StatusBadRequest, "messages required")
+		return
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "streaming unsupported")
+		return
+	}
+
+	profile := assistant.Profile{MemberID: s.auth.ActiveMemberID(r)}
+	if profile.MemberID != "" {
+		profile.Role = s.tools.MemberRole(profile.MemberID)
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.WriteHeader(http.StatusOK)
+	emit := func(ev assistant.ChatEvent) {
+		data, _ := json.Marshal(ev)
+		fmt.Fprintf(w, "data: %s\n\n", data)
+		flusher.Flush()
+	}
+
+	if err := s.assistant.Chat(r.Context(), s.tools, profile, body.Messages, emit); err != nil {
+		emit(assistant.ChatEvent{Type: "error", Content: err.Error()})
+	}
+	fmt.Fprint(w, "data: {\"type\":\"done\"}\n\n")
+	flusher.Flush()
 }
 
 // POST /api/assistant/brief/refresh {"kind":"day"|"week"} — regenerate now

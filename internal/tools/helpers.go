@@ -1,4 +1,4 @@
-package mcp
+package tools
 
 import (
 	"time"
@@ -10,12 +10,12 @@ import (
 // sourceForAttendees picks the calendar a new event should live on: a single
 // attendee → that person's calendar; otherwise the family calendar (mirroring
 // the web EventForm). Falls back to any writable person calendar.
-func (d *deps) sourceForAttendees(attendeeIDs []string) string {
+func (d *Deps) sourceForAttendees(attendeeIDs []string) string {
 	srcs, err := d.events.ListSources()
 	if err != nil {
 		return ""
 	}
-	var family, fallback string
+	var familySrc, fallback string
 	for _, s := range srcs {
 		if s.ReadOnly {
 			continue
@@ -29,16 +29,16 @@ func (d *deps) sourceForAttendees(attendeeIDs []string) string {
 				fallback = s.ID
 			}
 		case "family":
-			family = s.ID
+			familySrc = s.ID
 		}
 	}
-	if family != "" {
-		return family
+	if familySrc != "" {
+		return familySrc
 	}
 	return fallback
 }
 
-func (d *deps) memberLites() map[string]family.Member {
+func (d *Deps) memberLites() map[string]family.Member {
 	ms, _ := d.family.ListMembers()
 	byID := make(map[string]family.Member, len(ms))
 	for _, m := range ms {
@@ -47,7 +47,7 @@ func (d *deps) memberLites() map[string]family.Member {
 	return byID
 }
 
-func (d *deps) personFor(ev calendar.Event, byID map[string]family.Member) string {
+func (d *Deps) personFor(ev calendar.Event, byID map[string]family.Member) string {
 	if !ev.IsShared && len(ev.AttendeeIDs) > 0 {
 		if m, ok := byID[ev.AttendeeIDs[0]]; ok {
 			return m.Name
@@ -56,61 +56,38 @@ func (d *deps) personFor(ev calendar.Event, byID map[string]family.Member) strin
 	return "Family"
 }
 
-func (d *deps) eventsBetween(from, to time.Time) ([]eventDTO, error) {
+func (d *Deps) eventsBetween(from, to time.Time) ([]EventDTO, error) {
 	events, err := d.events.ListEvents(from, to)
 	if err != nil {
 		return nil, err
 	}
 	byID := d.memberLites()
-	out := []eventDTO{}
+	out := []EventDTO{}
 	for _, ev := range events {
-		out = append(out, eventDTO{Title: ev.Title, Start: ev.StartAt, End: ev.EndAt, Person: d.personFor(ev, byID)})
+		out = append(out, EventDTO{Title: ev.Title, Start: ev.StartAt, End: ev.EndAt, Person: d.personFor(ev, byID)})
 	}
 	return out, nil
 }
 
-func (d *deps) briefing() briefingOut {
-	now := time.Now()
-	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	end := start.AddDate(0, 0, 1)
-
-	evs, _ := d.eventsBetween(start, end)
-	out := briefingOut{Date: start.Format("2006-01-02"), Events: evs, PendingChores: []string{}, OpenTodos: []string{}}
-
-	instances, _ := d.chores.ListInstances(start, end)
-	for _, ci := range instances {
-		if ci.Status == "pending" {
-			out.PendingChores = append(out.PendingChores, ci.Title)
-		}
-	}
-	allTodos, _ := d.todos.List()
-	for _, t := range allTodos {
-		if t.Status == "open" {
-			out.OpenTodos = append(out.OpenTodos, t.Title)
-		}
-	}
-	return out
-}
-
 // availability reports which members are free in [from, to): busy if they are an
 // attendee of an overlapping event, or (guardians) have an overlapping work block.
-func (d *deps) availability(fromStr, toStr string) (availabilityOut, error) {
+func (d *Deps) availability(fromStr, toStr string) (AvailabilityOut, error) {
 	from, err := time.Parse(time.RFC3339, fromStr)
 	if err != nil {
-		return availabilityOut{}, err
+		return AvailabilityOut{}, err
 	}
 	to, err := time.Parse(time.RFC3339, toStr)
 	if err != nil {
-		return availabilityOut{}, err
+		return AvailabilityOut{}, err
 	}
 
 	members, err := d.family.ListMembers()
 	if err != nil {
-		return availabilityOut{}, err
+		return AvailabilityOut{}, err
 	}
 	events, err := d.events.ListEvents(from, to)
 	if err != nil {
-		return availabilityOut{}, err
+		return AvailabilityOut{}, err
 	}
 	schedules, _ := d.family.ListWorkSchedules()
 
@@ -126,9 +103,9 @@ func (d *deps) availability(fromStr, toStr string) (availabilityOut, error) {
 	fromMin := from.Hour()*60 + from.Minute()
 	toMin := to.Hour()*60 + to.Minute()
 
-	out := availabilityOut{Members: []memberAvail{}}
+	out := AvailabilityOut{Members: []MemberAvail{}}
 	for _, m := range members {
-		ma := memberAvail{MemberID: m.ID, Name: m.Name, Free: true}
+		ma := MemberAvail{MemberID: m.ID, Name: m.Name, Free: true}
 		if busyEvent[m.ID] {
 			ma.Free, ma.Reason = false, "has an event"
 		} else {

@@ -16,6 +16,7 @@ import (
 	"tribo/internal/family"
 	"tribo/internal/mcp"
 	"tribo/internal/todos"
+	"tribo/internal/tools"
 	"tribo/internal/weather"
 )
 
@@ -29,6 +30,7 @@ type Server struct {
 	sync      *calsync.Engine
 	auth      *auth.Service
 	assistant *assistant.Service
+	tools     *tools.Deps
 }
 
 // NewHandler builds the full HTTP handler: open auth/session routes, the
@@ -45,6 +47,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 		sync:      syncEngine,
 		auth:      authSvc,
 		assistant: assistant.NewService(db, assistant.ConfigFromEnv()),
+		tools:     tools.New(db, syncEngine),
 	}
 
 	// Protected API surface.
@@ -89,6 +92,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	mux.HandleFunc("GET /api/assistant/status", s.assistantStatus)
 	mux.HandleFunc("GET /api/assistant/brief", s.assistantBrief)
 	mux.HandleFunc("POST /api/assistant/brief/refresh", s.assistantRefresh)
+	mux.HandleFunc("POST /api/assistant/chat", s.assistantChat)
 
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)

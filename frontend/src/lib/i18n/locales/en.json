@@ -57,6 +57,25 @@
     "settingsOnSub": "Daily and weekly briefs on the Home screen",
     "settingsOff": "Not configured",
     "settingsOffBody": "AI briefs are off. To enable them, point Tribo at any OpenAI-compatible backend (Claude, Gemini, Ollama, vLLM) on the server:",
+    "chat": {
+      "open": "Ask the assistant",
+      "hello": "Ask about the family's week — I can check the calendar, chores and to-dos, and act on them.",
+      "starter1": "What's happening today?",
+      "starter2": "Who's free tomorrow evening?",
+      "starter3": "What chores are still open?",
+      "placeholder": "Ask about the week…",
+      "send": "Send",
+      "thinking": "Thinking…"
+    },
+    "tools": {
+      "get_today": "checked today",
+      "get_briefing": "read the briefing",
+      "check_availability": "checked availability",
+      "add_event": "added event",
+      "add_todo": "added to-do",
+      "complete_todo": "completed to-do",
+      "complete_chore": "completed chore"
+    },
     "privacyNote": "To write the brief, Tribo sends this family's first names, event titles and times, chore and to-do titles, and guardians' work hours to the configured AI backend. PINs, logins, and passwords are never sent. With a local backend (Ollama/vLLM), nothing leaves your server."
   },
   "weather": {

@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from './lib/session'
 import { ThemeProvider } from './lib/theme'
 import { TimeFormatProvider } from './lib/timeformat'
 import { LoginScreen, MapProfileScreen } from './views/AuthScreens'
+import ChatAssistant from './components/ChatAssistant'
 import ReloadPrompt from './components/ReloadPrompt'
 import OnboardingWizard from './views/OnboardingWizard'
 import HomePage from './views/HomePage'
@@ -57,18 +58,33 @@ function Router() {
   const [focus, setFocus] = useState<EventFocus | undefined>(undefined)
   const go = (s: Section, i?: Intent, f?: EventFocus) => { setSection(s); setIntent(i); setFocus(f) }
 
+  let screen: React.ReactNode
   switch (section) {
     case 'calendar':
-      return <CalendarPage onNavigate={go} openNew={intent === 'new-event'} focus={intent === 'open-event' ? focus : undefined} />
+      screen = <CalendarPage onNavigate={go} openNew={intent === 'new-event'} focus={intent === 'open-event' ? focus : undefined} />
+      break
     case 'chores':
-      return <ChoresPage go={go} />
+      screen = <ChoresPage go={go} />
+      break
     case 'todos':
-      return <TodosPage go={go} />
+      screen = <TodosPage go={go} />
+      break
     case 'family':
-      return <FamilyPage go={go} />
+      screen = <FamilyPage go={go} />
+      break
     case 'review':
-      return <ReviewPage go={go} />
+      screen = <ReviewPage go={go} />
+      break
     default:
-      return <HomePage go={go} />
+      screen = <HomePage go={go} />
   }
+
+  // The chat assistant lives outside the section switch so its ✦ button and
+  // (ephemeral) conversation survive navigation between screens.
+  return (
+    <>
+      {screen}
+      <ChatAssistant />
+    </>
+  )
 }

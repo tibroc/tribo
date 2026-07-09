@@ -57,6 +57,25 @@
     "settingsOnSub": "Tages- und Wochen-Briefings auf dem Startbildschirm",
     "settingsOff": "Nicht konfiguriert",
     "settingsOffBody": "KI-Briefings sind aus. Zum Aktivieren Tribo auf dem Server mit einem OpenAI-kompatiblen Backend verbinden (Claude, Gemini, Ollama, vLLM):",
+    "chat": {
+      "open": "Assistent fragen",
+      "hello": "Frag nach der Familienwoche — ich kann Kalender, Aufgaben und To-dos prüfen und darauf reagieren.",
+      "starter1": "Was steht heute an?",
+      "starter2": "Wer hat morgen Abend Zeit?",
+      "starter3": "Welche Aufgaben sind noch offen?",
+      "placeholder": "Frag zur Woche…",
+      "send": "Senden",
+      "thinking": "Denke nach…"
+    },
+    "tools": {
+      "get_today": "heute geprüft",
+      "get_briefing": "Briefing gelesen",
+      "check_availability": "Verfügbarkeit geprüft",
+      "add_event": "Termin angelegt",
+      "add_todo": "To-do angelegt",
+      "complete_todo": "To-do erledigt",
+      "complete_chore": "Aufgabe erledigt"
+    },
     "privacyNote": "Für das Briefing sendet Tribo Vornamen, Termintitel und -zeiten, Aufgaben- und To-do-Titel sowie die Arbeitszeiten der Eltern an das konfigurierte KI-Backend. PINs, Logins und Passwörter werden nie gesendet. Mit einem lokalen Backend (Ollama/vLLM) verlässt nichts euren Server."
   },
   "weather": {

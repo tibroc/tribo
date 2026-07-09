@@ -16,8 +16,29 @@ import (
 // JSON call.
 
 type chatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role       string     `json:"role"`
+	Content    string     `json:"content"`
+	ToolCalls  []toolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"` // on role:"tool" replies
+}
+
+type toolCall struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"` // "function"
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"` // JSON-encoded args
+	} `json:"function"`
+}
+
+// toolDef is an OpenAI-style function tool definition.
+type toolDef struct {
+	Type     string `json:"type"` // "function"
+	Function struct {
+		Name        string          `json:"name"`
+		Description string          `json:"description"`
+		Parameters  json.RawMessage `json:"parameters"`
+	} `json:"function"`
 }
 
 type chatRequest struct {
@@ -25,6 +46,7 @@ type chatRequest struct {
 	Messages       []chatMessage   `json:"messages"`
 	Temperature    float64         `json:"temperature"`
 	ResponseFormat *responseFormat `json:"response_format,omitempty"`
+	Tools          []toolDef       `json:"tools,omitempty"`
 }
 
 type responseFormat struct {
@@ -33,9 +55,7 @@ type responseFormat struct {
 
 type chatResponse struct {
 	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
+		Message chatMessage `json:"message"`
 	} `json:"choices"`
 	Error *struct {
 		Message string `json:"message"`
@@ -65,15 +85,29 @@ func (s *Service) completeOnce(ctx context.Context, system, user string, jsonMod
 	if jsonMode {
 		reqBody.ResponseFormat = &responseFormat{Type: "json_object"}
 	}
-	buf, err := json.Marshal(reqBody)
+	msg, err := s.send(ctx, reqBody)
 	if err != nil {
 		return "", err
+	}
+	return msg.Content, nil
+}
+
+// chatRound sends a full conversation (+ optional tools) and returns the
+// assistant's next message, which may carry tool calls.
+func (s *Service) chatRound(ctx context.Context, msgs []chatMessage, tools []toolDef) (*chatMessage, error) {
+	return s.send(ctx, chatRequest{Model: s.cfg.Model, Messages: msgs, Temperature: 0.4, Tools: tools})
+}
+
+func (s *Service) send(ctx context.Context, reqBody chatRequest) (*chatMessage, error) {
+	buf, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
 	}
 
 	url := strings.TrimRight(s.cfg.BaseURL, "/") + "/chat/completions"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(buf))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if s.cfg.APIKey != "" {
@@ -82,29 +116,29 @@ func (s *Service) completeOnce(ctx context.Context, system, user string, jsonMod
 
 	resp, err := s.http.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("assistant backend: %w", err)
+		return nil, fmt.Errorf("assistant backend: %w", err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var parsed chatResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {
-		return "", fmt.Errorf("assistant backend: HTTP %d: %s", resp.StatusCode, truncate(string(body), 200))
+		return nil, fmt.Errorf("assistant backend: HTTP %d: %s", resp.StatusCode, truncate(string(body), 200))
 	}
 	if resp.StatusCode >= 400 {
 		msg := truncate(string(body), 200)
 		if parsed.Error != nil {
 			msg = parsed.Error.Message
 		}
-		return "", fmt.Errorf("assistant backend: HTTP %d: %s", resp.StatusCode, msg)
+		return nil, fmt.Errorf("assistant backend: HTTP %d: %s", resp.StatusCode, msg)
 	}
 	if len(parsed.Choices) == 0 {
-		return "", fmt.Errorf("assistant backend: empty response")
+		return nil, fmt.Errorf("assistant backend: empty response")
 	}
-	return parsed.Choices[0].Message.Content, nil
+	return &parsed.Choices[0].Message, nil
 }
 
 func truncate(s string, n int) string {

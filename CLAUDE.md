@@ -182,8 +182,21 @@ fills gaps only), refresh rate-limited to 1/min. API:
 Frontend: `BriefCard` on Home (Today/This-week toggle, chores/todos complete
 in place, event priorities deep-link to the claim flow) + an assistant status/
 privacy row in Family → App settings. Only first names, titles, and times are
-sent to the backend — never PINs/credentials. **Phase 2 (chat bottom sheet with
-tool use) is deferred**; the plan doc has the design.
+sent to the backend — never PINs/credentials.
+
+**AI assistant chat (phase 2, done):** a ✦ button above the FAB opens a
+bottom-sheet chat on any screen (`ChatAssistant`, mounted at the Router level so
+the ephemeral conversation survives navigation; hidden when unconfigured).
+`POST /api/assistant/chat` streams SSE — tool-trace events while the assistant
+acts, then the reply; the client sends the whole history each turn (no server
+state). The tool-calling loop (`internal/assistant/chat.go`, max 6 rounds) runs
+over **`internal/tools`** — the 7 tool implementations refactored out of
+`internal/mcp`, which is now a thin adapter over the same package (MCP behavior
+unchanged). Guardrails: child profiles get read tools + completing their *own*
+chores/todos only (write tools stripped from their tool list *and* rejected on
+forced calls; completions credited to them via `auth.Service.ActiveMemberID`);
+no active profile = guardian privileges. A backend that 400s on tools degrades
+to read-only Q&A. Tool traces are localized in the UI ("✦ added to-do ✓").
 
 **Caveats:** OIDC login and Google Calendar sync aren't exercised in-repo (no
 Authentik / Google OAuth client here) — the configured/unconfigured and
