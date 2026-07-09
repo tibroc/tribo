@@ -2,14 +2,15 @@
 
 An assistant that helps the family keep track of chores, prioritize the day/
 week, and get more out of reviews. Staged rollout: **Phase 1 — generated
-briefs** (no chat, one scheduled LLM call), **Phase 2 (optional, later) —
-chat with tool use** on the same backend plumbing.
+briefs** (no chat, one scheduled LLM call), **Phase 2 — chat with tool use**
+on the same backend plumbing. **Both phases are implemented** — see CLAUDE.md
+"Current status" for what shipped.
 
 UI exploration mockups (phone frames, Salvia design system, seeded Silva-family
 data): see the "Tribo assistant — UI options" Claude artifact (options A–D).
-**Decided:** option **B** (structured Home brief) is phase 1. Option A
-(narrative digest) rejected; option C (review coach's notes) not pursued;
-option D (chat bottom sheet) deferred — nice-to-have later.
+**Decided:** option **B** (structured Home brief) is phase 1; option **D**
+(chat bottom sheet) is phase 2. Option A (narrative digest) rejected; option C
+(review coach's notes) not pursued.
 
 ## Guiding decisions
 
@@ -82,7 +83,7 @@ option D (chat bottom sheet) deferred — nice-to-have later.
 - Golden test for the grounding payload so prompt-relevant data changes are
   visible in review.
 
-## Phase 2 — Chat (bottom sheet) — deferred, build only if wanted later
+## Phase 2 — Chat (bottom sheet) — implemented
 
 - **UI (option D):** a ✦ button (above the FAB) opens a bottom-sheet chat over
   any screen — no nav slot consumed. Streaming replies; a visible tool trace
