@@ -213,16 +213,17 @@ func seed(db *sql.DB) error {
 		mode, color     string
 		assigned        string
 		rotation        any
+		effort          string
 	}
 	choreSeeds := []choreSeed{
-		{"chore-mow", "Mow the lawn", "weekly", 1, "fixed", "#4C7EA8", memberAlberto, nil},
-		{"chore-bath", "Clean the bathroom", "weekly", 1, "fixed", "#D1577A", memberHilda, nil},
-		{"chore-recycle", "Take out recycling", "weekly", 2, "fixed", "#8A6BB8", memberGuilherme, nil},
-		{"chore-plants", "Water the plants", "weekly", 1, "fixed", "#5C9460", memberMarie, nil},
-		{"chore-table", "Set the table", "daily", 1, "rotation", "#5C9460", "", memberMarie + "," + memberGuilherme},
-		{"chore-fridge", "Defrost the fridge", "monthly", 1, "fixed", "#D1577A", memberHilda, nil},
-		{"chore-deepclean", "Deep clean the house", "monthly", 3, "fixed", "#4C7EA8", memberAlberto, nil},
-		{"chore-smoke", "Replace smoke-alarm batteries", "monthly", 12, "fixed", "#D1577A", memberHilda, nil},
+		{"chore-mow", "Mow the lawn", "weekly", 1, "fixed", "#4C7EA8", memberAlberto, nil, "heavy"},
+		{"chore-bath", "Clean the bathroom", "weekly", 1, "fixed", "#D1577A", memberHilda, nil, "standard"},
+		{"chore-recycle", "Take out recycling", "weekly", 2, "fixed", "#8A6BB8", memberGuilherme, nil, "5min"},
+		{"chore-plants", "Water the plants", "weekly", 1, "fixed", "#5C9460", memberMarie, nil, "5min"},
+		{"chore-table", "Set the table", "daily", 1, "rotation", "#5C9460", "", memberMarie + "," + memberGuilherme, "2min"},
+		{"chore-fridge", "Defrost the fridge", "monthly", 1, "fixed", "#D1577A", memberHilda, nil, "standard"},
+		{"chore-deepclean", "Deep clean the house", "monthly", 3, "fixed", "#4C7EA8", memberAlberto, nil, "heavy"},
+		{"chore-smoke", "Replace smoke-alarm batteries", "monthly", 12, "fixed", "#D1577A", memberHilda, nil, "5min"},
 	}
 	for i, c := range choreSeeds {
 		var assigned any
@@ -230,9 +231,9 @@ func seed(db *sql.DB) error {
 			assigned = c.assigned
 		}
 		if _, err := tx.Exec(
-			`INSERT INTO chore (id, title, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, sort_order)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			c.id, c.title, c.rule, c.interval, c.mode, assigned, c.rotation, c.color, i); err != nil {
+			`INSERT INTO chore (id, title, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, sort_order, effort)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			c.id, c.title, c.rule, c.interval, c.mode, assigned, c.rotation, c.color, i, c.effort); err != nil {
 			return err
 		}
 	}
@@ -246,25 +247,31 @@ func seed(db *sql.DB) error {
 		return err
 	}
 
-	// Todos. "Order birthday gift" was completed last week so Home/Review recaps show it.
+	// Todos. "Order birthday gift" was completed last week so Home/Review recaps
+	// show it; due dates/importance/effort demo the focus queue's ranking.
 	lastWeekDone := monday.AddDate(0, 0, -2).Format(time.RFC3339)
+	overdue := time.Now().AddDate(0, 0, -2).Format("2006-01-02")
+	dueToday := time.Now().Format("2006-01-02")
 	todoSeeds := []struct {
 		id, title string
 		member    any
 		status    string
 		completed any
 		order     int
+		due       any
+		important int
+		effort    string
 	}{
-		{"todo-dentist", "Book dentist for Marie", memberMarie, "open", nil, 0},
-		{"todo-car", "Renew car registration", nil, "open", nil, 1},
-		{"todo-gift", "Order birthday gift", nil, "done", lastWeekDone, 2},
-		{"todo-swim", "Pack swim bag for tomorrow", nil, "open", nil, 3},
-		{"todo-email", "Reply to school email", nil, "open", nil, 4},
+		{"todo-dentist", "Book dentist for Marie", memberMarie, "open", nil, 0, nil, 1, "5min"},
+		{"todo-car", "Renew car registration", nil, "open", nil, 1, overdue, 0, "standard"},
+		{"todo-gift", "Order birthday gift", nil, "done", lastWeekDone, 2, nil, 0, "standard"},
+		{"todo-swim", "Pack swim bag for tomorrow", nil, "open", nil, 3, dueToday, 0, "2min"},
+		{"todo-email", "Reply to school email", nil, "open", nil, 4, nil, 0, "5min"},
 	}
 	for _, t := range todoSeeds {
 		if _, err := tx.Exec(
-			`INSERT INTO todo (id, title, assigned_member_id, status, completed_at, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
-			t.id, t.title, t.member, t.status, t.completed, t.order); err != nil {
+			`INSERT INTO todo (id, title, assigned_member_id, status, completed_at, sort_order, due_date, importance, effort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			t.id, t.title, t.member, t.status, t.completed, t.order, t.due, t.important, t.effort); err != nil {
 			return err
 		}
 	}

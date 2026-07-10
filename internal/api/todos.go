@@ -31,21 +31,16 @@ func (s *Server) createTodo(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, t)
 }
 
-// PATCH /api/todos/{id} — body may set {"title": "…"}, {"status":"open"|"done"}
-// and/or {"assignedMemberId": "<id>"|""} (empty string clears the assignment).
-// A nil pointer means "leave unchanged", so title-only, status-only and
-// assignee-only patches all work.
+// PATCH /api/todos/{id} — any subset of title / status / assignedMemberId /
+// dueDate / important / effort. Absent fields are left unchanged; empty-string
+// assignedMemberId / dueDate clear the field.
 func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Title            *string `json:"title"`
-		Status           *string `json:"status"`
-		AssignedMemberID *string `json:"assignedMemberId"`
-	}
+	var body todos.PatchTodo
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	t, err := s.todos.Patch(r.PathValue("id"), body.Title, body.Status, body.AssignedMemberID)
+	t, err := s.todos.Patch(r.PathValue("id"), body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

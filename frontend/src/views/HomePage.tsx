@@ -10,7 +10,7 @@ import { fmtTime, fmtRange, fmtWeekdayLong, fmtWeekdayDay, daysLabel } from '../
 import { useLocale } from '../lib/i18n'
 import AppShell from '../components/AppShell'
 import { SimpleHeader } from '../components/chrome'
-import BriefCard from '../components/BriefCard'
+import FocusCard from '../components/FocusCard'
 import Card from '../components/Card'
 import PersonAvatar from '../components/PersonAvatar'
 
@@ -25,10 +25,8 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent, foc
   useEffect(() => { getBriefing().then(setB).catch((e) => setError(String(e))) }, [])
   useEffect(() => { getNotifications().then(setAlerts).catch(() => setAlerts([])) }, [])
   useEffect(() => {
-    getAssistantStatus().then((s) => {
-      setAssistantOn(s.enabled)
-      if (s.enabled) getFamilyMembers().then(setMembers).catch(() => {})
-    }).catch(() => {})
+    getFamilyMembers().then(setMembers).catch(() => {})
+    getAssistantStatus().then((s) => setAssistantOn(s.enabled)).catch(() => {})
   }, [])
 
   // Home's FAB is a quick "new event" shortcut — it routes to the calendar and
@@ -53,8 +51,8 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent, foc
             )}
           </div>
 
-          {/* AI assistant brief (only when an LLM backend is configured) */}
-          {assistantOn && <BriefCard members={members} go={go} />}
+          {/* Focus queue (works without AI; the assistant adds the week tab + callouts) */}
+          <FocusCard members={members} go={go} assistantOn={assistantOn} />
 
           {/* Needs attention: unclaimed / needs-guardian events, deep-linked to the event */}
           {alerts.length > 0 && (

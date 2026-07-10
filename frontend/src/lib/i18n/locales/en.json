@@ -43,6 +43,52 @@
     "lastWeekStats": "{{choresDone}}/{{choresTotal}} chores · {{todosDone}}/{{todosTotal}} to-dos done",
     "viewReview": "View full review →"
   },
+  "focus": {
+    "title": "Focus",
+    "tab": { "today": "Today", "week": "This week" },
+    "nowLabel": "NOW · JUST THIS ONE",
+    "nextLabel": "Next · when that's done",
+    "gotIt": "I've got it",
+    "notNow": "Not now",
+    "allClear": "All clear — nothing needs you right now.",
+    "moreToday_one": "＋ {{count}} more today — hidden on purpose ·",
+    "moreToday_other": "＋ {{count}} more today — hidden on purpose ·",
+    "show": "show",
+    "hide": "hide",
+    "markDone": "Mark \"{{title}}\" done",
+    "nowDue": "now",
+    "inMinutes_one": "in {{count}} min",
+    "inMinutes_other": "in {{count}} min",
+    "inHours": "in {{h}} h {{m}} m",
+    "leaveFor": "Leave for {{title}}",
+    "reason": {
+      "needs_guardian": "needs a guardian",
+      "unclaimed": "nobody has this yet",
+      "before_event": "before the event",
+      "overdue_one": "overdue by {{count}} day",
+      "overdue_other": "overdue by {{count}} days",
+      "due_today": "due today",
+      "important": "important",
+      "due_soon_one": "due in {{count}} day",
+      "due_soon_other": "due in {{count}} days",
+      "chore_due_zero": "chore · due today",
+      "chore_due_one": "chore · due tomorrow",
+      "chore_due_other": "chore · {{count}} days left",
+      "open_todo": "open to-do"
+    }
+  },
+  "effort": {
+    "2min": "2 min",
+    "5min": "5 min",
+    "standard": "Normal",
+    "heavy": "Heavy"
+  },
+  "effortShort": {
+    "2min": "2m",
+    "5min": "5m",
+    "standard": "~",
+    "heavy": "XL"
+  },
   "assistant": {
     "title": "AI assistant",
     "briefTitle": "Assistant brief",
@@ -223,7 +269,9 @@
     "assign": "Assign",
     "unassigned": "Unassigned",
     "editAria": "Edit to-do",
-    "deleteAria": "Delete to-do"
+    "deleteAria": "Delete to-do",
+    "importantAria": "Toggle important",
+    "effortAria": "Change effort"
   },
   "family": {
     "membersTitle": "Family members",
@@ -340,6 +388,7 @@
     "end": "End",
     "label": "Label",
     "showBusy": "Show as \"busy\" on calendar",
+    "effort": "Effort",
     "role": {
       "label": "Role",
       "guardian": "Guardian",

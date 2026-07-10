@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   getChoreInstances, getTodos, setChoreStatus, setTodoStatus, setTodoAssignee, createTodo,
-  updateTodoTitle, deleteTodo as apiDeleteTodo,
-  type ChoreInstance, type Todo,
+  updateTodoTitle, deleteTodo as apiDeleteTodo, patchTodoPriority,
+  type ChoreInstance, type Todo, type Effort,
 } from './api'
+
+const EFFORT_CYCLE: Effort[] = ['standard', '2min', '5min', 'heavy']
 import { addDays, mondayOf } from './calendar'
 
 // Chore instances scheduled within a date range + all todos, with optimistic
@@ -68,5 +70,17 @@ export function useChoresTodos(range?: { from: Date; to: Date }) {
     apiDeleteTodo(t.id).catch(() => reload())
   }, [reload])
 
-  return { instances, todos, error, loading, toggleChore, toggleTodo, addTodo, assignTodo, editTodo, deleteTodo, reload }
+  const toggleImportant = useCallback((t: Todo) => {
+    const next = !t.important
+    setTodos((cur) => cur.map((x) => (x.id === t.id ? { ...x, important: next } : x)))
+    patchTodoPriority(t.id, { important: next }).catch(() => reload())
+  }, [reload])
+
+  const cycleEffort = useCallback((t: Todo) => {
+    const next = EFFORT_CYCLE[(EFFORT_CYCLE.indexOf(t.effort) + 1) % EFFORT_CYCLE.length]
+    setTodos((cur) => cur.map((x) => (x.id === t.id ? { ...x, effort: next } : x)))
+    patchTodoPriority(t.id, { effort: next }).catch(() => reload())
+  }, [reload])
+
+  return { instances, todos, error, loading, toggleChore, toggleTodo, addTodo, assignTodo, editTodo, deleteTodo, toggleImportant, cycleEffort, reload }
 }

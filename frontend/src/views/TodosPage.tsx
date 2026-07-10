@@ -13,7 +13,7 @@ import { TodosPanel } from '../components/panels'
 export default function TodosPage({ go }: { go: (s: Section) => void }) {
   const { t } = useTranslation()
   const [members, setMembers] = useState<FamilyMember[]>([])
-  const { todos, error, loading, toggleTodo, addTodo, assignTodo, editTodo, deleteTodo } = useChoresTodos()
+  const { todos, error, loading, toggleTodo, addTodo, assignTodo, editTodo, deleteTodo, toggleImportant, cycleEffort } = useChoresTodos()
   const [pendingDelete, setPendingDelete] = useState<Todo | null>(null)
   useEffect(() => { getFamilyMembers().then(setMembers).catch(() => {}) }, [])
 
@@ -46,7 +46,7 @@ export default function TodosPage({ go }: { go: (s: Section) => void }) {
             action={<span style={{ fontFamily: 'var(--t-font-body)', fontSize: 12, color: 'var(--t-text-soft)' }}>{t('todos.openCount', { count: openItems.length })}</span>}
             padded={false}
           >
-            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} onAssign={assignTodo} onEdit={editTodo} onDelete={setPendingDelete} flush />
+            <TodosPanel todos={openItems} members={members} onToggle={toggleTodo} onAdd={addTodo} onAssign={assignTodo} onEdit={editTodo} onDelete={setPendingDelete} onToggleImportant={toggleImportant} onCycleEffort={cycleEffort} flush />
           </Card>
 
           <Card

@@ -247,6 +247,7 @@ export interface Chore {
   rotationMemberIds?: string[]
   color?: string
   icon?: string // a curated Lucide icon name (see lib/choreIcons)
+  effort: Effort
 }
 
 export interface ChoreInstance {
@@ -260,6 +261,7 @@ export interface ChoreInstance {
   status: 'pending' | 'done' | 'skipped'
   completedBy?: string
   completedAt?: string
+  effort: Effort
 }
 
 export function getChores(): Promise<Chore[]> {
@@ -277,6 +279,7 @@ export interface ChoreInput {
   rotationMemberIds?: string[]
   color?: string
   icon?: string | null
+  effort?: Effort
 }
 export function createChore(in_: ChoreInput): Promise<Chore> {
   return fetch('/api/chores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(in_) }).then((r) => json<Chore>(r))
@@ -314,6 +317,8 @@ export function setChoreStatus(instanceId: string, status: 'pending' | 'done' | 
 }
 
 // ===== Todos =====
+export type Effort = '2min' | '5min' | 'standard' | 'heavy'
+
 export interface Todo {
   id: string
   title: string
@@ -321,6 +326,8 @@ export interface Todo {
   dueDate?: string
   status: 'open' | 'done'
   completedAt?: string
+  important: boolean
+  effort: Effort
 }
 
 export function getTodos(): Promise<Todo[]> {
@@ -363,6 +370,15 @@ export function updateTodoTitle(id: string, title: string): Promise<Todo> {
 
 export function deleteTodo(id: string): Promise<void> {
   return fetch(`/api/todos/${id}`, { method: 'DELETE' }).then((r) => json<void>(r))
+}
+
+// Toggle the important flag / set the effort level of a todo.
+export function patchTodoPriority(id: string, p: { important?: boolean; effort?: Effort }): Promise<Todo> {
+  return fetch(`/api/todos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(p),
+  }).then((r) => json<Todo>(r))
 }
 
 // ===== Work schedules =====
@@ -450,6 +466,38 @@ export function refreshAssistantBrief(kind: 'day' | 'week'): Promise<AssistantBr
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ kind }),
   }).then((r) => json<AssistantBrief>(r))
+}
+
+// ===== Focus queue (Now / Next / Later) =====
+export interface FocusItem {
+  kind: 'event' | 'todo' | 'chore'
+  id: string
+  title: string
+  reason: { code: string; n?: number }
+  memberId?: string
+  effort?: Effort
+  at?: string // RFC3339 — when it starts / becomes due
+}
+
+export interface FocusQueue {
+  date: string
+  now?: FocusItem
+  next: FocusItem[]
+  laterCount: number
+  later?: FocusItem[]
+  anchor?: { eventId: string; title: string; at: string; leaveAt: string }
+}
+
+export function getFocus(all = false): Promise<FocusQueue> {
+  return fetch(`/api/focus${all ? '?all=1' : ''}`).then((r) => json<FocusQueue>(r))
+}
+
+export function deferFocusItem(kind: FocusItem['kind'], id: string): Promise<void> {
+  return fetch('/api/focus/defer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind, id }),
+  }).then((r) => json<void>(r))
 }
 
 // ===== AI assistant (chat) =====

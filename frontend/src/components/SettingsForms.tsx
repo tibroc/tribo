@@ -12,7 +12,7 @@ import {
   createMember, updateMember, deleteMember,
   createChore, updateChore, deleteChore,
   createWorkSchedule, updateWorkSchedule, deleteWorkSchedule,
-  type FamilyMember, type Chore, type WorkSchedule,
+  type FamilyMember, type Chore, type WorkSchedule, type Effort,
 } from '../lib/api'
 import Button from './Button'
 import { weekdayLabels } from '../lib/datetime'
@@ -161,6 +161,7 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
   const [count, setCount] = useState(initialRecur.count)
   const [weekdays, setWeekdays] = useState(chore?.recurrenceWeekdays ?? '')
   const [mode, setMode] = useState<'fixed' | 'rotation'>(chore?.assignmentMode ?? 'fixed')
+  const [effort, setEffort] = useState<Effort>(chore?.effort ?? 'standard')
   const [assignee, setAssignee] = useState(chore?.assignedMemberId ?? '')
   const [rotation, setRotation] = useState<string[]>(chore?.rotationMemberIds ?? [])
   const { t } = useTranslation()
@@ -182,6 +183,7 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
       assignedMemberId: mode === 'fixed' && assignee ? assignee : null,
       rotationMemberIds: mode === 'rotation' ? rotation : [],
       color: colorFor(),
+      effort,
     }
     return chore ? updateChore(chore.id, payload) : createChore(payload)
   })
@@ -231,6 +233,17 @@ export function ChoreForm({ chore, members, onClose, onSaved }: {
           <div className="text-xs mt-1" style={{ color: 'var(--t-text-soft)' }}>{t('forms.choreWeekdaysHint')}</div>
         </Labeled>
       )}
+      <Labeled label={t('forms.effort')}>
+        <div className="flex gap-1.5">
+          {(['2min', '5min', 'standard', 'heavy'] as Effort[]).map((e) => (
+            <button key={e} type="button" onClick={() => setEffort(e)}
+              className="flex-1 rounded-lg text-center text-xs font-semibold py-1.5"
+              style={e === effort ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)' } : { ...field, color: 'var(--t-text-soft)' }}>
+              {t(`effort.${e}`)}
+            </button>
+          ))}
+        </div>
+      </Labeled>
       <Labeled label={t('forms.assignment')}>
         <select className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
           <option value="fixed">{t('forms.assignmentMode.fixed')}</option>

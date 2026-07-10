@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, UserPlus, Pencil, Trash2 } from 'lucide-react'
+import { Check, UserPlus, Pencil, Trash2, Star } from 'lucide-react'
 import type { ChoreInstance, Chore, Todo, FamilyMember } from '../lib/api'
 import { recurrenceLabel, linkifyDescription } from '../lib/chores'
 import { ChoreIcon } from '../lib/choreIcons'
@@ -260,7 +260,7 @@ export function ChoresPanel({ instances, members, chores, onToggle, onEdit, titl
   )
 }
 
-export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, onEdit, onDelete, title, flush }: {
+export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, onEdit, onDelete, onToggleImportant, onCycleEffort, title, flush }: {
   todos: Todo[]
   members?: FamilyMember[]
   onToggle: (t: Todo) => void
@@ -268,6 +268,8 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, onE
   onAssign?: (t: Todo, memberId: string | null) => void
   onEdit?: (t: Todo, title: string) => void
   onDelete?: (t: Todo) => void
+  onToggleImportant?: (t: Todo) => void
+  onCycleEffort?: (t: Todo) => void
   title?: string
   flush?: boolean
 }) {
@@ -278,6 +280,9 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, onE
   const [editDraft, setEditDraft] = useState('')
   const editAria = t('todos.editAria')
   const deleteAria = t('todos.deleteAria')
+  const importantAria = t('todos.importantAria')
+  const effortAria = t('todos.effortAria')
+  const effortLabel = (e: string) => t(`effortShort.${e}`)
   const startEdit = (todo: Todo) => { setEditingId(todo.id); setEditDraft(todo.title) }
   const commitEdit = (todo: Todo) => {
     const v = editDraft.trim()
@@ -342,6 +347,24 @@ export function TodosPanel({ todos, members = [], onToggle, onAdd, onAssign, onE
               >
                 {t.title}
               </span>
+            )}
+            {onCycleEffort && (
+              <button
+                aria-label={effortAria}
+                onClick={() => onCycleEffort(t)}
+                className="shrink-0 rounded-full text-[10px] font-bold px-2 py-0.5"
+                style={t.effort !== 'standard'
+                  ? { background: 'color-mix(in oklab, var(--t-brand) 14%, var(--t-surface))', color: 'var(--t-brand)' }
+                  : { border: '1px dashed var(--t-line)', color: 'var(--t-text-soft)' }}
+              >
+                {effortLabel(t.effort)}
+              </button>
+            )}
+            {onToggleImportant && (
+              <button aria-label={importantAria} onClick={() => onToggleImportant(t)} className="shrink-0"
+                style={{ color: t.important ? 'var(--t-accent)' : 'var(--t-text-soft)' }}>
+                <Star size={15} fill={t.important ? 'currentColor' : 'none'} />
+              </button>
             )}
             {onAssign && members.length > 0
               ? <TodoAssign todo={t} members={members} onAssign={onAssign} />

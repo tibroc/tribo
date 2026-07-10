@@ -43,10 +43,62 @@
     "lastWeekStats": "{{choresDone}}/{{choresTotal}} tarefas · {{todosDone}}/{{todosTotal}} a fazer concluídos",
     "viewReview": "Ver resumo completo →"
   },
+  "focus": {
+    "title": "Foco",
+    "tab": {
+      "today": "Hoje",
+      "week": "Esta semana"
+    },
+    "nowLabel": "AGORA · SÓ ISTO",
+    "nextLabel": "Depois · quando isto terminar",
+    "gotIt": "Deixa comigo",
+    "notNow": "Agora não",
+    "allClear": "Tudo certo — nada precisa de você agora.",
+    "moreToday_one": "＋ {{count}} item a mais hoje — oculto de propósito ·",
+    "moreToday_other": "＋ {{count}} itens a mais hoje — ocultos de propósito ·",
+    "show": "mostrar",
+    "hide": "ocultar",
+    "markDone": "Marcar \"{{title}}\" como concluída",
+    "nowDue": "agora",
+    "inMinutes_one": "em {{count}} min",
+    "inMinutes_other": "em {{count}} min",
+    "inHours": "em {{h}} h {{m}} min",
+    "leaveFor": "Sair para {{title}}",
+    "reason": {
+      "needs_guardian": "precisa de um responsável",
+      "unclaimed": "ninguém assumiu ainda",
+      "before_event": "antes do evento",
+      "overdue_one": "atrasada {{count}} dia",
+      "overdue_other": "atrasada {{count}} dias",
+      "due_today": "vence hoje",
+      "important": "importante",
+      "due_soon_one": "vence em {{count}} dia",
+      "due_soon_other": "vence em {{count}} dias",
+      "chore_due_zero": "tarefa · vence hoje",
+      "chore_due_one": "tarefa · até amanhã",
+      "chore_due_other": "tarefa · faltam {{count}} dias",
+      "open_todo": "tarefa aberta"
+    }
+  },
+  "effort": {
+    "2min": "2 min",
+    "5min": "5 min",
+    "standard": "Normal",
+    "heavy": "Pesada"
+  },
+  "effortShort": {
+    "2min": "2m",
+    "5min": "5m",
+    "standard": "~",
+    "heavy": "XL"
+  },
   "assistant": {
     "title": "Assistente de IA",
     "briefTitle": "Resumo do assistente",
-    "kind": { "day": "Hoje", "week": "Esta semana" },
+    "kind": {
+      "day": "Hoje",
+      "week": "Esta semana"
+    },
     "noBrief": "Ainda não há resumo para este período.",
     "generate": "Gerar",
     "generating": "Gerando…",
@@ -189,8 +241,16 @@
     "noneThisWeek": "Nenhuma tarefa esta semana",
     "donePeriod": "concluídas {{period}}",
     "nonePeriod": "Nenhuma tarefa {{period}}",
-    "period": { "week": "esta semana", "month": "este mês", "year": "este ano" },
-    "periodCap": { "week": "Esta semana", "month": "Este mês", "year": "Este ano" },
+    "period": {
+      "week": "esta semana",
+      "month": "este mês",
+      "year": "este ano"
+    },
+    "periodCap": {
+      "week": "Esta semana",
+      "month": "Este mês",
+      "year": "Este ano"
+    },
     "recurrence": {
       "daily": "Diária",
       "weekly": "Semanal",
@@ -201,12 +261,21 @@
     "everyPrefix": "A cada",
     "every": "A cada {{count}} {{unit}}",
     "everyNWeeksOn": "A cada {{count}} semanas · {{days}}",
-    "adjective": { "day": "Diária", "week": "Semanal", "month": "Mensal", "year": "Anual" },
+    "adjective": {
+      "day": "Diária",
+      "week": "Semanal",
+      "month": "Mensal",
+      "year": "Anual"
+    },
     "unit": {
-      "day_one": "dia", "day_other": "dias",
-      "week_one": "semana", "week_other": "semanas",
-      "month_one": "mês", "month_other": "meses",
-      "year_one": "ano", "year_other": "anos"
+      "day_one": "dia",
+      "day_other": "dias",
+      "week_one": "semana",
+      "week_other": "semanas",
+      "month_one": "mês",
+      "month_other": "meses",
+      "year_one": "ano",
+      "year_other": "anos"
     }
   },
   "todos": {
@@ -223,7 +292,9 @@
     "assign": "Atribuir",
     "unassigned": "Não atribuído",
     "editAria": "Editar tarefa",
-    "deleteAria": "Excluir tarefa"
+    "deleteAria": "Excluir tarefa",
+    "importantAria": "Alternar importante",
+    "effortAria": "Mudar esforço"
   },
   "family": {
     "membersTitle": "Membros da família",
@@ -354,7 +425,8 @@
       "fixed": "Fixo — uma pessoa",
       "rotation": "Rodízio — reveza"
     },
-    "dateOfBirth": "Data de nascimento"
+    "dateOfBirth": "Data de nascimento",
+    "effort": "Esforço"
   },
   "calendar": {
     "thisWeek": "Esta semana",

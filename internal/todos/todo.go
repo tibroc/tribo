@@ -19,12 +19,25 @@ type Todo struct {
 	DueDate          *string `json:"dueDate,omitempty"`          // YYYY-MM-DD
 	Status           string  `json:"status"`                     // open | done
 	CompletedAt      *string `json:"completedAt,omitempty"`
+	Important        bool    `json:"important"`
+	Effort           string  `json:"effort"` // 2min | 5min | standard | heavy
 }
 
 type NewTodo struct {
 	Title            string  `json:"title"`
 	AssignedMemberID *string `json:"assignedMemberId"`
 	DueDate          *string `json:"dueDate"`
+	Important        bool    `json:"important"`
+	Effort           string  `json:"effort"`
+}
+
+// ValidEffort reports whether e is one of the effort levels (empty = default).
+func ValidEffort(e string) bool {
+	switch e {
+	case "", "2min", "5min", "standard", "heavy":
+		return true
+	}
+	return false
 }
 
 type Service struct {
@@ -35,7 +48,7 @@ func NewService(db *sql.DB) *Service { return &Service{db: db} }
 
 func (s *Service) List() ([]Todo, error) {
 	rows, err := s.db.Query(
-		`SELECT id, title, description, assigned_member_id, due_date, status, completed_at
+		`SELECT id, title, description, assigned_member_id, due_date, status, completed_at, importance, effort
 		 FROM todo ORDER BY status, sort_order, title`)
 	if err != nil {
 		return nil, err
@@ -45,9 +58,11 @@ func (s *Service) List() ([]Todo, error) {
 	out := []Todo{}
 	for rows.Next() {
 		var t Todo
-		if err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.AssignedMemberID, &t.DueDate, &t.Status, &t.CompletedAt); err != nil {
+		var imp int
+		if err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.AssignedMemberID, &t.DueDate, &t.Status, &t.CompletedAt, &imp, &t.Effort); err != nil {
 			return nil, err
 		}
+		t.Important = imp != 0
 		out = append(out, t)
 	}
 	return out, rows.Err()
@@ -57,10 +72,16 @@ func (s *Service) Create(in NewTodo) (*Todo, error) {
 	if strings.TrimSpace(in.Title) == "" {
 		return nil, errors.New("title is required")
 	}
+	if !ValidEffort(in.Effort) {
+		return nil, errors.New("effort must be one of 2min, 5min, standard, heavy")
+	}
+	if in.Effort == "" {
+		in.Effort = "standard"
+	}
 	id := uuid.NewString()
 	if _, err := s.db.Exec(
-		`INSERT INTO todo (id, title, assigned_member_id, due_date, status) VALUES (?, ?, ?, ?, 'open')`,
-		id, in.Title, in.AssignedMemberID, in.DueDate); err != nil {
+		`INSERT INTO todo (id, title, assigned_member_id, due_date, status, importance, effort) VALUES (?, ?, ?, ?, 'open', ?, ?)`,
+		id, in.Title, in.AssignedMemberID, in.DueDate, boolInt(in.Important), in.Effort); err != nil {
 		return nil, err
 	}
 	return s.get(id)
@@ -85,18 +106,33 @@ func (s *Service) SetStatus(id, status string) (*Todo, error) {
 	return s.get(id)
 }
 
-// Patch applies an optional title, assignee, and/or status change in a single
-// transaction. A nil pointer leaves that field unchanged. Validation runs before
-// any write, so an invalid value can't leave a half-applied field behind.
-func (s *Service) Patch(id string, title, status, assignedMemberID *string) (*Todo, error) {
-	if title == nil && status == nil && assignedMemberID == nil {
+// PatchTodo carries optional field changes; nil leaves a field unchanged.
+// Empty-string AssignedMemberID clears the assignment; empty-string DueDate
+// clears the due date.
+type PatchTodo struct {
+	Title            *string `json:"title"`
+	Status           *string `json:"status"`
+	AssignedMemberID *string `json:"assignedMemberId"`
+	DueDate          *string `json:"dueDate"`
+	Important        *bool   `json:"important"`
+	Effort           *string `json:"effort"`
+}
+
+// Patch applies the given field changes in a single transaction. Validation
+// runs before any write, so an invalid value can't leave a half-applied field
+// behind.
+func (s *Service) Patch(id string, p PatchTodo) (*Todo, error) {
+	if p.Title == nil && p.Status == nil && p.AssignedMemberID == nil && p.DueDate == nil && p.Important == nil && p.Effort == nil {
 		return nil, errors.New("nothing to update")
 	}
-	if title != nil && strings.TrimSpace(*title) == "" {
+	if p.Title != nil && strings.TrimSpace(*p.Title) == "" {
 		return nil, errors.New("title is required")
 	}
-	if status != nil && *status != "open" && *status != "done" {
+	if p.Status != nil && *p.Status != "open" && *p.Status != "done" {
 		return nil, errors.New("status must be open or done")
+	}
+	if p.Effort != nil && (!ValidEffort(*p.Effort) || *p.Effort == "") {
+		return nil, errors.New("effort must be one of 2min, 5min, standard, heavy")
 	}
 
 	tx, err := s.db.Begin()
@@ -105,34 +141,56 @@ func (s *Service) Patch(id string, title, status, assignedMemberID *string) (*To
 	}
 	defer tx.Rollback()
 
-	if title != nil {
-		res, err := tx.Exec(`UPDATE todo SET title = ? WHERE id = ?`, strings.TrimSpace(*title), id)
+	set := func(query string, val any) error {
+		res, err := tx.Exec(query, val, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if n, _ := res.RowsAffected(); n == 0 {
-			return nil, errors.New("todo not found")
+			return errors.New("todo not found")
+		}
+		return nil
+	}
+
+	if p.Title != nil {
+		if err := set(`UPDATE todo SET title = ? WHERE id = ?`, strings.TrimSpace(*p.Title)); err != nil {
+			return nil, err
 		}
 	}
-	if assignedMemberID != nil {
+	if p.AssignedMemberID != nil {
 		var v any
-		if strings.TrimSpace(*assignedMemberID) != "" {
-			v = *assignedMemberID
+		if strings.TrimSpace(*p.AssignedMemberID) != "" {
+			v = *p.AssignedMemberID
 		}
-		res, err := tx.Exec(`UPDATE todo SET assigned_member_id = ? WHERE id = ?`, v, id)
-		if err != nil {
+		if err := set(`UPDATE todo SET assigned_member_id = ? WHERE id = ?`, v); err != nil {
 			return nil, err
 		}
-		if n, _ := res.RowsAffected(); n == 0 {
-			return nil, errors.New("todo not found")
+	}
+	if p.DueDate != nil {
+		var v any
+		if strings.TrimSpace(*p.DueDate) != "" {
+			v = *p.DueDate
+		}
+		if err := set(`UPDATE todo SET due_date = ? WHERE id = ?`, v); err != nil {
+			return nil, err
 		}
 	}
-	if status != nil {
+	if p.Important != nil {
+		if err := set(`UPDATE todo SET importance = ? WHERE id = ?`, boolInt(*p.Important)); err != nil {
+			return nil, err
+		}
+	}
+	if p.Effort != nil {
+		if err := set(`UPDATE todo SET effort = ? WHERE id = ?`, *p.Effort); err != nil {
+			return nil, err
+		}
+	}
+	if p.Status != nil {
 		var completedAt any
-		if *status == "done" {
+		if *p.Status == "done" {
 			completedAt = time.Now().Format(time.RFC3339)
 		}
-		res, err := tx.Exec(`UPDATE todo SET status = ?, completed_at = ? WHERE id = ?`, *status, completedAt, id)
+		res, err := tx.Exec(`UPDATE todo SET status = ?, completed_at = ? WHERE id = ?`, *p.Status, completedAt, id)
 		if err != nil {
 			return nil, err
 		}
@@ -160,11 +218,20 @@ func (s *Service) Delete(id string) error {
 
 func (s *Service) get(id string) (*Todo, error) {
 	var t Todo
+	var imp int
 	err := s.db.QueryRow(
-		`SELECT id, title, description, assigned_member_id, due_date, status, completed_at FROM todo WHERE id = ?`, id).
-		Scan(&t.ID, &t.Title, &t.Description, &t.AssignedMemberID, &t.DueDate, &t.Status, &t.CompletedAt)
+		`SELECT id, title, description, assigned_member_id, due_date, status, completed_at, importance, effort FROM todo WHERE id = ?`, id).
+		Scan(&t.ID, &t.Title, &t.Description, &t.AssignedMemberID, &t.DueDate, &t.Status, &t.CompletedAt, &imp, &t.Effort)
 	if err != nil {
 		return nil, err
 	}
+	t.Important = imp != 0
 	return &t, nil
+}
+
+func boolInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

@@ -43,10 +43,62 @@
     "lastWeekStats": "{{choresDone}}/{{choresTotal}} Aufgaben · {{todosDone}}/{{todosTotal}} To-dos erledigt",
     "viewReview": "Ganzen Rückblick ansehen →"
   },
+  "focus": {
+    "title": "Fokus",
+    "tab": {
+      "today": "Heute",
+      "week": "Diese Woche"
+    },
+    "nowLabel": "JETZT · NUR DAS EINE",
+    "nextLabel": "Danach · wenn das erledigt ist",
+    "gotIt": "Ich übernehme das",
+    "notNow": "Nicht jetzt",
+    "allClear": "Alles klar — gerade braucht dich nichts.",
+    "moreToday_one": "＋ {{count}} weiteres heute — bewusst ausgeblendet ·",
+    "moreToday_other": "＋ {{count}} weitere heute — bewusst ausgeblendet ·",
+    "show": "zeigen",
+    "hide": "ausblenden",
+    "markDone": "„{{title}}“ als erledigt markieren",
+    "nowDue": "jetzt",
+    "inMinutes_one": "in {{count}} Min.",
+    "inMinutes_other": "in {{count}} Min.",
+    "inHours": "in {{h}} Std. {{m}} Min.",
+    "leaveFor": "Losfahren: {{title}}",
+    "reason": {
+      "needs_guardian": "braucht einen Elternteil",
+      "unclaimed": "noch niemand zuständig",
+      "before_event": "vor dem Termin",
+      "overdue_one": "{{count}} Tag überfällig",
+      "overdue_other": "{{count}} Tage überfällig",
+      "due_today": "heute fällig",
+      "important": "wichtig",
+      "due_soon_one": "fällig in {{count}} Tag",
+      "due_soon_other": "fällig in {{count}} Tagen",
+      "chore_due_zero": "Aufgabe · heute fällig",
+      "chore_due_one": "Aufgabe · bis morgen",
+      "chore_due_other": "Aufgabe · noch {{count}} Tage",
+      "open_todo": "offenes To-do"
+    }
+  },
+  "effort": {
+    "2min": "2 Min.",
+    "5min": "5 Min.",
+    "standard": "Normal",
+    "heavy": "Groß"
+  },
+  "effortShort": {
+    "2min": "2m",
+    "5min": "5m",
+    "standard": "~",
+    "heavy": "XL"
+  },
   "assistant": {
     "title": "KI-Assistent",
     "briefTitle": "Assistenz-Briefing",
-    "kind": { "day": "Heute", "week": "Diese Woche" },
+    "kind": {
+      "day": "Heute",
+      "week": "Diese Woche"
+    },
     "noBrief": "Für diesen Zeitraum gibt es noch kein Briefing.",
     "generate": "Erstellen",
     "generating": "Wird erstellt…",
@@ -189,8 +241,16 @@
     "noneThisWeek": "Keine Aufgaben diese Woche",
     "donePeriod": "erledigt {{period}}",
     "nonePeriod": "Keine Aufgaben {{period}}",
-    "period": { "week": "diese Woche", "month": "diesen Monat", "year": "dieses Jahr" },
-    "periodCap": { "week": "Diese Woche", "month": "Diesen Monat", "year": "Dieses Jahr" },
+    "period": {
+      "week": "diese Woche",
+      "month": "diesen Monat",
+      "year": "dieses Jahr"
+    },
+    "periodCap": {
+      "week": "Diese Woche",
+      "month": "Diesen Monat",
+      "year": "Dieses Jahr"
+    },
     "recurrence": {
       "daily": "Täglich",
       "weekly": "Wöchentlich",
@@ -201,12 +261,21 @@
     "everyPrefix": "Alle",
     "every": "Alle {{count}} {{unit}}",
     "everyNWeeksOn": "Alle {{count}} Wochen · {{days}}",
-    "adjective": { "day": "Täglich", "week": "Wöchentlich", "month": "Monatlich", "year": "Jährlich" },
+    "adjective": {
+      "day": "Täglich",
+      "week": "Wöchentlich",
+      "month": "Monatlich",
+      "year": "Jährlich"
+    },
     "unit": {
-      "day_one": "Tag", "day_other": "Tage",
-      "week_one": "Woche", "week_other": "Wochen",
-      "month_one": "Monat", "month_other": "Monate",
-      "year_one": "Jahr", "year_other": "Jahre"
+      "day_one": "Tag",
+      "day_other": "Tage",
+      "week_one": "Woche",
+      "week_other": "Wochen",
+      "month_one": "Monat",
+      "month_other": "Monate",
+      "year_one": "Jahr",
+      "year_other": "Jahre"
     }
   },
   "todos": {
@@ -223,7 +292,9 @@
     "assign": "Zuweisen",
     "unassigned": "Nicht zugewiesen",
     "editAria": "To-do bearbeiten",
-    "deleteAria": "To-do löschen"
+    "deleteAria": "To-do löschen",
+    "importantAria": "Wichtig umschalten",
+    "effortAria": "Aufwand ändern"
   },
   "family": {
     "membersTitle": "Familienmitglieder",
@@ -354,7 +425,8 @@
       "fixed": "Fest — eine Person",
       "rotation": "Rotation — im Wechsel"
     },
-    "dateOfBirth": "Geburtsdatum"
+    "dateOfBirth": "Geburtsdatum",
+    "effort": "Aufwand"
   },
   "calendar": {
     "thisWeek": "Diese Woche",

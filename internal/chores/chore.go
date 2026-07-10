@@ -27,6 +27,7 @@ type Chore struct {
 	// RecurrenceWeekdays is a 7-char Mon..Sun bitstring (e.g. '0000001' = Sundays).
 	// Only meaningful when RecurrenceRule == "weekly"; nil/empty = every week bucket.
 	RecurrenceWeekdays *string `json:"recurrenceWeekdays,omitempty"`
+	Effort             string  `json:"effort"` // 2min | 5min | standard | heavy
 }
 
 type Instance struct {
@@ -40,6 +41,7 @@ type Instance struct {
 	Status           string  `json:"status"` // pending | done | skipped
 	CompletedBy      *string `json:"completedBy,omitempty"`
 	CompletedAt      *string `json:"completedAt,omitempty"`
+	Effort           string  `json:"effort"` // from the chore definition
 }
 
 type NewChore struct {
@@ -53,6 +55,18 @@ type NewChore struct {
 	Color              *string  `json:"color"`
 	Icon               *string  `json:"icon"`
 	RecurrenceWeekdays *string  `json:"recurrenceWeekdays"`
+	Effort             string   `json:"effort"`
+}
+
+// normalizeEffort validates/defaults the effort level.
+func normalizeEffort(e string) (string, error) {
+	switch e {
+	case "":
+		return "standard", nil
+	case "2min", "5min", "standard", "heavy":
+		return e, nil
+	}
+	return "", errors.New("effort must be one of 2min, 5min, standard, heavy")
 }
 
 const maxInterval = 120 // sanity cap (e.g. monthly × 120 = every 10 years)
@@ -282,7 +296,7 @@ func resolveAssignee(c Chore, periodIdx int) *string {
 func (s *Service) ListChores() ([]Chore, error) {
 	rows, err := s.db.Query(
 		`SELECT id, title, description, recurrence_rule, recurrence_interval, assignment_mode,
-		        assigned_member_id, rotation_member_ids, color, icon, recurrence_weekdays
+		        assigned_member_id, rotation_member_ids, color, icon, recurrence_weekdays, effort
 		 FROM chore ORDER BY sort_order, title`)
 	if err != nil {
 		return nil, err
@@ -294,7 +308,7 @@ func (s *Service) ListChores() ([]Chore, error) {
 		var c Chore
 		var rotation *string
 		if err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.RecurrenceRule, &c.RecurrenceInterval, &c.AssignmentMode,
-			&c.AssignedMemberID, &rotation, &c.Color, &c.Icon, &c.RecurrenceWeekdays); err != nil {
+			&c.AssignedMemberID, &rotation, &c.Color, &c.Icon, &c.RecurrenceWeekdays, &c.Effort); err != nil {
 			return nil, err
 		}
 		if rotation != nil && *rotation != "" {
@@ -311,6 +325,10 @@ func (s *Service) CreateChore(in NewChore) (*Chore, error) {
 	}
 	rule, interval := normalizeRecurrence(in.RecurrenceRule, in.RecurrenceInterval)
 	weekdays := normalizeWeekdays(rule, in.RecurrenceWeekdays)
+	effort, err := normalizeEffort(in.Effort)
+	if err != nil {
+		return nil, err
+	}
 	if in.AssignmentMode == "" {
 		in.AssignmentMode = "fixed"
 	}
@@ -321,9 +339,9 @@ func (s *Service) CreateChore(in NewChore) (*Chore, error) {
 		rotation = &joined
 	}
 	if _, err := s.db.Exec(
-		`INSERT INTO chore (id, title, description, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, icon, recurrence_weekdays)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, in.Title, in.Description, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, weekdays); err != nil {
+		`INSERT INTO chore (id, title, description, recurrence_rule, recurrence_interval, assignment_mode, assigned_member_id, rotation_member_ids, color, icon, recurrence_weekdays, effort)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, in.Title, in.Description, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, weekdays, effort); err != nil {
 		return nil, err
 	}
 	// Generate this period's instance immediately so it appears right away.
@@ -349,6 +367,10 @@ func (s *Service) UpdateChore(id string, in NewChore) (*Chore, error) {
 	}
 	rule, interval := normalizeRecurrence(in.RecurrenceRule, in.RecurrenceInterval)
 	weekdays := normalizeWeekdays(rule, in.RecurrenceWeekdays)
+	effort, err := normalizeEffort(in.Effort)
+	if err != nil {
+		return nil, err
+	}
 	if in.AssignmentMode == "" {
 		in.AssignmentMode = "fixed"
 	}
@@ -357,8 +379,8 @@ func (s *Service) UpdateChore(id string, in NewChore) (*Chore, error) {
 		rotation = strings.Join(in.RotationMemberIDs, ",")
 	}
 	res, err := s.db.Exec(
-		`UPDATE chore SET title=?, description=?, recurrence_rule=?, recurrence_interval=?, assignment_mode=?, assigned_member_id=?, rotation_member_ids=?, color=?, icon=?, recurrence_weekdays=? WHERE id=?`,
-		in.Title, in.Description, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, weekdays, id)
+		`UPDATE chore SET title=?, description=?, recurrence_rule=?, recurrence_interval=?, assignment_mode=?, assigned_member_id=?, rotation_member_ids=?, color=?, icon=?, recurrence_weekdays=?, effort=? WHERE id=?`,
+		in.Title, in.Description, rule, interval, in.AssignmentMode, in.AssignedMemberID, rotation, in.Color, in.Icon, weekdays, effort, id)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +423,7 @@ func (s *Service) DeleteChore(id string) error {
 func (s *Service) ListInstances(from, to time.Time) ([]Instance, error) {
 	rows, err := s.db.Query(
 		`SELECT ci.id, ci.chore_id, c.title, COALESCE(c.color, ''), ci.period_start, ci.period_end,
-		        ci.assigned_member_id, ci.status, ci.completed_by, ci.completed_at
+		        ci.assigned_member_id, ci.status, ci.completed_by, ci.completed_at, c.effort
 		 FROM chore_instance ci JOIN chore c ON c.id = ci.chore_id
 		 WHERE ci.period_start >= ? AND ci.period_start < ?
 		 ORDER BY ci.period_start, c.title`,
@@ -416,7 +438,7 @@ func (s *Service) ListInstances(from, to time.Time) ([]Instance, error) {
 		var in Instance
 		var color string
 		if err := rows.Scan(&in.ID, &in.ChoreID, &in.Title, &color, &in.PeriodStart, &in.PeriodEnd,
-			&in.AssignedMemberID, &in.Status, &in.CompletedBy, &in.CompletedAt); err != nil {
+			&in.AssignedMemberID, &in.Status, &in.CompletedBy, &in.CompletedAt, &in.Effort); err != nil {
 			return nil, err
 		}
 		if color != "" {
