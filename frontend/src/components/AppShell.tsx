@@ -1,11 +1,9 @@
 import { type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { NavKey, Intent, EventFocus } from '../lib/calendar'
-import { useTheme } from '../lib/theme'
 import Icon from './Icon'
 import { Wordmark, Weather } from './chrome'
 import NotificationBell from './NotificationBell'
-import ProfileSwitcher from './ProfileSwitcher'
 
 const NAV: { key: NavKey; icon: string }[] = [
   { key: 'home',     icon: 'home' },
@@ -81,18 +79,6 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
   children: ReactNode
 }) {
   const { t } = useTranslation()
-  const { theme, toggle } = useTheme()
-
-  const themeBtn = (
-    <button
-      onClick={toggle}
-      className="flex items-center justify-center rounded-full"
-      style={{ width: 38, height: 38, border: '1px solid var(--t-line)', background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}
-      aria-label={theme === 'dark' ? t('appshell.switchToLight') : t('appshell.switchToDark')}
-    >
-      <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
-    </button>
-  )
 
   const bellBtn = (
     <NotificationBell onOpenEvent={(eventId, date) => onNavigate('calendar', 'open-event', { eventId, date })} />
@@ -108,7 +94,6 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
         <div className="flex-1 flex items-center justify-center min-w-0">{header}</div>
         <div className="flex items-center gap-2">
           <Weather />
-          {themeBtn}
           {bellBtn}
         </div>
       </header>
@@ -119,7 +104,6 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
           <Wordmark size="sm" />
           <div className="flex items-center gap-2">
             <Weather size={15} />
-            {themeBtn}
             {bellBtn}
           </div>
         </div>
@@ -140,9 +124,8 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
             <RailNav key={n.key} name={n.icon} label={t(`nav.${n.key}`)} active={active === n.key} onClick={() => onNavigate(n.key)} />
           ))}
           <div className="flex-1" style={{ minHeight: 24 }} />
-          {/* Bottom cluster: Family, then the profile switcher pinned to the very bottom */}
+          {/* Family pinned to the very bottom of the rail */}
           <RailNav name="family" label={t('nav.family')} active={active === 'family'} onClick={() => onNavigate('family')} />
-          <ProfileSwitcher />
         </nav>
 
         <main
@@ -183,7 +166,6 @@ export default function AppShell({ active, onNavigate, header, aside, showFab = 
         {NAV.map((n) => (
           <TabNav key={n.key} name={n.icon} label={t(`nav.${n.key}`)} active={active === n.key} onClick={() => onNavigate(n.key)} />
         ))}
-        <ProfileSwitcher mobile />
       </nav>
 
       {showFab && (

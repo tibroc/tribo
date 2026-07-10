@@ -239,11 +239,6 @@
     "month": "Monat",
     "year": "Jahr"
   },
-  "appshell": {
-    "switchToDark": "Zu dunklem Modus wechseln",
-    "switchToLight": "Zu hellem Modus wechseln",
-    "theme": "Design"
-  },
   "profile": {
     "switch": "Profil wechseln",
     "viewingAs": "Angemeldet als",

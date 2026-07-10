@@ -239,11 +239,6 @@
     "month": "Mês",
     "year": "Ano"
   },
-  "appshell": {
-    "switchToDark": "Mudar para o modo escuro",
-    "switchToLight": "Mudar para o modo claro",
-    "theme": "Tema"
-  },
   "profile": {
     "switch": "Trocar de perfil",
     "viewingAs": "Visualizando como",
