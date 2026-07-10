@@ -198,6 +198,45 @@ forced calls; completions credited to them via `auth.Service.ActiveMemberID`);
 no active profile = guardian privileges. A backend that 400s on tools degrades
 to read-only Q&A. Tool traces are localized in the UI ("✦ added to-do ✓").
 
+**Focus & priorities release (F1–F3, done — see `docs/focus-plan.md`):**
+ND-first (ADHD/autism-aware) prioritization for guardians; UI mockups in the
+"Tribo focus & priorities" Claude artifact. Three phases, all shipped:
+- **F1 — Focus queue** (migration 0008, `internal/focus`): to-dos gained
+  `important`/`effort` (2min|5min|standard|heavy)/`anchor_event_id` and a used
+  `due_date`; chores gained `effort`. Deterministic ranking (guardian conflicts
+  → event-anchored → overdue → due today → important → today's chores → due
+  soon → open; ties by time then smaller effort) — **no LLM required**; reasons
+  are structured codes localized client-side. `GET /api/focus[?all=1]`,
+  `POST /api/focus/defer` ("not now": hides for the rest of the day
+  family-wide, logged in `focus_defer` for a future Review surface). Home's
+  `FocusCard` (replaced `BriefCard`; always on): NOW hero with Done/"Not now"
+  (events: a guardian's "I've got it" claims directly), 2 NEXT, hidden-on-
+  purpose tail, and an **anchor countdown pill** (next timed event,
+  leaveAt = start − 20min `focus.LeaveBuffer`). With the assistant configured,
+  a "This week" tab hosts the week brief + day-brief watch-out callout.
+- **F2 — Energy** (`?energy=low|ok|high`): low = only 2min/5min small wins
+  (conflicts always stay) with standard/heavy in a visible `parked` group;
+  high = heavy boost. Energy is a per-device, day-scoped localStorage signal —
+  never stored server-side. `winsToday` powers the momentum line (replaced the
+  brief's praise callout).
+- **F3 — Push** (migration 0009, `internal/push`, dep `webpush-go`):
+  self-hosted Web Push, zero-config — VAPID keys auto-generate into
+  `app_setting` (override: `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/
+  `VAPID_SUBJECT`). 1-min scheduler sends a focus-queue morning brief (empty
+  queue = no send) and leaving-time transition warnings (leave − 15min;
+  optional − 5min nudge only for pickups the member is assigned guardian of),
+  with quiet hours, per-member prefs incl. device language (server-side
+  localized wording), and a `push_sent` dedupe log (restart-safe). Frontend:
+  dedicated `push-sw.js` at a narrow scope (coexists with the vite-plugin-pwa
+  caching worker — don't merge them), settings sheet under Family → App
+  settings. Chores deliberately never ping.
+- Note: `Portal` takes a `singleton` key — AppShell mounts children twice
+  (desktop/mobile) and portals escape the hidden copy, so every portal'd
+  overlay inside AppShell children **must** pass a distinct key or it renders
+  twice.
+- Deferred (see plan doc): AI re-rank/"why" upgrade for the queue,
+  anchor-*setting* UI, due-date editing UI, the Eisenhower planning board.
+
 **Caveats:** OIDC login and Google Calendar sync aren't exercised in-repo (no
 Authentik / Google OAuth client here) — the configured/unconfigured and
 state-rejection paths are tested, but the live token round-trips need real
@@ -209,4 +248,7 @@ still only generated for the near term (≈-1mo..+3mo), so distant years show
 events/birthdays but not chores. `/mcp` is unauthenticated in dev — gate it
 behind a token/proxy in production. The assistant is tested against a fake
 OpenAI-compatible server; real-model schema adherence (esp. small local models)
-hasn't been exercised in-repo.
+hasn't been exercised in-repo. Push is verified up to a genuine
+aes128gcm-encrypted delivery against a fake push service; the final
+browser↔FCM/APNs hop needs a real device (iOS additionally requires the PWA
+installed to the Home Screen).
