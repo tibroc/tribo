@@ -15,7 +15,7 @@ export default function ConfirmDialog({ title, message, confirmLabel, onConfirm,
 }) {
   const { t } = useTranslation()
   return (
-    <Portal>
+    <Portal singleton="confirm-dialog">
       <div className="fixed inset-0 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 60 }}>
         <div
           className="w-full max-w-xs p-5"

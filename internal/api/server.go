@@ -16,6 +16,7 @@ import (
 	"tribo/internal/family"
 	"tribo/internal/focus"
 	"tribo/internal/mcp"
+	"tribo/internal/push"
 	"tribo/internal/todos"
 	"tribo/internal/tools"
 	"tribo/internal/weather"
@@ -33,6 +34,7 @@ type Server struct {
 	assistant *assistant.Service
 	tools     *tools.Deps
 	focus     *focus.Service
+	push      *push.Service
 }
 
 // NewHandler builds the full HTTP handler: open auth/session routes, the
@@ -51,6 +53,7 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 		assistant: assistant.NewService(db, assistant.ConfigFromEnv()),
 		tools:     tools.New(db, syncEngine),
 		focus:     focus.NewService(db),
+		push:      push.New(db),
 	}
 
 	// Protected API surface.
@@ -99,6 +102,12 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 
 	mux.HandleFunc("GET /api/focus", s.getFocus)
 	mux.HandleFunc("POST /api/focus/defer", s.deferFocusItem)
+
+	mux.HandleFunc("GET /api/push/status", s.pushStatus)
+	mux.HandleFunc("POST /api/push/subscriptions", s.pushSubscribe)
+	mux.HandleFunc("DELETE /api/push/subscriptions", s.pushUnsubscribe)
+	mux.HandleFunc("GET /api/push/prefs", s.pushGetPrefs)
+	mux.HandleFunc("PATCH /api/push/prefs", s.pushSetPrefs)
 
 	mux.HandleFunc("GET /api/briefing", s.getBriefing)
 	mux.HandleFunc("GET /api/review", s.getReview)

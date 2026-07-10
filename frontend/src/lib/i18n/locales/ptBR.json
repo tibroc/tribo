@@ -140,6 +140,23 @@
     },
     "privacyNote": "Para escrever o resumo, o Tribo envia os primeiros nomes da família, títulos e horários de eventos, títulos de tarefas e afazeres e os horários de trabalho dos responsáveis ao backend de IA configurado. PINs, logins e senhas nunca são enviados. Com um backend local (Ollama/vLLM), nada sai do seu servidor."
   },
+  "push": {
+    "title": "Notificações",
+    "settingsSub": "Resumo matinal e avisos de saída",
+    "unsupported": "Este navegador não suporta notificações push.",
+    "serverOff": "Push não está disponível no servidor no momento.",
+    "needProfile": "Escolha um perfil primeiro (toque no avatar) — as notificações são por pessoa.",
+    "deviceToggle": "Notificar {{name}} neste dispositivo",
+    "deviceToggleSub": "O navegador pedirá permissão uma vez.",
+    "morningBrief": "Resumo matinal",
+    "transitions": "Avisos de saída",
+    "transitionsSub": "15 minutos antes de você precisar sair para um evento",
+    "secondNudge": "Segundo lembrete",
+    "secondNudgeSub": "Aviso extra de 5 minutos, só para caronas que você assume",
+    "quietHours": "Horário de silêncio",
+    "choresNote": "Tarefas nunca notificam — elas esperam quietas na tela inicial.",
+    "iosNote": "No iPhone/iPad, adicione o Tribo à Tela de Início primeiro — o iOS só entrega push a apps instalados."
+  },
   "weather": {
     "clear": "Limpo",
     "partlyCloudy": "Parcialmente nublado",

@@ -77,9 +77,10 @@ const (
 	EnergyHigh = "high"
 )
 
-// leaveBuffer is the fixed leaving-time buffer before an event (a per-event
-// or per-family override is a later refinement — see the plan's open questions).
-const leaveBuffer = 20 * time.Minute
+// LeaveBuffer is the fixed leaving-time buffer before an event (a per-event
+// or per-family override is a later refinement — see the plan's open
+// questions). Shared with the push scheduler's transition warnings.
+const LeaveBuffer = 20 * time.Minute
 
 // Ranks: lower comes first. Ties break on sortAt, then smaller effort.
 const (
@@ -407,7 +408,7 @@ func anchorFor(events []calendar.Event, now time.Time) *Anchor {
 	}
 	return &Anchor{
 		EventID: best.ID, Title: best.Title, At: best.StartAt,
-		LeaveAt: bestStart.Add(-leaveBuffer).Format(time.RFC3339),
+		LeaveAt: bestStart.Add(-LeaveBuffer).Format(time.RFC3339),
 	}
 }
 

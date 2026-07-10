@@ -69,6 +69,13 @@ services:
       # - ASSISTANT_MODEL=llama3.1
       # - ASSISTANT_API_KEY=...
       # - ASSISTANT_LANGUAGE=en
+      # Web Push (morning brief + leaving-time warnings) is zero-config: VAPID
+      # keys are generated on first boot and stored in the DB. Set these only to
+      # bring your own keys; VAPID_SUBJECT is a contact URL/mailto for the push
+      # services.
+      # - VAPID_PUBLIC_KEY=...
+      # - VAPID_PRIVATE_KEY=...
+      # - VAPID_SUBJECT=mailto:admin@example.com
     depends_on:
       radicale:
         condition: service_healthy

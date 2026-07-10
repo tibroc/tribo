@@ -259,7 +259,7 @@ export default function FocusCard({ members, go, assistantOn }: {
 
       {/* Countdown to the day's next fixed point — pinned above the nav. */}
       {anchor && anchorCountdown && tab === 'today' && (
-        <Portal>
+        <Portal singleton="anchor-pill">
           <div
             className="fixed left-4 right-4 lg:left-auto lg:right-8 lg:w-[380px] flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold bottom-[76px] lg:bottom-6"
             style={{

@@ -36,7 +36,7 @@ function Modal({ title, onClose, onSave, onDelete, busy, error, children }: {
   const { t } = useTranslation()
   const [confirming, setConfirming] = useState(false)
   return (
-    <Portal>
+    <Portal singleton="settings-modal">
       <div className="fixed inset-0 z-50 flex lg:items-center lg:justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
         <div className="flex flex-col w-full h-full lg:h-auto lg:w-[440px] lg:max-h-[85vh] overflow-hidden lg:rounded-(--t-radius-lg)"
           style={{ background: 'var(--t-surface)', color: 'var(--t-text)', boxShadow: 'var(--t-shadow-pop)' }}>

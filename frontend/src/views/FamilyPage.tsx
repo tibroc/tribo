@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Users, CalendarDays, CheckSquare, Globe, ChevronRight, MapPin, Palette, LogIn,
-  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle, Clock, Sparkles,
+  RefreshCw, Trash2, Plus, Sun, Moon, Monitor, LogOut, Check, Languages, Lock, AlertTriangle, Clock, Sparkles, Bell,
 } from 'lucide-react'
 import { calendarLabel, type Section } from '../lib/calendar'
 import {
@@ -9,9 +9,11 @@ import {
   addCalendarSource, syncCalendarSource, deleteCalendarSource, setWorkScheduleVisibility, googleConnectUrl,
   getCalendarStatus,
   getWeatherSettings, updateWeatherSettings, geocodeLocation, getAssistantStatus,
+  getPushStatus, getPushPrefs, setPushPrefs,
   type FamilyMember, type WorkSchedule, type Chore, type CalendarSource, type CalendarStatus,
-  type WeatherSettings, type WeatherUnits, type GeoResult, type AssistantStatus,
+  type WeatherSettings, type WeatherUnits, type GeoResult, type AssistantStatus, type PushPrefs,
 } from '../lib/api'
+import { pushSupported, currentEndpoint, enablePush, disablePush } from '../lib/push'
 import AppShell from '../components/AppShell'
 import { SimpleHeader, WEATHER_CHANGED_EVENT } from '../components/chrome'
 import Card from '../components/Card'
@@ -21,6 +23,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import Portal from '../components/Portal'
 import PersonAvatar from '../components/PersonAvatar'
 import OnboardingWizard from './OnboardingWizard'
+import TimePicker from '../components/TimePicker'
 import { MemberForm, ChoreForm, WorkScheduleForm } from '../components/SettingsForms'
 import { RecurrencePill } from '../components/panels'
 import { recurrenceLabel } from '../lib/chores'
@@ -43,6 +46,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
   const [showAccount, setShowAccount] = useState(false)
   const [showAssistant, setShowAssistant] = useState(false)
   const [assistantStatus, setAssistantStatus] = useState<AssistantStatus | null>(null)
+  const [showNotifications, setShowNotifications] = useState(false)
   const [showLanguage, setShowLanguage] = useState(false)
   const [showTimeFormat, setShowTimeFormat] = useState(false)
   const reloadWeather = () => getWeatherSettings().then(setWeather).catch(() => {})
@@ -243,7 +247,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
         </div>
 
         {showConnect && (
-          <Portal><ConnectCalendarModal
+          <Portal singleton="sheet-connect"><ConnectCalendarModal
             members={members}
             onClose={() => setShowConnect(false)}
             onConnected={() => { setShowConnect(false); reloadSources() }}
@@ -273,15 +277,16 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             onSaved={() => { setWsModal(undefined); reloadSchedules() }} />
         )}
         {showLocation && (
-          <Portal><LocationModal settings={weather}
+          <Portal singleton="sheet-location"><LocationModal settings={weather}
             onClose={() => setShowLocation(false)}
             onSaved={() => { setShowLocation(false); reloadWeather(); window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)) }} /></Portal>
         )}
-        {showAppearance && <Portal><AppearanceModal onClose={() => setShowAppearance(false)} /></Portal>}
-        {showAccount && <Portal><AccountModal onClose={() => setShowAccount(false)} /></Portal>}
-        {showAssistant && <Portal><AssistantModal status={assistantStatus} onClose={() => setShowAssistant(false)} /></Portal>}
-        {showLanguage && <Portal><LanguageModal onClose={() => setShowLanguage(false)} /></Portal>}
-        {showTimeFormat && <Portal><TimeFormatModal onClose={() => setShowTimeFormat(false)} /></Portal>}
+        {showAppearance && <Portal singleton="sheet-appearance"><AppearanceModal onClose={() => setShowAppearance(false)} /></Portal>}
+        {showAccount && <Portal singleton="sheet-account"><AccountModal onClose={() => setShowAccount(false)} /></Portal>}
+        {showAssistant && <Portal singleton="sheet-assistant"><AssistantModal status={assistantStatus} onClose={() => setShowAssistant(false)} /></Portal>}
+        {showNotifications && <Portal singleton="sheet-notifications"><NotificationsModal onClose={() => setShowNotifications(false)} /></Portal>}
+        {showLanguage && <Portal singleton="sheet-language"><LanguageModal onClose={() => setShowLanguage(false)} /></Portal>}
+        {showTimeFormat && <Portal singleton="sheet-timeformat"><TimeFormatModal onClose={() => setShowTimeFormat(false)} /></Portal>}
 
         {/* App settings */}
         <Section title={t('settings.appSettings')}>
@@ -292,6 +297,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
             <SettingRow icon={Languages} title={t('language.title')} sub={currentLang.label} onClick={() => setShowLanguage(true)} />
             <SettingRow icon={Clock} title={t('settings.timeFormat')} sub={timeFormatSub(timeFormat.preference, t)} onClick={() => setShowTimeFormat(true)} />
             <SettingRow icon={Palette} title={t('settings.appearance')} sub={appearanceSub(theme.preference, t)} onClick={() => setShowAppearance(true)} />
+            <SettingRow icon={Bell} title={t('push.title')} sub={t('push.settingsSub')} onClick={() => setShowNotifications(true)} />
             <SettingRow icon={Sparkles} title={t('assistant.title')}
               sub={assistantStatus?.enabled ? t('assistant.settingsOn', { model: assistantStatus.model }) : t('assistant.settingsOff')}
               onClick={() => setShowAssistant(true)} />
@@ -549,6 +555,134 @@ function LanguageModal({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('language.hint')}</div>
+    </SettingsSheet>
+  )
+}
+
+// Notification settings: enable push on this device (per profile) + the
+// per-member preferences — morning brief, transition warnings, quiet hours.
+// Chores deliberately never ping: there is no toggle to make them.
+function NotificationsModal({ onClose }: { onClose: () => void }) {
+  const { t, i18n } = useTranslation()
+  const locale = useLocale()
+  const { activeMember } = useSession()
+  const supported = pushSupported()
+  const [serverOn, setServerOn] = useState<boolean | null>(null)
+  const [deviceOn, setDeviceOn] = useState(false)
+  const [prefs, setPrefs] = useState<PushPrefs | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getPushStatus().then((s) => setServerOn(s.enabled)).catch(() => setServerOn(false))
+    currentEndpoint().then((ep) => {
+      if (ep) getPushStatus(ep).then((s) => setDeviceOn(Boolean(s.subscribed))).catch(() => {})
+    }).catch(() => {})
+    if (activeMember) getPushPrefs().then(setPrefs).catch(() => {})
+  }, [activeMember])
+
+  const toggleDevice = async () => {
+    if (busy) return
+    setBusy(true); setError(null)
+    try {
+      if (deviceOn) {
+        await disablePush()
+        setDeviceOn(false)
+      } else {
+        await enablePush()
+        setDeviceOn(true)
+      }
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Auto-save on change, stamping the device language so server-sent
+  // notification text matches the app.
+  const patch = (p: Partial<PushPrefs>) => {
+    if (!prefs) return
+    const next = { ...prefs, ...p, lang: i18n.language }
+    setPrefs(next)
+    setPushPrefs(next).catch((e) => setError(String(e)))
+  }
+
+  const rowStyle = { borderBottom: '1px solid var(--t-line)' }
+  const hourLabel = (h: number) => fmtClock(`${String(h).padStart(2, '0')}:00`, locale)
+
+  return (
+    <SettingsSheet title={t('push.title')} onClose={onClose}>
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+      {!supported ? (
+        <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}>{t('push.unsupported')}</div>
+      ) : serverOn === false ? (
+        <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}>{t('push.serverOff')}</div>
+      ) : !activeMember ? (
+        <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--t-shell)', color: 'var(--t-text-soft)' }}>{t('push.needProfile')}</div>
+      ) : (
+        <>
+          <label className="flex items-center gap-3 py-2" style={rowStyle}>
+            <input type="checkbox" checked={deviceOn} disabled={busy} onChange={toggleDevice} className="w-4 h-4 rounded-sm" />
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-medium">{t('push.deviceToggle', { name: activeMember.name })}</span>
+              <span className="block text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('push.deviceToggleSub')}</span>
+            </span>
+          </label>
+
+          {prefs && (
+            <>
+              <div className="flex items-center gap-3 py-2" style={rowStyle}>
+                <input type="checkbox" checked={prefs.morningBrief} onChange={(e) => patch({ morningBrief: e.target.checked })} className="w-4 h-4 rounded-sm" />
+                <span className="flex-1 text-sm font-medium">{t('push.morningBrief')}</span>
+                <select
+                  className="text-sm rounded-lg px-2 py-1 outline-hidden"
+                  style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)', color: 'var(--t-text)' }}
+                  value={prefs.briefHour}
+                  disabled={!prefs.morningBrief}
+                  onChange={(e) => patch({ briefHour: Number(e.target.value) })}
+                >
+                  {Array.from({ length: 18 }, (_, i) => i + 5).map((h) => (
+                    <option key={h} value={h}>{hourLabel(h)}</option>
+                  ))}
+                </select>
+              </div>
+
+              <label className="flex items-center gap-3 py-2" style={rowStyle}>
+                <input type="checkbox" checked={prefs.transitions} onChange={(e) => patch({ transitions: e.target.checked })} className="w-4 h-4 rounded-sm" />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium">{t('push.transitions')}</span>
+                  <span className="block text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('push.transitionsSub')}</span>
+                </span>
+              </label>
+
+              <label className="flex items-center gap-3 py-2" style={rowStyle}>
+                <input type="checkbox" checked={prefs.secondNudge} disabled={!prefs.transitions} onChange={(e) => patch({ secondNudge: e.target.checked })} className="w-4 h-4 rounded-sm" />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium">{t('push.secondNudge')}</span>
+                  <span className="block text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('push.secondNudgeSub')}</span>
+                </span>
+              </label>
+
+              <div className="py-2" style={rowStyle}>
+                <div className="text-sm font-medium mb-1">{t('push.quietHours')}</div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="rounded-xl px-3 py-1.5" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)' }}>
+                    <TimePicker value={prefs.quietStart} onChange={(v) => patch({ quietStart: v })} locale={locale} />
+                  </span>
+                  <span style={{ color: 'var(--t-text-soft)' }}>–</span>
+                  <span className="rounded-xl px-3 py-1.5" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)' }}>
+                    <TimePicker value={prefs.quietEnd} onChange={(v) => patch({ quietEnd: v })} locale={locale} />
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-xs pt-1" style={{ color: 'var(--t-text-soft)' }}>{t('push.choresNote')}</div>
+              <div className="text-xs" style={{ color: 'var(--t-text-soft)' }}>{t('push.iosNote')}</div>
+            </>
+          )}
+        </>
+      )}
     </SettingsSheet>
   )
 }

@@ -15,6 +15,7 @@ import (
 	"tribo/internal/auth"
 	"tribo/internal/calsync"
 	"tribo/internal/chores"
+	"tribo/internal/push"
 	"tribo/internal/store"
 	"tribo/web"
 )
@@ -56,6 +57,9 @@ func main() {
 
 	// AI briefs: nightly generation when an LLM backend is configured.
 	startAssistantScheduler(db)
+
+	// Web Push: morning brief + transition warnings for subscribed members.
+	push.New(db).Run(context.Background())
 
 	handler := api.NewHandler(db, web.FS(), authSvc, syncEngine)
 

@@ -140,6 +140,23 @@
     },
     "privacyNote": "Für das Briefing sendet Tribo Vornamen, Termintitel und -zeiten, Aufgaben- und To-do-Titel sowie die Arbeitszeiten der Eltern an das konfigurierte KI-Backend. PINs, Logins und Passwörter werden nie gesendet. Mit einem lokalen Backend (Ollama/vLLM) verlässt nichts euren Server."
   },
+  "push": {
+    "title": "Benachrichtigungen",
+    "settingsSub": "Morgen-Briefing & Losfahr-Erinnerungen",
+    "unsupported": "Dieser Browser unterstützt keine Push-Benachrichtigungen.",
+    "serverOff": "Push ist auf dem Server gerade nicht verfügbar.",
+    "needProfile": "Wähle zuerst ein Profil (Avatar antippen) — Benachrichtigungen sind pro Person.",
+    "deviceToggle": "{{name}} auf diesem Gerät benachrichtigen",
+    "deviceToggleSub": "Der Browser fragt einmal nach der Erlaubnis.",
+    "morningBrief": "Morgen-Briefing",
+    "transitions": "Losfahr-Erinnerungen",
+    "transitionsSub": "15 Minuten bevor du zu einem Termin los musst",
+    "secondNudge": "Zweite Erinnerung",
+    "secondNudgeSub": "Extra 5-Minuten-Warnung, nur für Fahrten, die du übernimmst",
+    "quietHours": "Ruhezeiten",
+    "choresNote": "Aufgaben klingeln nie — sie warten still auf dem Startbildschirm.",
+    "iosNote": "Auf iPhone/iPad Tribo zuerst zum Home-Bildschirm hinzufügen — iOS stellt Push nur an installierte Apps zu."
+  },
   "weather": {
     "clear": "Klar",
     "partlyCloudy": "Teils bewölkt",

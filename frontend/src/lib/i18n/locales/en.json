@@ -140,6 +140,23 @@
     },
     "privacyNote": "To write the brief, Tribo sends this family's first names, event titles and times, chore and to-do titles, and guardians' work hours to the configured AI backend. PINs, logins, and passwords are never sent. With a local backend (Ollama/vLLM), nothing leaves your server."
   },
+  "push": {
+    "title": "Notifications",
+    "settingsSub": "Morning brief & leaving-time warnings",
+    "unsupported": "This browser doesn't support push notifications.",
+    "serverOff": "Push isn't available on the server right now.",
+    "needProfile": "Pick a profile first (tap your avatar) — notifications are per person.",
+    "deviceToggle": "Notify {{name}} on this device",
+    "deviceToggleSub": "Your browser will ask for permission once.",
+    "morningBrief": "Morning brief",
+    "transitions": "Leaving-time warnings",
+    "transitionsSub": "15 minutes before you need to leave for an event",
+    "secondNudge": "Second nudge",
+    "secondNudgeSub": "An extra 5-minute warning, only for pickups you're driving",
+    "quietHours": "Quiet hours",
+    "choresNote": "Chores never ping — they wait quietly on the Home screen.",
+    "iosNote": "On iPhone/iPad, add Tribo to the Home Screen first — iOS only delivers push to installed apps."
+  },
   "weather": {
     "clear": "Clear",
     "partlyCloudy": "Partly cloudy",

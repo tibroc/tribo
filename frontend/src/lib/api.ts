@@ -508,6 +508,56 @@ export function deferFocusItem(kind: FocusItem['kind'], id: string): Promise<voi
   }).then((r) => json<void>(r))
 }
 
+// ===== Web Push (notifications) =====
+export interface PushStatus {
+  enabled: boolean
+  publicKey?: string
+  subscribed?: boolean
+}
+
+export interface PushPrefs {
+  morningBrief: boolean
+  briefHour: number
+  transitions: boolean
+  secondNudge: boolean
+  quietStart: string // HH:MM
+  quietEnd: string
+  lang: string
+}
+
+export function getPushStatus(endpoint?: string): Promise<PushStatus> {
+  const qs = endpoint ? `?${new URLSearchParams({ endpoint })}` : ''
+  return fetch(`/api/push/status${qs}`).then((r) => json<PushStatus>(r))
+}
+
+export function subscribePush(sub: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<void> {
+  return fetch('/api/push/subscriptions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(sub),
+  }).then((r) => json<void>(r))
+}
+
+export function unsubscribePush(endpoint: string): Promise<void> {
+  return fetch('/api/push/subscriptions', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint }),
+  }).then((r) => json<void>(r))
+}
+
+export function getPushPrefs(): Promise<PushPrefs> {
+  return fetch('/api/push/prefs').then((r) => json<PushPrefs>(r))
+}
+
+export function setPushPrefs(p: PushPrefs): Promise<PushPrefs> {
+  return fetch('/api/push/prefs', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(p),
+  }).then((r) => json<PushPrefs>(r))
+}
+
 // ===== AI assistant (chat) =====
 export interface ChatMessage {
   role: 'user' | 'assistant'
