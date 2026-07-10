@@ -57,7 +57,7 @@ func noon() time.Time {
 func TestQueueRanking(t *testing.T) {
 	now := noon()
 	svc := NewService(testDB(t, now))
-	q, err := svc.buildQueueAt(now, "", true)
+	q, err := svc.buildQueueAt(now, "", true, "")
 	if err != nil {
 		t.Fatalf("buildQueueAt: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestDeferHidesForToday(t *testing.T) {
 	if err := svc.Defer("event", "evt-conflict", "mem-a"); err != nil {
 		t.Fatalf("Defer: %v", err)
 	}
-	q, err := svc.buildQueueAt(now, "", true)
+	q, err := svc.buildQueueAt(now, "", true, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestMemberScoping(t *testing.T) {
 	}
 
 	svc := NewService(db)
-	q, err := svc.buildQueueAt(now, "mem-a", true)
+	q, err := svc.buildQueueAt(now, "mem-a", true, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestAnchoredTodoRanksByEventTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	svc := NewService(db)
-	q, err := svc.buildQueueAt(now, "", true)
+	q, err := svc.buildQueueAt(now, "", true, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,5 +166,121 @@ func TestAnchoredTodoRanksByEventTime(t *testing.T) {
 	}
 	if q.Next[0].At == "" {
 		t.Error("anchored todo should carry the event start time")
+	}
+}
+
+func TestLowEnergySmallWins(t *testing.T) {
+	now := noon()
+	db := testDB(t, now)
+	// A heavy chore due today alongside the fixture's 5-min chore.
+	if _, err := db.Exec(`INSERT INTO chore (id, title, recurrence_rule, assignment_mode, effort) VALUES ('ch-heavy', 'Deep clean', 'weekly', 'fixed', 'heavy')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO chore_instance (id, chore_id, period_start, period_end, status) VALUES ('inst-heavy', 'ch-heavy', ?, ?, 'pending')`,
+		now.Format("2006-01-02"), now.Format("2006-01-02")); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := NewService(db)
+	q, err := svc.buildQueueAt(now, "", true, EnergyLow)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The conflict event stays NOW even on a low day — a child still needs the ride.
+	if q.Now == nil || q.Now.ID != "evt-conflict" {
+		t.Fatalf("conflict must survive low energy, NOW=%+v", q.Now)
+	}
+	// Everything active must be a small win (or the conflict).
+	active := append([]Item{}, q.Next...)
+	active = append(active, q.Later...)
+	for _, it := range active {
+		if it.Effort != "2min" && it.Effort != "5min" {
+			t.Errorf("low energy leaked a %q item into the queue: %+v", it.Effort, it)
+		}
+	}
+	// Standard/heavy items wait visibly in parked (overdue+important+plain todos = standard, heavy chore).
+	if len(q.Parked) != 4 {
+		t.Fatalf("want 4 parked items, got %+v", q.Parked)
+	}
+	for _, it := range q.Parked {
+		if it.Effort == "2min" || it.Effort == "5min" {
+			t.Errorf("small win wrongly parked: %+v", it)
+		}
+	}
+}
+
+func TestHighEnergyBoostsHeavy(t *testing.T) {
+	now := noon()
+	db := testDB(t, now)
+	if _, err := db.Exec(`INSERT INTO chore (id, title, recurrence_rule, assignment_mode, effort) VALUES ('ch-heavy', 'Deep clean', 'weekly', 'fixed', 'heavy')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO chore_instance (id, chore_id, period_start, period_end, status) VALUES ('inst-heavy', 'ch-heavy', ?, ?, 'pending')`,
+		now.Format("2006-01-02"), now.Format("2006-01-02")); err != nil {
+		t.Fatal(err)
+	}
+	svc := NewService(db)
+
+	ok, err := svc.buildQueueAt(now, "", true, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	high, err := svc.buildQueueAt(now, "", true, EnergyHigh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pos := func(q *Queue, id string) int {
+		all := []Item{}
+		if q.Now != nil {
+			all = append(all, *q.Now)
+		}
+		all = append(all, q.Next...)
+		all = append(all, q.Later...)
+		for i, it := range all {
+			if it.ID == id {
+				return i
+			}
+		}
+		return -1
+	}
+	if pos(high, "inst-heavy") >= pos(ok, "inst-heavy") {
+		t.Errorf("high energy should move the heavy chore up: ok=%d high=%d", pos(ok, "inst-heavy"), pos(high, "inst-heavy"))
+	}
+	// Conflicts still lead even on a strong day.
+	if high.Now == nil || high.Now.ID != "evt-conflict" {
+		t.Errorf("conflict must stay NOW on high energy, got %+v", high.Now)
+	}
+}
+
+func TestWinsToday(t *testing.T) {
+	now := noon()
+	db := testDB(t, now)
+	today := now.Format("2006-01-02")
+	if _, err := db.Exec(`UPDATE chore_instance SET status='done', completed_by='mem-a', completed_at=? WHERE id='inst-1'`, today+"T10:00:00Z"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE todo SET status='done', completed_at=? WHERE id='todo-plain'`, today+"T11:00:00Z"); err != nil {
+		t.Fatal(err)
+	}
+	svc := NewService(db)
+
+	q, err := svc.buildQueueAt(now, "mem-a", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q.WinsToday != 2 {
+		t.Errorf("mem-a wins today: want 2 (own chore + family todo), got %d", q.WinsToday)
+	}
+	// Another member gets todo credit only (chores are attributed).
+	if _, err := db.Exec(`INSERT INTO family_member (id, family_id, name, color, role) VALUES ('mem-b', 'fam', 'Bo', '#BC6678', 'guardian')`); err != nil {
+		t.Fatal(err)
+	}
+	qb, err := svc.buildQueueAt(now, "mem-b", false, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if qb.WinsToday != 1 {
+		t.Errorf("mem-b wins today: want 1, got %d", qb.WinsToday)
 	}
 }

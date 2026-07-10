@@ -52,15 +52,30 @@ type Anchor struct {
 }
 
 // Queue is the focus card payload: one NOW, two NEXT, the rest counted (and
-// included only on request — hidden on purpose).
+// included only on request — hidden on purpose). In low-energy mode, standard
+// and heavy items move to Parked ("waiting for a better day") instead of
+// competing for attention. WinsToday counts today's completions (any size) —
+// the momentum line.
 type Queue struct {
 	Date       string  `json:"date"`
 	Now        *Item   `json:"now,omitempty"`
 	Next       []Item  `json:"next"`
 	LaterCount int     `json:"laterCount"`
 	Later      []Item  `json:"later,omitempty"`
+	Parked     []Item  `json:"parked,omitempty"`
 	Anchor     *Anchor `json:"anchor,omitempty"`
+	WinsToday  int     `json:"winsToday"`
 }
+
+// Energy levels: "low" narrows the queue to 2min/5min small wins (guardian
+// conflicts always stay — they're time-critical), "high" boosts heavy tasks,
+// "ok" (default) leaves the ranking alone. Never stored server-side: the
+// client sends it per request as a private, per-device signal.
+const (
+	EnergyLow  = "low"
+	EnergyOK   = "ok"
+	EnergyHigh = "high"
+)
 
 // leaveBuffer is the fixed leaving-time buffer before an event (a per-event
 // or per-family override is a later refinement — see the plan's open questions).
@@ -109,15 +124,18 @@ func (s *Service) familyLocation() *time.Location {
 
 // BuildQueue assembles the ranked queue for the acting member ("" = no active
 // profile: everything is in scope). includeLater additionally returns the
-// hidden tail.
-func (s *Service) BuildQueue(memberID string, includeLater bool) (*Queue, error) {
+// hidden tail; energy is one of the Energy* levels ("" = ok).
+func (s *Service) BuildQueue(memberID string, includeLater bool, energy string) (*Queue, error) {
 	loc := s.familyLocation()
 	now := time.Now().In(loc)
-	return s.buildQueueAt(now, memberID, includeLater)
+	return s.buildQueueAt(now, memberID, includeLater, energy)
 }
 
 // buildQueueAt is the testable core, anchored at an explicit "now".
-func (s *Service) buildQueueAt(now time.Time, memberID string, includeLater bool) (*Queue, error) {
+func (s *Service) buildQueueAt(now time.Time, memberID string, includeLater bool, energy string) (*Queue, error) {
+	if energy != EnergyLow && energy != EnergyHigh {
+		energy = EnergyOK
+	}
 	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	today := dayStart.Format("2006-01-02")
 
@@ -230,6 +248,15 @@ func (s *Service) buildQueueAt(now time.Time, memberID string, includeLater bool
 		items = append(items, it)
 	}
 
+	// Plenty in the tank: heavy tasks get a rank boost (never above conflicts)
+	// and win ties — the day for the big stuff.
+	if energy == EnergyHigh {
+		for i := range items {
+			if items[i].Effort == "heavy" && items[i].rank > rankAnchored {
+				items[i].rank--
+			}
+		}
+	}
 	sort.SliceStable(items, func(i, j int) bool {
 		if items[i].rank != items[j].rank {
 			return items[i].rank < items[j].rank
@@ -237,10 +264,30 @@ func (s *Service) buildQueueAt(now time.Time, memberID string, includeLater bool
 		if items[i].sortAt != items[j].sortAt {
 			return items[i].sortAt < items[j].sortAt
 		}
+		if energy == EnergyHigh {
+			return effortKey(items[i].Effort) > effortKey(items[j].Effort)
+		}
 		return effortKey(items[i].Effort) < effortKey(items[j].Effort)
 	})
 
 	q := &Queue{Date: today, Next: []Item{}}
+
+	// Running low: only small wins (2min/5min) compete for attention; the big
+	// stuff waits visibly, without penalty. Conflicts always stay — a child
+	// still needs the ride.
+	if energy == EnergyLow {
+		kept := items[:0]
+		for _, it := range items {
+			small := it.Effort == "2min" || it.Effort == "5min"
+			if it.rank == rankConflict || small {
+				kept = append(kept, it)
+			} else {
+				q.Parked = append(q.Parked, it)
+			}
+		}
+		items = kept
+	}
+
 	if len(items) > 0 {
 		q.Now = &items[0]
 	}
@@ -255,7 +302,28 @@ func (s *Service) buildQueueAt(now time.Time, memberID string, includeLater bool
 		}
 	}
 	q.Anchor = anchorFor(events, now)
+	q.WinsToday = s.winsToday(today, memberID)
 	return q, nil
+}
+
+// winsToday counts completions today — chores completed by the acting member
+// (any member when unscoped) plus to-dos checked off (unattributed, so they
+// count family-wide). Momentum counts; size doesn't.
+func (s *Service) winsToday(today, memberID string) int {
+	var chores, todos int
+	if memberID != "" {
+		_ = s.db.QueryRow(
+			`SELECT COUNT(*) FROM chore_instance WHERE status = 'done' AND substr(COALESCE(completed_at,''),1,10) = ? AND completed_by = ?`,
+			today, memberID).Scan(&chores)
+	} else {
+		_ = s.db.QueryRow(
+			`SELECT COUNT(*) FROM chore_instance WHERE status = 'done' AND substr(COALESCE(completed_at,''),1,10) = ?`,
+			today).Scan(&chores)
+	}
+	_ = s.db.QueryRow(
+		`SELECT COUNT(*) FROM todo WHERE status = 'done' AND substr(COALESCE(completed_at,''),1,10) = ?`,
+		today).Scan(&todos)
+	return chores + todos
 }
 
 // Defer hides an item from the queue for the rest of the day (family-wide, so

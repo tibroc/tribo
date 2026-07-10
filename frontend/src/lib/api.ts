@@ -479,17 +479,25 @@ export interface FocusItem {
   at?: string // RFC3339 — when it starts / becomes due
 }
 
+export type Energy = 'low' | 'ok' | 'high'
+
 export interface FocusQueue {
   date: string
   now?: FocusItem
   next: FocusItem[]
   laterCount: number
   later?: FocusItem[]
+  parked?: FocusItem[] // low-energy mode: heavy/standard items waiting for a better day
   anchor?: { eventId: string; title: string; at: string; leaveAt: string }
+  winsToday: number
 }
 
-export function getFocus(all = false): Promise<FocusQueue> {
-  return fetch(`/api/focus${all ? '?all=1' : ''}`).then((r) => json<FocusQueue>(r))
+export function getFocus(all = false, energy: Energy = 'ok'): Promise<FocusQueue> {
+  const qs = new URLSearchParams()
+  if (all) qs.set('all', '1')
+  if (energy !== 'ok') qs.set('energy', energy)
+  const q = qs.toString()
+  return fetch(`/api/focus${q ? '?' + q : ''}`).then((r) => json<FocusQueue>(r))
 }
 
 export function deferFocusItem(kind: FocusItem['kind'], id: string): Promise<void> {

@@ -4,7 +4,7 @@ import { AlertTriangle, Sparkles, RefreshCw, Clock } from 'lucide-react'
 import {
   getFocus, deferFocusItem, claimEvent, setChoreStatus, setTodoStatus,
   getAssistantBrief, refreshAssistantBrief,
-  type FocusQueue, type FocusItem, type FamilyMember, type AssistantBrief,
+  type FocusQueue, type FocusItem, type FamilyMember, type AssistantBrief, type Energy,
 } from '../lib/api'
 import { fmtTime } from '../lib/datetime'
 import { useLocale } from '../lib/i18n'
@@ -14,6 +14,25 @@ import { NOTIFICATIONS_CHANGED_EVENT } from './NotificationBell'
 import Card from './Card'
 import PersonAvatar from './PersonAvatar'
 import Portal from './Portal'
+
+// Today's energy level — a private, per-device signal (localStorage, never
+// sent as stored state to the server). Day-scoped: a new day resets to "ok".
+const ENERGY_KEY = 'tribo-energy'
+
+function loadEnergy(): Energy {
+  try {
+    const raw = localStorage.getItem(ENERGY_KEY)
+    if (raw) {
+      const { v, d } = JSON.parse(raw) as { v: Energy; d: string }
+      if (d === new Date().toDateString() && (v === 'low' || v === 'ok' || v === 'high')) return v
+    }
+  } catch { /* fall through */ }
+  return 'ok'
+}
+
+function saveEnergy(v: Energy) {
+  try { localStorage.setItem(ENERGY_KEY, JSON.stringify({ v, d: new Date().toDateString() })) } catch { /* best effort */ }
+}
 
 // The Home focus card (docs/focus-plan.md F1, mockup A): one NOW, two NEXT,
 // the rest hidden on purpose, with guilt-free defer and a countdown to the
@@ -33,6 +52,8 @@ export default function FocusCard({ members, go, assistantOn }: {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<'today' | 'week'>('today')
   const [dayBrief, setDayBrief] = useState<AssistantBrief | null>(null)
+  const [energy, setEnergyState] = useState<Energy>(loadEnergy)
+  const setEnergy = (v: Energy) => { setEnergyState(v); saveEnergy(v) }
   // Tick every 30s so countdowns stay honest.
   const [nowTs, setNowTs] = useState(() => Date.now())
   useEffect(() => {
@@ -41,8 +62,8 @@ export default function FocusCard({ members, go, assistantOn }: {
   }, [])
 
   const reload = useCallback((all: boolean) => {
-    getFocus(all).then(setQueue).catch((e) => setError(String(e)))
-  }, [])
+    getFocus(all, energy).then(setQueue).catch((e) => setError(String(e)))
+  }, [energy])
   useEffect(() => { reload(showLater) }, [reload, showLater])
   useEffect(() => {
     if (assistantOn) getAssistantBrief('day').then(setDayBrief).catch(() => {})
@@ -136,10 +157,30 @@ export default function FocusCard({ members, go, assistantOn }: {
           ? <WeekBrief members={members} />
           : !queue ? (
             <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>
-          ) : !queue.now ? (
-            <div className="text-sm py-2" style={{ color: 'var(--t-text-soft)' }}>{t('focus.allClear')}</div>
           ) : (
             <>
+              {/* Today's energy — meets the day where it is. */}
+              <div className="flex gap-1.5 mb-2">
+                {(['low', 'ok', 'high'] as Energy[]).map((e) => (
+                  <button key={e} onClick={() => setEnergy(e)}
+                    className="flex-1 rounded-xl py-1.5 text-xs font-bold"
+                    style={e === energy
+                      ? { background: 'var(--t-brand)', color: 'var(--t-on-brand)', border: '1px solid var(--t-brand)' }
+                      : { background: 'var(--t-shell)', color: 'var(--t-text-soft)', border: '1px solid var(--t-line)' }}>
+                    {t(`focus.energy.${e}`)}
+                  </button>
+                ))}
+              </div>
+              {energy === 'low' && (
+                <div className="text-xs mb-2" style={{ color: 'var(--t-text-soft)' }}>{t('focus.lowHint')}</div>
+              )}
+
+              {!queue.now ? (
+                <div className="text-sm py-2" style={{ color: 'var(--t-text-soft)' }}>
+                  {energy === 'low' && (queue.parked?.length ?? 0) > 0 ? t('focus.allClearLow') : t('focus.allClear')}
+                </div>
+              ) : (
+                <>
               {/* NOW — just this one */}
               <div className="rounded-2xl p-4 mb-2" style={{ border: '2px solid var(--t-brand)' }}>
                 <div className="text-[11px] font-extrabold tracking-widest mb-1.5" style={{ color: 'var(--t-brand)' }}>{t('focus.nowLabel')}</div>
@@ -186,19 +227,30 @@ export default function FocusCard({ members, go, assistantOn }: {
                   )}
                 </div>
               )}
+                </>
+              )}
+
+              {/* Low energy: the big stuff waits visibly, without penalty. */}
+              {(queue.parked?.length ?? 0) > 0 && (
+                <div className="mt-3" style={{ opacity: 0.65 }}>
+                  <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--t-text-soft)' }}>{t('focus.parked')}</div>
+                  {queue.parked!.map((it, i) => row(it, i === queue.parked!.length - 1))}
+                </div>
+              )}
+
+              {queue.winsToday > 0 && (
+                <div className="flex items-start gap-2 rounded-xl px-3 py-2 mt-3 text-sm"
+                  style={{ background: 'color-mix(in oklab, var(--t-brand) 12%, var(--t-surface))', color: 'var(--t-brand)' }}>
+                  <Sparkles size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span>{t('focus.momentum', { count: queue.winsToday })}</span>
+                </div>
+              )}
 
               {dayBrief?.watchOut && (
                 <div className="flex items-start gap-2 rounded-xl px-3 py-2 mt-3 text-sm"
                   style={{ background: 'color-mix(in oklab, var(--t-danger) 12%, var(--t-surface))', color: 'var(--t-danger)' }}>
                   <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 2 }} />
                   <span>{dayBrief.watchOut}</span>
-                </div>
-              )}
-              {dayBrief?.praise && (
-                <div className="flex items-start gap-2 rounded-xl px-3 py-2 mt-2 text-sm"
-                  style={{ background: 'color-mix(in oklab, var(--t-brand) 12%, var(--t-surface))', color: 'var(--t-brand)' }}>
-                  <Sparkles size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span>{dayBrief.praise}</span>
                 </div>
               )}
             </>

@@ -14,9 +14,10 @@ frontend/tsconfig.tsbuildinfo
 /web/dist/*
 !/web/dist/.gitkeep
 
-# Editor / OS
+# Editor / OS / tooling
 .DS_Store
 *.local
+.playwright-mcp/
 
 # Local secrets (OIDC, etc.) — never commit
 .env

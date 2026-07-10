@@ -78,7 +78,17 @@
       "chore_due_one": "Aufgabe · bis morgen",
       "chore_due_other": "Aufgabe · noch {{count}} Tage",
       "open_todo": "offenes To-do"
-    }
+    },
+    "energy": {
+      "low": "Wenig Energie",
+      "ok": "Geht so",
+      "high": "Voller Tank"
+    },
+    "lowHint": "Energiesparmodus: nur kleine Erfolge — das Große wartet ohne Vorwurf.",
+    "allClearLow": "Keine kleinen Aufgaben mehr — der Rest kann auf einen besseren Tag warten.",
+    "parked": "Wartet auf einen besseren Tag",
+    "momentum_one": "{{count}} Erfolg heute — Schwung zählt, Größe nicht.",
+    "momentum_other": "{{count}} Erfolge heute — Schwung zählt, Größe nicht."
   },
   "effort": {
     "2min": "2 Min.",

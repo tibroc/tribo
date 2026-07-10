@@ -1,2 +1,0 @@
-[  177785ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:8080/api/chores:0
-[  177785ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:8080/api/review?period=week:0

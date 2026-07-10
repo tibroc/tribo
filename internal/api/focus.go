@@ -5,10 +5,12 @@ import (
 	"net/http"
 )
 
-// GET /api/focus[?all=1] — the Now/Next/Later queue for the acting profile
-// (deterministic ranking; see internal/focus). all=1 includes the hidden tail.
+// GET /api/focus[?all=1][&energy=low|ok|high] — the Now/Next/Later queue for
+// the acting profile (deterministic ranking; see internal/focus). all=1
+// includes the hidden tail; energy=low narrows to small wins (heavy/standard
+// items are returned in `parked`), energy=high boosts heavy tasks.
 func (s *Server) getFocus(w http.ResponseWriter, r *http.Request) {
-	q, err := s.focus.BuildQueue(s.auth.ActiveMemberID(r), r.URL.Query().Get("all") == "1")
+	q, err := s.focus.BuildQueue(s.auth.ActiveMemberID(r), r.URL.Query().Get("all") == "1", r.URL.Query().Get("energy"))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

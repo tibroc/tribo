@@ -78,7 +78,17 @@
       "chore_due_one": "tarefa · até amanhã",
       "chore_due_other": "tarefa · faltam {{count}} dias",
       "open_todo": "tarefa aberta"
-    }
+    },
+    "energy": {
+      "low": "Na reserva",
+      "ok": "Ok",
+      "high": "A todo vapor"
+    },
+    "lowHint": "Modo baixa energia: só vitórias rápidas — o resto espera sem culpa.",
+    "allClearLow": "Sem vitórias rápidas restantes — o resto pode esperar um dia melhor.",
+    "parked": "Esperando um dia melhor",
+    "momentum_one": "{{count}} vitória hoje — o ritmo conta, o tamanho não.",
+    "momentum_other": "{{count}} vitórias hoje — o ritmo conta, o tamanho não."
   },
   "effort": {
     "2min": "2 min",

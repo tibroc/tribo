@@ -45,7 +45,10 @@
   },
   "focus": {
     "title": "Focus",
-    "tab": { "today": "Today", "week": "This week" },
+    "tab": {
+      "today": "Today",
+      "week": "This week"
+    },
     "nowLabel": "NOW · JUST THIS ONE",
     "nextLabel": "Next · when that's done",
     "gotIt": "I've got it",
@@ -75,7 +78,17 @@
       "chore_due_one": "chore · due tomorrow",
       "chore_due_other": "chore · {{count}} days left",
       "open_todo": "open to-do"
-    }
+    },
+    "energy": {
+      "low": "Running low",
+      "ok": "Okay",
+      "high": "Plenty"
+    },
+    "lowHint": "Low-energy mode: small wins only — the big stuff waits without penalty.",
+    "allClearLow": "No small wins left — everything else can wait for a better day.",
+    "parked": "Waiting for a better day",
+    "momentum_one": "{{count}} win today — momentum counts, size doesn't.",
+    "momentum_other": "{{count}} wins today — momentum counts, size doesn't."
   },
   "effort": {
     "2min": "2 min",
@@ -92,7 +105,10 @@
   "assistant": {
     "title": "AI assistant",
     "briefTitle": "Assistant brief",
-    "kind": { "day": "Today", "week": "This week" },
+    "kind": {
+      "day": "Today",
+      "week": "This week"
+    },
     "noBrief": "No brief for this period yet.",
     "generate": "Generate",
     "generating": "Generating…",
@@ -235,8 +251,16 @@
     "noneThisWeek": "No chores this week",
     "donePeriod": "done {{period}}",
     "nonePeriod": "No chores {{period}}",
-    "period": { "week": "this week", "month": "this month", "year": "this year" },
-    "periodCap": { "week": "This week", "month": "This month", "year": "This year" },
+    "period": {
+      "week": "this week",
+      "month": "this month",
+      "year": "this year"
+    },
+    "periodCap": {
+      "week": "This week",
+      "month": "This month",
+      "year": "This year"
+    },
     "recurrence": {
       "daily": "Daily",
       "weekly": "Weekly",
@@ -247,12 +271,21 @@
     "everyPrefix": "Every",
     "every": "Every {{count}} {{unit}}",
     "everyNWeeksOn": "Every {{count}} weeks · {{days}}",
-    "adjective": { "day": "Daily", "week": "Weekly", "month": "Monthly", "year": "Yearly" },
+    "adjective": {
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly",
+      "year": "Yearly"
+    },
     "unit": {
-      "day_one": "day", "day_other": "days",
-      "week_one": "week", "week_other": "weeks",
-      "month_one": "month", "month_other": "months",
-      "year_one": "year", "year_other": "years"
+      "day_one": "day",
+      "day_other": "days",
+      "week_one": "week",
+      "week_other": "weeks",
+      "month_one": "month",
+      "month_other": "months",
+      "year_one": "year",
+      "year_other": "years"
     }
   },
   "todos": {
