@@ -245,8 +245,14 @@ CalDAV sync window covers a rolling ±1 year and **grows on demand** as the user
 navigates further out (`Engine.EnsureWindow`, called from `GET /api/events`);
 birthdays are materialized for every year in the window. Projected chores are
 still only generated for the near term (≈-1mo..+3mo), so distant years show
-events/birthdays but not chores. `/mcp` is unauthenticated in dev — gate it
-behind a token/proxy in production. The assistant is tested against a fake
+events/birthdays but not chores. **Auth (`internal/auth`):** the OIDC session
+cookie gates `/api/*` only when `OIDC_ISSUER_URL` is set; unset = dev mode, API
+fully open. An optional `TRIBO_API_TOKEN` bearer is accepted on `/api/*` as an
+alternative to the cookie (only meaningful when OIDC is on — it does *not* gate
+the browser API in no-OIDC mode) and **required on `/mcp` once set** (fail-open:
+`/mcp` is unauthenticated until you set a token, so set one in production). The
+API bearer is additive/headless-only; there's no token-as-login for the browser
+yet (deferred). The assistant is tested against a fake
 OpenAI-compatible server; real-model schema adherence (esp. small local models)
 hasn't been exercised in-repo. Push is verified up to a genuine
 aes128gcm-encrypted delivery against a fake push service; the final
