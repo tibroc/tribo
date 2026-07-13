@@ -20,14 +20,31 @@ func (s *Service) RegisterRoutes(mux *http.ServeMux) {
 }
 
 // Protect requires an authenticated session for API routes when auth is enabled.
+// A valid TRIBO_API_TOKEN bearer is accepted as an alternative to the session
+// cookie (for headless/automation clients). The token does not, by itself, turn
+// enforcement on: with OIDC off the API stays open — the token is only required
+// on /mcp (see RequireToken).
 func (s *Service) Protect(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.enabled {
+		if s.enabled && !s.hasValidBearer(r) {
 			sess, ok := s.readSession(r)
 			if !ok || sess.Sub == "" {
 				writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthenticated"})
 				return
 			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// RequireToken gates a handler on the bearer token when one is configured, and
+// passes through otherwise (fail-open). Used for /mcp, which has no session/
+// cookie concept — the token is its only credential.
+func (s *Service) RequireToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.apiToken != "" && !s.hasValidBearer(r) {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthenticated"})
+			return
 		}
 		next.ServeHTTP(w, r)
 	})

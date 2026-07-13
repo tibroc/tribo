@@ -130,8 +130,9 @@ func NewHandler(db *sql.DB, webFS fs.FS, authSvc *auth.Service, syncEngine *cals
 	})
 	root.Handle("/api/", authSvc.Protect(mux))
 
-	// MCP server (open in dev; protect behind a token/proxy in production).
-	mcpHandler := mcp.NewHandler(db, syncEngine)
+	// MCP server. Gated by the TRIBO_API_TOKEN bearer when one is set; open
+	// otherwise (fail-open — set a token to close it in production).
+	mcpHandler := authSvc.RequireToken(mcp.NewHandler(db, syncEngine))
 	root.Handle("/mcp", mcpHandler)
 	root.Handle("/mcp/", mcpHandler)
 

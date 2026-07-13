@@ -11,6 +11,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -31,6 +32,7 @@ type Service struct {
 	enabled  bool
 	secret   []byte
 	secure   bool
+	apiToken string // TRIBO_API_TOKEN — bearer credential for headless API + MCP
 	oauth    *oauth2.Config
 	verifier *oidc.IDTokenVerifier
 
@@ -50,7 +52,10 @@ type session struct {
 // OIDC discovery errors — it logs and falls back to disabled mode so the app
 // still serves.
 func New(db *sql.DB) *Service {
-	s := &Service{db: db, secret: loadSecret()}
+	s := &Service{db: db, secret: loadSecret(), apiToken: os.Getenv("TRIBO_API_TOKEN")}
+	if s.apiToken != "" {
+		log.Printf("auth: TRIBO_API_TOKEN set — bearer accepted on /api/* (when auth is on) and required on /mcp")
+	}
 
 	issuer := os.Getenv("OIDC_ISSUER_URL")
 	if issuer == "" {
@@ -118,6 +123,26 @@ func loadSecret() []byte {
 	}
 	log.Printf("auth: SESSION_SECRET unset — using a random secret (sessions reset on restart)")
 	return b
+}
+
+// ===== Bearer token =====
+
+// TokenConfigured reports whether a TRIBO_API_TOKEN is set (drives the /mcp gate).
+func (s *Service) TokenConfigured() bool { return s.apiToken != "" }
+
+// hasValidBearer reports whether the request carries the configured bearer
+// token in an Authorization header (constant-time compare). False when no
+// token is configured.
+func (s *Service) hasValidBearer(r *http.Request) bool {
+	if s.apiToken == "" {
+		return false
+	}
+	h := r.Header.Get("Authorization")
+	tok, ok := strings.CutPrefix(h, "Bearer ")
+	if !ok {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(tok), []byte(s.apiToken)) == 1
 }
 
 // ===== Cookie signing =====
