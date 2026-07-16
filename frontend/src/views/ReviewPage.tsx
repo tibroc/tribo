@@ -44,7 +44,7 @@ export default function ReviewPage({ go }: { go: (s: Section) => void }) {
 
   return (
     <AppShell active="home" onNavigate={go} header={header} showFab={false}>
-      <div style={{ padding: '22px 26px' }}>
+      <div className="px-3.5 py-[22px] lg:px-[26px]">
       {error && <div className="rounded-xl p-3 mb-3 text-sm" style={{ background: 'color-mix(in oklab, var(--t-danger) 16%, var(--t-shell))', color: 'var(--t-danger)' }}>{error}</div>}
       {!r ? (
         <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>

@@ -22,7 +22,7 @@ export default function TodosPage({ go }: { go: (s: Section) => void }) {
 
   return (
     <AppShell active="todos" onNavigate={go} header={<SimpleHeader title={t('nav.todos')} />} showFab={false}>
-      <div style={{ padding: '22px 26px' }}>
+      <div className="px-3.5 py-[22px] lg:px-[26px]">
         {error && <ErrorBanner className="mb-3">{error}</ErrorBanner>}
         {loading && todos.length === 0 && !error && (
           <div className="text-sm mb-3" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>

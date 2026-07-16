@@ -121,8 +121,8 @@ export default function FocusCard({ members, go, assistantOn }: {
               className="shrink-0 rounded-full" style={{ width: 18, height: 18, border: '2px solid var(--t-line)' }} />}
         <button className="flex-1 min-w-0 text-left" style={{ cursor: isEvent ? 'pointer' : 'default' }}
           onClick={() => { if (isEvent) go('calendar', 'open-event', { eventId: item.id, date: item.at ?? '' }) }}>
-          <span className="block text-sm font-medium truncate">{isEvent && '⚠ '}{item.title}</span>
-          <span className="block text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{reasonText(item)}</span>
+          <span className="block text-[15px] lg:text-sm font-medium truncate">{isEvent && '⚠ '}{item.title}</span>
+          <span className="block text-[13px] lg:text-xs truncate" style={{ color: 'var(--t-text-soft)' }}>{reasonText(item)}</span>
         </button>
         {member && <PersonAvatar name={member.name} color={member.color} size={22} />}
       </div>
@@ -184,7 +184,7 @@ export default function FocusCard({ members, go, assistantOn }: {
               {/* NOW — just this one */}
               <div className="rounded-2xl p-4 mb-2" style={{ border: '2px solid var(--t-brand)' }}>
                 <div className="text-[11px] font-extrabold tracking-widest mb-1.5" style={{ color: 'var(--t-brand)' }}>{t('focus.nowLabel')}</div>
-                <div className="font-display text-xl mb-0.5" style={{ fontWeight: 600 }}>
+                <div className="font-display text-2xl lg:text-xl mb-0.5" style={{ fontWeight: 600 }}>
                   {queue.now.kind === 'event' && '⚠ '}{queue.now.title}
                 </div>
                 <div className="text-sm mb-1" style={{ color: 'var(--t-text-soft)' }}>{reasonText(queue.now)}</div>

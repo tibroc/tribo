@@ -103,7 +103,7 @@ export default function FamilyPage({ go }: { go: (s: Section) => void }) {
 
   return (
     <AppShell active="family" onNavigate={go} showFab={false} header={<SimpleHeader title={t('nav.family')} />}>
-      <div style={{ padding: '22px 26px' }} className="space-y-4">
+      <div className="px-3.5 py-[22px] lg:px-[26px] space-y-4">
         {loadError && <ErrorBanner>{loadError}</ErrorBanner>}
         {loading && members.length === 0 && !loadError && (
           <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>
@@ -340,7 +340,7 @@ function FamilyBanner({ members, guardians, sources }: { members: FamilyMember[]
   ].join(' · ')
   return (
     <Card>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col items-start gap-3 lg:flex-row lg:items-center lg:gap-4">
         <div className="flex items-center">
           {members.map((m, i) => (
             <div key={m.id} style={{ marginLeft: i === 0 ? 0 : -10 }}>

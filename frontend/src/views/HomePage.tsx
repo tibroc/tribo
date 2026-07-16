@@ -33,7 +33,7 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent, foc
   // opens the add-event modal on arrival.
   return (
     <AppShell active="home" onNavigate={go} header={<SimpleHeader />} onFabClick={() => go('calendar', 'new-event')}>
-      <div style={{ padding: '22px 26px' }}>
+      <div className="px-3.5 py-[22px] lg:px-[26px]">
       {error && <div className="rounded-xl p-3 mb-3 text-sm" style={{ background: 'color-mix(in oklab, var(--t-danger) 16%, var(--t-shell))', color: 'var(--t-danger)' }}>{error}</div>}
       {!b ? (
         <div className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('common.loading')}</div>
@@ -41,8 +41,8 @@ export default function HomePage({ go }: { go: (s: Section, intent?: Intent, foc
         <>
           {/* Greeting hero */}
           <div className="rounded-2xl p-4 mb-4" style={{ backgroundColor: 'var(--t-today-wash)', border: '1px solid var(--t-line)' }}>
-            <div className="font-display text-xl font-bold mb-1">{t('home.greeting')}</div>
-            <div className="text-sm mb-3" style={{ color: 'var(--t-text-soft)' }}>{t('home.weekAhead', { range: fmtRange(b.rangeStart, b.rangeEnd, locale) })}</div>
+            <div className="font-display text-2xl lg:text-xl font-bold mb-1">{t('home.greeting')}</div>
+            <div className="text-[15px] lg:text-sm mb-3" style={{ color: 'var(--t-text-soft)' }}>{t('home.weekAhead', { range: fmtRange(b.rangeStart, b.rangeEnd, locale) })}</div>
             {b.countdown && (
               <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5" style={{ backgroundColor: 'var(--t-surface)' }}>
                 <Sparkles size={14} style={{ color: 'var(--t-accent)' }} />
