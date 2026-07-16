@@ -181,9 +181,9 @@ export default function EventForm({ event, members, sources, defaultDate, onClos
                   <span className="text-sm" style={{ color: 'var(--t-text-soft)' }}>{t('event.allDay')}</span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <TimePicker value={startTime} onChange={setStartTime} locale={locale} />
+                    <TimePicker value={startTime} onChange={setStartTime} />
                     <span style={{ color: 'var(--t-text-soft)' }}>–</span>
-                    <TimePicker value={endTime} onChange={setEndTime} locale={locale} />
+                    <TimePicker value={endTime} onChange={setEndTime} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">

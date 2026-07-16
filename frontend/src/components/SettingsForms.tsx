@@ -315,8 +315,8 @@ export function WorkScheduleForm({ schedule, guardians, onClose, onSaved }: {
         </div>
       </Labeled>
       <div className="flex gap-3">
-        <Labeled label={t('forms.start')}><div className="text-sm rounded-xl px-3 py-2" style={field}><TimePicker value={start} onChange={setStart} locale={locale} /></div></Labeled>
-        <Labeled label={t('forms.end')}><div className="text-sm rounded-xl px-3 py-2" style={field}><TimePicker value={end} onChange={setEnd} locale={locale} /></div></Labeled>
+        <Labeled label={t('forms.start')}><div className="text-sm rounded-xl px-3 py-2" style={field}><TimePicker value={start} onChange={setStart} /></div></Labeled>
+        <Labeled label={t('forms.end')}><div className="text-sm rounded-xl px-3 py-2" style={field}><TimePicker value={end} onChange={setEnd} /></div></Labeled>
       </div>
       <Labeled label={t('forms.label')}><input className="w-full text-sm rounded-xl px-3 py-2 outline-hidden" style={field} value={label} onChange={(e) => setLabel(e.target.value)} /></Labeled>
       <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--t-text-soft)' }}>

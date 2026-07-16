@@ -668,11 +668,11 @@ function NotificationsModal({ onClose }: { onClose: () => void }) {
                 <div className="text-sm font-medium mb-1">{t('push.quietHours')}</div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="rounded-xl px-3 py-1.5" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)' }}>
-                    <TimePicker value={prefs.quietStart} onChange={(v) => patch({ quietStart: v })} locale={locale} />
+                    <TimePicker value={prefs.quietStart} onChange={(v) => patch({ quietStart: v })} />
                   </span>
                   <span style={{ color: 'var(--t-text-soft)' }}>–</span>
                   <span className="rounded-xl px-3 py-1.5" style={{ background: 'var(--t-bg)', border: '1px solid var(--t-line)' }}>
-                    <TimePicker value={prefs.quietEnd} onChange={(v) => patch({ quietEnd: v })} locale={locale} />
+                    <TimePicker value={prefs.quietEnd} onChange={(v) => patch({ quietEnd: v })} />
                   </span>
                 </div>
               </div>
