@@ -10,7 +10,7 @@ COPY frontend/ ./
 RUN npm run build   # emits to /app/web/dist
 
 # 2) Go build (embeds the frontend via go:embed)
-FROM golang:1.26-alpine AS backend
+FROM golang:1.27-alpine AS backend
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
