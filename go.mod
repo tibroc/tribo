@@ -1,6 +1,6 @@
 module tribo
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
@@ -9,7 +9,7 @@ require (
 	github.com/emersion/go-webdav v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/modelcontextprotocol/go-sdk v1.7.0
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.37.0
 	google.golang.org/api v0.295.0
 	modernc.org/sqlite v1.57.0
 )
